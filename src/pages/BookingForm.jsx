@@ -84,6 +84,23 @@ export default function BookingForm() {
 
     await base44.entities.Booking.create(bookingData);
     
+    // 發送通知給管理員
+    await base44.integrations.Core.SendEmail({
+      to: "larry87tw@gmail.com",
+      subject: `新預約通知 - ${formData.name}`,
+      body: `新的預約已建立：
+
+客戶姓名：${formData.name}
+聯絡電話：${formData.phone}
+服務地址：${formData.address}
+服務類型：${formData.service_type}
+預約日期：${format(date, 'yyyy-MM-dd')}
+時段：${formData.time_slot}
+房屋類型：${formData.housing_type || '未填'}
+坪數：${formData.square_footage || '未填'}
+備註：${formData.notes || '無'}`
+    });
+    
     setIsSubmitting(false);
     setIsSuccess(true);
     toast.success("預約成功！我們將盡快與您聯繫確認。");

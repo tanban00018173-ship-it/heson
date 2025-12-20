@@ -47,7 +47,7 @@ export default function HeroSection() {
                   <ArrowRight className="ml-2 w-5 h-5" />
                 </Button>
               </Link>
-              <a href="https://line.me" target="_blank" rel="noopener noreferrer">
+              <a href="https://lin.ee/6KgqiOU" target="_blank" rel="noopener noreferrer">
                 <Button 
                   variant="outline" 
                   size="lg"
