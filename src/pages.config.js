@@ -9,6 +9,10 @@ import ClientProfile from './pages/ClientProfile';
 import CleanerJobs from './pages/CleanerJobs';
 import CleanerSchedule from './pages/CleanerSchedule';
 import CleanerReport from './pages/CleanerReport';
+import CleanerProfile from './pages/CleanerProfile';
+import AdminDashboard from './pages/AdminDashboard';
+import AdminBookings from './pages/AdminBookings';
+import AdminCleaners from './pages/AdminCleaners';
 
 
 export const PAGES = {
@@ -23,6 +27,10 @@ export const PAGES = {
     "CleanerJobs": CleanerJobs,
     "CleanerSchedule": CleanerSchedule,
     "CleanerReport": CleanerReport,
+    "CleanerProfile": CleanerProfile,
+    "AdminDashboard": AdminDashboard,
+    "AdminBookings": AdminBookings,
+    "AdminCleaners": AdminCleaners,
 }
 
 export const pagesConfig = {
