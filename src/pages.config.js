@@ -4,6 +4,11 @@ import FAQ from './pages/FAQ';
 import BookingForm from './pages/BookingForm';
 import ClientDashboard from './pages/ClientDashboard';
 import ClientHistory from './pages/ClientHistory';
+import ClientBooking from './pages/ClientBooking';
+import ClientProfile from './pages/ClientProfile';
+import CleanerJobs from './pages/CleanerJobs';
+import CleanerSchedule from './pages/CleanerSchedule';
+import CleanerReport from './pages/CleanerReport';
 
 
 export const PAGES = {
@@ -13,6 +18,11 @@ export const PAGES = {
     "BookingForm": BookingForm,
     "ClientDashboard": ClientDashboard,
     "ClientHistory": ClientHistory,
+    "ClientBooking": ClientBooking,
+    "ClientProfile": ClientProfile,
+    "CleanerJobs": CleanerJobs,
+    "CleanerSchedule": CleanerSchedule,
+    "CleanerReport": CleanerReport,
 }
 
 export const pagesConfig = {
