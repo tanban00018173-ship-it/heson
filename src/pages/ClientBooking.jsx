@@ -79,6 +79,22 @@ export default function ClientBooking() {
 
     await base44.entities.Booking.create(bookingData);
     
+    // 發送通知給管理員
+    await base44.integrations.Core.SendEmail({
+      to: "larry87tw@gmail.com",
+      subject: `新預約通知 - ${user?.full_name}`,
+      body: `
+新的預約已建立：
+
+客戶姓名：${user?.full_name}
+預約日期：${format(date, 'yyyy-MM-dd')}
+時段：${formData.time_slot}
+服務地址：${profile?.address || ''}
+服務類型：${profile?.subscription_plan || '單次清潔'}
+備註：${formData.notes || '無'}
+      `
+    });
+    
     setIsSubmitting(false);
     setIsSuccess(true);
     toast.success("預約成功！");

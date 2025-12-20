@@ -79,7 +79,7 @@ export default function Footer() {
               </li>
               <li>
                 <a 
-                  href="https://line.me" 
+                  href="https://lin.ee/6KgqiOU" 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm transition-colors mt-2"

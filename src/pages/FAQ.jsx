@@ -123,7 +123,7 @@ export default function FAQ() {
               <p className="text-stone-400 mb-6">
                 我們的客服團隊隨時為您服務
               </p>
-              <a href="https://line.me" target="_blank" rel="noopener noreferrer">
+              <a href="https://lin.ee/6KgqiOU" target="_blank" rel="noopener noreferrer">
                 <Button className="bg-green-600 hover:bg-green-700 text-white px-8 py-6 text-base rounded-full">
                   <MessageCircle className="mr-2 w-5 h-5" />
                   LINE 聯繫我們
