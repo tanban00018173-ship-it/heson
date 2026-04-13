@@ -44,6 +44,7 @@ function getTodayAndNext30() {
 export default function HesonAIChat() {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState([{ role: 'assistant', content: WELCOME }]);
+  const [quickShown, setQuickShown] = useState(false);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [bookingResult, setBookingResult] = useState(null);
@@ -256,6 +257,20 @@ export default function HesonAIChat() {
                   </div>
                 </div>
               ))}
+              {/* Quick suggestion chips - inline in message area, one-time */}
+              {messages.length === 1 && !quickShown && !bookingStep && (
+                <div className="flex flex-wrap gap-1.5 pl-9 pb-1">
+                  {QUICK_QUESTIONS.map(q => (
+                    <button
+                      key={q}
+                      onClick={() => { setQuickShown(true); handleQuickClick(q); }}
+                      className="text-xs bg-white border border-amber-200 text-amber-700 px-2.5 py-1.5 rounded-full hover:bg-amber-50 transition-colors"
+                    >
+                      {q}
+                    </button>
+                  ))}
+                </div>
+              )}
               {loading && (
                 <div className="flex gap-2 justify-start">
                   <div className="w-7 h-7 rounded-full flex-shrink-0 overflow-hidden bg-amber-100">
@@ -281,21 +296,6 @@ export default function HesonAIChat() {
 
             {/* Interactive Options Area */}
             <div className="flex-shrink-0 border-t border-stone-100 bg-white">
-              {/* Quick Questions - only at start */}
-              {messages.length === 1 && !bookingStep && (
-                <div className="px-3 py-2 flex flex-wrap gap-1.5">
-                  {QUICK_QUESTIONS.map(q => (
-                    <button
-                      key={q}
-                      onClick={() => handleQuickClick(q)}
-                      className="text-xs bg-white border border-amber-200 text-amber-700 px-2.5 py-1.5 rounded-full hover:bg-amber-50 transition-colors"
-                    >
-                      {q}
-                    </button>
-                  ))}
-                </div>
-              )}
-
               {/* Service Type Selection */}
               {bookingStep === 'service' && (
                 <div className="px-3 py-2 grid grid-cols-2 gap-1.5">
@@ -358,7 +358,7 @@ export default function HesonAIChat() {
                 </div>
               )}
 
-              {/* Text Input (road, name, phone, or free chat) */}
+              {/* Text Input: always show for free chat & text-entry steps */}
               {(!bookingStep || bookingStep === 'road' || bookingStep === 'name' || bookingStep === 'phone') && (
                 <div className="px-3 py-3 flex gap-2">
                   <input
