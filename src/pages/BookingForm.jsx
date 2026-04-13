@@ -107,7 +107,8 @@ export default function BookingForm() {
 
     setIsSubmitting(true);
 
-    const bookingData = {
+    try {
+      const bookingData = {
       client_id: user?.id || 'guest',
       client_name: formData.name,
       service_type: formData.service_type,
@@ -127,11 +128,15 @@ export default function BookingForm() {
       body: `新的預約已建立：\n\n客戶姓名：${formData.name}\n聯絡電話：${formData.phone}\n服務地址：${formData.address}\n服務類型：${formData.service_type}\n預約日期：${format(date, 'yyyy-MM-dd')}\n時段：${formData.time_slot}\n房屋類型：${formData.housing_type || '未填'}\n坪數：${formData.square_footage || '未填'}\n備註：${formData.notes || '無'}`
     });
 
-    setIsSubmitting(false);
-    // 導向付款
-    const amount = getAmount();
-    const itemName = formData.service_type;
-    window.location.href = `/PaymentRedirect?booking_id=${booking.id}&amount=${amount}&item_name=${encodeURIComponent(itemName)}`;
+      setIsSubmitting(false);
+      // 導向付款
+      const amount = getAmount();
+      const itemName = formData.service_type;
+      window.location.href = `/PaymentRedirect?booking_id=${booking.id}&amount=${amount}&item_name=${encodeURIComponent(itemName)}`;
+    } catch (error) {
+      setIsSubmitting(false);
+      toast.error('預約建立失敗，請稍後重試');
+    }
   };
 
   if (isSuccess) {
