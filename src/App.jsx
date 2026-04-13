@@ -15,6 +15,8 @@ import JoinCleaner from './pages/JoinCleaner'
 import BusinessCooperation from './pages/BusinessCooperation'
 import Recruitment from './pages/Recruitment'
 import CleanerTeam from './pages/CleanerTeam'
+import CleanerApplicationForm from './pages/CleanerApplicationForm'
+import CleanerManagement from './pages/CleanerManagement'
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
@@ -86,6 +88,8 @@ const AuthenticatedApp = () => {
       <Route path="/BusinessCooperation" element={<BusinessCooperation />} />
       <Route path="/Recruitment" element={<Recruitment />} />
       <Route path="/CleanerTeam" element={<CleanerTeam />} />
+      <Route path="/CleanerApplicationForm" element={<CleanerApplicationForm />} />
+      <Route path="/CleanerManagement" element={<CleanerManagement />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );
