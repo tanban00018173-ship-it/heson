@@ -70,12 +70,15 @@ export default function HesonAIChat() {
       {/* Floating Button */}
       <button
         onClick={() => setOpen(o => !o)}
-        className="fixed bottom-6 right-4 z-50 w-14 h-14 bg-amber-500 hover:bg-amber-600 text-white rounded-full shadow-lg flex items-center justify-center transition-all duration-300 hover:scale-110"
+        className="fixed bottom-6 right-4 z-50 w-14 h-14 bg-amber-500 hover:bg-amber-600 rounded-full shadow-lg flex items-center justify-center transition-all duration-300 hover:scale-110 overflow-hidden"
         aria-label="開啟小赫 AI 客服"
       >
-        {open ? <X className="w-6 h-6" /> : <MessageCircle className="w-6 h-6" />}
+        {open
+          ? <X className="w-6 h-6 text-white" />
+          : <img src="https://media.base44.com/images/public/6945eea24a533fe8f1a31e80/08fd95ace_generated_image.png" alt="小赫" className="w-10 h-10 object-cover rounded-full" />
+        }
         {!open && (
-          <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-[9px] flex items-center justify-center font-bold">AI</span>
+          <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-[9px] flex items-center justify-center font-bold text-white">AI</span>
         )}
       </button>
 
@@ -92,8 +95,8 @@ export default function HesonAIChat() {
           >
             {/* Header */}
             <div className="bg-gradient-to-r from-amber-500 to-amber-600 px-4 py-3 flex items-center gap-3">
-              <div className="w-9 h-9 bg-white/20 rounded-full flex items-center justify-center">
-                <Bot className="w-5 h-5 text-white" />
+              <div className="w-9 h-9 rounded-full overflow-hidden bg-white/20">
+                <img src="https://media.base44.com/images/public/6945eea24a533fe8f1a31e80/08fd95ace_generated_image.png" alt="小赫" className="w-full h-full object-cover" />
               </div>
               <div>
                 <p className="text-white font-medium text-sm">小赫 AI 客服</p>
@@ -109,8 +112,8 @@ export default function HesonAIChat() {
               {messages.map((m, i) => (
                 <div key={i} className={`flex gap-2 ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                   {m.role === 'assistant' && (
-                    <div className="w-7 h-7 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <Bot className="w-4 h-4 text-amber-600" />
+                    <div className="w-7 h-7 rounded-full flex-shrink-0 mt-0.5 overflow-hidden bg-amber-100">
+                      <img src="https://media.base44.com/images/public/6945eea24a533fe8f1a31e80/08fd95ace_generated_image.png" alt="小赫" className="w-full h-full object-cover" />
                     </div>
                   )}
                   <div className={`max-w-[78%] px-3 py-2 rounded-2xl text-sm leading-relaxed ${
@@ -124,8 +127,8 @@ export default function HesonAIChat() {
               ))}
               {loading && (
                 <div className="flex gap-2 justify-start">
-                  <div className="w-7 h-7 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0">
-                    <Bot className="w-4 h-4 text-amber-600" />
+                  <div className="w-7 h-7 rounded-full flex-shrink-0 overflow-hidden bg-amber-100">
+                    <img src="https://media.base44.com/images/public/6945eea24a533fe8f1a31e80/08fd95ace_generated_image.png" alt="小赫" className="w-full h-full object-cover" />
                   </div>
                   <div className="bg-white px-4 py-3 rounded-2xl rounded-bl-sm shadow-sm border border-stone-100">
                     <Loader2 className="w-4 h-4 animate-spin text-amber-500" />
