@@ -57,19 +57,16 @@ export default function AdminDispatch() {
   });
 
   const dispatchMutation = useMutation({
-    mutationFn: async ({ bookingId, cleanerId }) => {
-      const cleaner = cleaners.find(c => c.id === cleanerId);
-      await base44.entities.Booking.update(bookingId, {
-        cleaner_id: cleanerId,
-        cleaner_name: cleaner?.nickname,
-        status: '已確認'
-      });
-    },
+    mutationFn: ({ bookingId, cleanerId }) =>
+      base44.functions.invoke('dispatchCleaner', { bookingId, cleanerId }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pendingBookings'] });
-      toast.success("派單成功！");
+      toast.success('派單成功！通知 Email 已發送給管理師');
       setSelectedBooking(null);
       setSelectedCleaner('');
+    },
+    onError: (err) => {
+      toast.error('派單失敗：' + (err?.message || '請稍後再試'));
     },
   });
 

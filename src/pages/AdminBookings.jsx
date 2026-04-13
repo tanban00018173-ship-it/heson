@@ -7,8 +7,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Calendar, Clock, MapPin, User, Filter } from "lucide-react";
+import { Calendar, Clock, MapPin, User, Filter, UserPlus, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { format } from "date-fns";
 import { zhTW } from "date-fns/locale";
@@ -18,6 +19,8 @@ import { createPageUrl } from "@/utils";
 export default function AdminBookings() {
   const [user, setUser] = useState(null);
   const [statusFilter, setStatusFilter] = useState('all');
+  const [assignBooking, setAssignBooking] = useState(null);
+  const [assignCleaner, setAssignCleaner] = useState('');
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -48,6 +51,29 @@ export default function AdminBookings() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['allBookings'] });
       toast.success("狀態已更新");
+    },
+  });
+
+  const { data: cleaners } = useQuery({
+    queryKey: ['activeCleaners'],
+    queryFn: async () => {
+      const all = await base44.entities.CleanerProfile.list();
+      return all.filter(c => c.is_active);
+    },
+    initialData: [],
+  });
+
+  const assignMutation = useMutation({
+    mutationFn: ({ bookingId, cleanerId }) =>
+      base44.functions.invoke('dispatchCleaner', { bookingId, cleanerId }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['allBookings'] });
+      toast.success('指派成功！通知 Email 已發送');
+      setAssignBooking(null);
+      setAssignCleaner('');
+    },
+    onError: (err) => {
+      toast.error('指派失敗：' + (err?.message || '請稍後再試'));
     },
   });
 
@@ -165,20 +191,33 @@ export default function AdminBookings() {
                               </Badge>
                             </TableCell>
                             <TableCell>
-                              <Select 
-                                value={booking.status}
-                                onValueChange={(status) => updateStatusMutation.mutate({ id: booking.id, status })}
-                              >
-                                <SelectTrigger className="w-28 h-8 text-xs rounded-lg">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="待確認">待確認</SelectItem>
-                                  <SelectItem value="已確認">已確認</SelectItem>
-                                  <SelectItem value="已完成">已完成</SelectItem>
-                                  <SelectItem value="已取消">已取消</SelectItem>
-                                </SelectContent>
-                              </Select>
+                              <div className="flex items-center gap-2">
+                                <Select 
+                                  value={booking.status}
+                                  onValueChange={(status) => updateStatusMutation.mutate({ id: booking.id, status })}
+                                >
+                                  <SelectTrigger className="w-28 h-8 text-xs rounded-lg">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="待確認">待確認</SelectItem>
+                                    <SelectItem value="已確認">已確認</SelectItem>
+                                    <SelectItem value="已完成">已完成</SelectItem>
+                                    <SelectItem value="已取消">已取消</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                                {booking.status === '待確認' && (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="h-8 text-xs rounded-lg text-amber-600 border-amber-300 hover:bg-amber-50"
+                                    onClick={() => { setAssignBooking(booking); setAssignCleaner(''); }}
+                                  >
+                                    <UserPlus className="w-3 h-3 mr-1" />
+                                    指派
+                                  </Button>
+                                )}
+                              </div>
                             </TableCell>
                           </TableRow>
                         ))
@@ -191,6 +230,56 @@ export default function AdminBookings() {
           </motion.div>
         </div>
       </main>
+
+      {/* Assign Dialog */}
+      <Dialog open={!!assignBooking} onOpenChange={() => setAssignBooking(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>指派服務人員</DialogTitle>
+          </DialogHeader>
+          {assignBooking && (
+            <div className="space-y-4">
+              <div className="bg-stone-50 rounded-xl p-4 text-sm">
+                <p className="font-medium text-stone-800">{assignBooking.client_name}</p>
+                <p className="text-stone-500 mt-1">{assignBooking.service_type}</p>
+                <p className="text-stone-500">
+                  {assignBooking.scheduled_date && format(new Date(assignBooking.scheduled_date), 'M月d日 (EEE)', { locale: zhTW })} · {assignBooking.time_slot}
+                </p>
+                <p className="text-stone-400 mt-1 truncate">{assignBooking.address}</p>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-stone-700">選擇管理師</label>
+                <Select value={assignCleaner} onValueChange={setAssignCleaner}>
+                  <SelectTrigger className="rounded-xl">
+                    <SelectValue placeholder="請選擇管理師" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {cleaners?.map(c => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.nickname}（{c.service_areas?.join('、') || '全區'}）
+                      </SelectItem>
+                    ))}
+                    {cleaners?.length === 0 && (
+                      <SelectItem value="__none" disabled>尚無可用管理師</SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+              <p className="text-xs text-stone-400">指派後將自動發送 Email 通知給管理師，並更新預約狀態為「已確認」。</p>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAssignBooking(null)}>取消</Button>
+            <Button
+              onClick={() => assignMutation.mutate({ bookingId: assignBooking.id, cleanerId: assignCleaner })}
+              disabled={!assignCleaner || assignMutation.isPending}
+              className="bg-amber-500 hover:bg-amber-600 text-white"
+            >
+              {assignMutation.isPending ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />處理中...</> : '確認指派'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
