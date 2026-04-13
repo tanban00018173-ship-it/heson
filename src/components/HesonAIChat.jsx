@@ -23,7 +23,6 @@ const TAIWAN_CITIES = [
   '台東縣', '澎湖縣', '金門縣', '連江縣',
 ];
 
-// Booking steps: service → city → road → date → time → name → phone → confirm
 const BOOKING_STEPS = ['service', 'city', 'road', 'date', 'time', 'name', 'phone', 'confirm'];
 
 function getMinDate() {
@@ -39,7 +38,7 @@ export default function HesonAIChat() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [bookingResult, setBookingResult] = useState(null);
-  const [bookingStep, setBookingStep] = useState(null); // null = normal chat
+  const [bookingStep, setBookingStep] = useState(null);
   const [bookingData, setBookingData] = useState({});
   const bottomRef = useRef(null);
   const dateInputRef = useRef(null);
@@ -128,7 +127,6 @@ export default function HesonAIChat() {
       setBookingData(newData);
       setBookingStep('confirm');
     } else {
-      // Normal chat
       sendChat(text);
     }
   };
@@ -137,7 +135,7 @@ export default function HesonAIChat() {
     if (serviceType === '基礎月護-4次') return 8400;
     if (serviceType === '進階月安-8次') return 16000;
     if (serviceType === '尊寵月怡-12次') return 24600;
-    return 2000; // 單次清潔預設
+    return 2000;
   };
 
   const confirmBooking = async () => {
@@ -200,23 +198,15 @@ export default function HesonAIChat() {
     addMessage('assistant', '已取消預約流程，有其他問題歡迎繼續詢問！');
   };
 
-
-
   return (
     <>
       {/* Floating Button */}
       <button
         onClick={() => setOpen(o => !o)}
-        className="fixed bottom-6 right-4 z-50 w-14 h-14 bg-gradient-to-br from-amber-400 to-amber-600 hover:from-amber-500 hover:to-amber-700 rounded-full shadow-xl flex items-center justify-center transition-all duration-300 hover:scale-110 overflow-hidden"
+        className="fixed bottom-6 right-4 z-50 w-14 h-14 bg-gradient-to-br from-amber-400 to-amber-600 hover:from-amber-500 hover:to-amber-700 rounded-full shadow-xl flex items-center justify-center transition-all duration-300 hover:scale-110 text-white font-bold text-xl"
         aria-label="開啟小赫 AI 客服"
       >
-        {open
-          ? <X className="w-6 h-6 text-white" />
-          : <img src="https://media.base44.com/images/public/6945eea24a533fe8f1a31e80/08fd95ace_generated_image.png" alt="小赫" className="w-10 h-10 object-cover rounded-full" />
-        }
-        {!open && (
-          <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-[9px] flex items-center justify-center font-bold text-white">AI</span>
-        )}
+        {open ? <X className="w-6 h-6" /> : '🤖'}
       </button>
 
       {/* Chat Window */}
@@ -232,9 +222,7 @@ export default function HesonAIChat() {
           >
             {/* Header */}
             <div className="bg-gradient-to-r from-amber-500 to-amber-600 px-4 py-3 flex items-center gap-3 flex-shrink-0 shadow-sm">
-              <div className="w-9 h-9 rounded-full overflow-hidden bg-white/20">
-                <img src="https://media.base44.com/images/public/6945eea24a533fe8f1a31e80/08fd95ace_generated_image.png" alt="小赫" className="w-full h-full object-cover" />
-              </div>
+              <div className="w-9 h-9 rounded-full flex items-center justify-center bg-white/20 text-lg font-bold">🤖</div>
               <div>
                 <p className="text-white font-medium text-sm">小赫 AI 客服</p>
                 <p className="text-amber-100 text-xs">HESON 赫頌 · 24hr 智能回覆</p>
@@ -252,11 +240,9 @@ export default function HesonAIChat() {
             {/* Messages */}
             <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 bg-gradient-to-b from-stone-50 via-white to-stone-50">
               {messages.map((m, i) => (
-                <div key={i} className={`flex gap-2 ${m.role === 'user' ? 'justify-end' : 'justify-start'} animate-fadeIn`}>
+                <div key={i} className={`flex gap-2 ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                   {m.role === 'assistant' && (
-                    <div className="w-7 h-7 rounded-full flex-shrink-0 mt-0.5 overflow-hidden bg-amber-100 shadow-sm">
-                      <img src="https://media.base44.com/images/public/6945eea24a533fe8f1a31e80/08fd95ace_generated_image.png" alt="小赫" className="w-full h-full object-cover" />
-                    </div>
+                    <div className="w-7 h-7 rounded-full flex-shrink-0 mt-0.5 bg-amber-100 shadow-sm flex items-center justify-center text-sm font-bold">🤖</div>
                   )}
                   <div className={`max-w-[78%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed whitespace-pre-line transition-all ${
                     m.role === 'user'
@@ -267,7 +253,6 @@ export default function HesonAIChat() {
                   </div>
                 </div>
               ))}
-              {/* Quick suggestion chips - inline in message area, one-time */}
               {messages.length === 1 && !quickShown && !bookingStep && (
                 <div className="flex flex-wrap gap-2 pl-9 pb-1">
                   {QUICK_QUESTIONS.map(q => (
@@ -283,9 +268,7 @@ export default function HesonAIChat() {
               )}
               {loading && (
                 <div className="flex gap-2 justify-start">
-                  <div className="w-7 h-7 rounded-full flex-shrink-0 overflow-hidden bg-amber-100">
-                    <img src="https://media.base44.com/images/public/6945eea24a533fe8f1a31e80/08fd95ace_generated_image.png" alt="小赫" className="w-full h-full object-cover" />
-                  </div>
+                  <div className="w-7 h-7 rounded-full flex-shrink-0 bg-amber-100 flex items-center justify-center text-sm font-bold">🤖</div>
                   <div className="bg-white px-4 py-3 rounded-2xl rounded-bl-sm shadow-sm border border-stone-200">
                     <Loader2 className="w-4 h-4 animate-spin text-amber-500" />
                   </div>
@@ -306,7 +289,6 @@ export default function HesonAIChat() {
 
             {/* Interactive Options Area */}
             <div className="flex-shrink-0 border-t border-stone-200 bg-white">
-              {/* Service Type Selection */}
               {bookingStep === 'service' && (
                 <div className="px-3 py-2 grid grid-cols-2 gap-2">
                   {SERVICE_TYPES.map(s => (
@@ -318,7 +300,6 @@ export default function HesonAIChat() {
                 </div>
               )}
 
-              {/* City Selection */}
               {bookingStep === 'city' && (
                 <div className="px-3 py-2 max-h-40 overflow-y-auto grid grid-cols-3 gap-1.5">
                   {TAIWAN_CITIES.map(c => (
@@ -330,7 +311,6 @@ export default function HesonAIChat() {
                 </div>
               )}
 
-              {/* Date Selection - calendar input */}
               {bookingStep === 'date' && (
                 <div className="px-3 py-3 flex flex-col gap-2">
                   <p className="text-xs text-stone-500 font-medium">請點選日期：</p>
@@ -344,7 +324,6 @@ export default function HesonAIChat() {
                 </div>
               )}
 
-              {/* Time Slot Selection */}
               {bookingStep === 'time' && (
                 <div className="px-3 py-2 flex flex-col gap-1.5">
                   {TIME_SLOTS.map(t => (
@@ -356,7 +335,6 @@ export default function HesonAIChat() {
                 </div>
               )}
 
-              {/* Login Required Step */}
               {bookingStep === 'login_required' && (
                 <div className="px-3 py-3 flex flex-col gap-2">
                   <button
@@ -371,7 +349,6 @@ export default function HesonAIChat() {
                 </div>
               )}
 
-              {/* Confirm Step */}
               {bookingStep === 'confirm' && (
                 <div className="px-3 py-2 flex gap-2">
                   <button onClick={confirmBooking}
@@ -385,7 +362,6 @@ export default function HesonAIChat() {
                 </div>
               )}
 
-              {/* Text Input: always show for free chat & text-entry steps */}
               {(!bookingStep || bookingStep === 'road' || bookingStep === 'name' || bookingStep === 'phone') && (
                 <div className="px-3 py-3 flex gap-2 bg-gradient-to-r from-amber-50 to-white border-t border-stone-200">
                   <input
