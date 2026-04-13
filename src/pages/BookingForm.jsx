@@ -251,9 +251,10 @@ export default function BookingForm() {
                           <SelectValue placeholder="請選擇" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="透天">透天厝</SelectItem>
+                          <SelectItem value="透天">透天</SelectItem>
                           <SelectItem value="公寓">公寓</SelectItem>
-                          <SelectItem value="大樓">大樓</SelectItem>
+                          <SelectItem value="華廈、大樓">華廈、大樓</SelectItem>
+                          <SelectItem value="農舍">農舍</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>

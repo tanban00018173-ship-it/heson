@@ -7,6 +7,12 @@ import { pagesConfig } from './pages.config'
 import AdminAttendance from './pages/AdminAttendance'
 import PaymentResult from './pages/PaymentResult'
 import PaymentRedirect from './pages/PaymentRedirect'
+import ServiceInquiry from './pages/ServiceInquiry'
+import PrivacyPolicy from './pages/PrivacyPolicy'
+import TermsOfService from './pages/TermsOfService'
+import JoinCleaner from './pages/JoinCleaner'
+import BusinessCooperation from './pages/BusinessCooperation'
+import Recruitment from './pages/Recruitment'
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
@@ -65,6 +71,12 @@ const AuthenticatedApp = () => {
       <Route path="/AdminAttendance" element={<AdminAttendance />} />
       <Route path="/PaymentResult" element={<PaymentResult />} />
       <Route path="/PaymentRedirect" element={<PaymentRedirect />} />
+      <Route path="/ServiceInquiry" element={<ServiceInquiry />} />
+      <Route path="/PrivacyPolicy" element={<PrivacyPolicy />} />
+      <Route path="/TermsOfService" element={<TermsOfService />} />
+      <Route path="/JoinCleaner" element={<JoinCleaner />} />
+      <Route path="/BusinessCooperation" element={<BusinessCooperation />} />
+      <Route path="/Recruitment" element={<Recruitment />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

@@ -60,11 +60,11 @@ export default function Footer() {
           <div>
             <h4 className="text-white font-medium mb-4">平台資訊</h4>
             <ul className="space-y-3 text-sm">
-              <li><a href="#" className="hover:text-amber-400 transition-colors">加入服務人員</a></li>
-              <li><a href="#" className="hover:text-amber-400 transition-colors">企業合作洽談</a></li>
-              <li><a href="#" className="hover:text-amber-400 transition-colors">服務條款</a></li>
-              <li><a href="#" className="hover:text-amber-400 transition-colors">隱私政策</a></li>
-              <li><a href="#" className="hover:text-amber-400 transition-colors">人才招募</a></li>
+              <li><Link to={createPageUrl("JoinCleaner")} className="hover:text-amber-400 transition-colors">加入服務人員</Link></li>
+              <li><Link to={createPageUrl("BusinessCooperation")} className="hover:text-amber-400 transition-colors">企業合作洽談</Link></li>
+              <li><Link to={createPageUrl("TermsOfService")} className="hover:text-amber-400 transition-colors">服務條款</Link></li>
+              <li><Link to={createPageUrl("PrivacyPolicy")} className="hover:text-amber-400 transition-colors">隱私政策</Link></li>
+              <li><Link to={createPageUrl("Recruitment")} className="hover:text-amber-400 transition-colors">人才招募</Link></li>
             </ul>
           </div>
           
