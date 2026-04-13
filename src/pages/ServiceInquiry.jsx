@@ -100,7 +100,8 @@ export default function ServiceInquiry() {
     }
     setIsSubmitting(true);
 
-    let notesArr = [];
+    try {
+      let notesArr = [];
     if (form.housing_type) notesArr.push(`房屋類型: ${form.housing_type}`);
     if (form.sqft) notesArr.push(`坪數: ${form.sqft}`);
     if (form.clean_type) notesArr.push(`清潔類型: ${form.clean_type}`);
@@ -114,18 +115,22 @@ export default function ServiceInquiry() {
     if (fabList) notesArr.push(`布面: ${fabList}`);
     if (form.notes) notesArr.push(`備註: ${form.notes}`);
 
-    const booking = await base44.entities.Booking.create({
-      client_id: user?.id || 'guest',
-      client_name: form.name,
-      service_type: serviceName === "居家清潔" ? (form.clean_type === "定期" ? "基礎月護-4次" : "單次清潔") : "單次清潔",
-      status: '待確認',
-      scheduled_date: format(date, 'yyyy-MM-dd'),
-      time_slot: form.time_slot,
-      address: form.address,
-      notes: `【${serviceName}】${notesArr.join(' | ')}`,
-    });
+      const booking = await base44.entities.Booking.create({
+        client_id: user?.id || 'guest',
+        client_name: form.name,
+        service_type: serviceName === "居家清潔" ? (form.clean_type === "定期" ? "基礎月護-4次" : "單次清潔") : "單次清潔",
+        status: '待確認',
+        scheduled_date: format(date, 'yyyy-MM-dd'),
+        time_slot: form.time_slot,
+        address: form.address,
+        notes: `【${serviceName}】${notesArr.join(' | ')}`,
+      });
 
-    window.location.href = `/PaymentRedirect?booking_id=${booking.id}&amount=${config.priceBase}&item_name=${encodeURIComponent(`HESON ${serviceName}`)}`;
+      window.location.href = `/PaymentRedirect?booking_id=${booking.id}&amount=${config.priceBase}&item_name=${encodeURIComponent(`HESON ${serviceName}`)}`;
+    } catch (error) {
+      setIsSubmitting(false);
+      toast.error('預約建立失敗，請稍後重試');
+    }
   };
 
   const Field = ({ label, children, required }) => (
