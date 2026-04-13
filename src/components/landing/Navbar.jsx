@@ -36,6 +36,7 @@ export default function Navbar() {
     { name: "首頁", path: "Home" },
     { name: "關於我們", path: "About" },
     { name: "服務方案", path: "BookingForm" },
+    { name: "清潔師團隊", path: "CleanerTeam" },
     { name: "查詢訂單", path: "OrderQuery" },
     { name: "常見問題", path: "FAQ" },
   ];

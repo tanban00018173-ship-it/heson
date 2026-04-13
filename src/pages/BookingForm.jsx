@@ -15,6 +15,7 @@ import { format } from "date-fns";
 import { zhTW } from "date-fns/locale";
 import { CalendarIcon, Check, Loader2, Sparkles } from "lucide-react";
 import { base44 } from "@/api/base44Client";
+import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 const serviceTypes = [
@@ -35,6 +36,10 @@ export default function BookingForm() {
   const [isSuccess, setIsSuccess] = useState(false);
   const [user, setUser] = useState(null);
   const [date, setDate] = useState(null);
+  const { data: cleaners = [] } = useQuery({
+    queryKey: ['activeCleaners'],
+    queryFn: () => base44.entities.CleanerProfile.filter({ is_active: true }),
+  });
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
@@ -43,6 +48,7 @@ export default function BookingForm() {
     square_footage: '',
     service_type: '單次清潔',
     time_slot: '',
+    preferred_cleaner: '',
     notes: '',
   });
 
@@ -108,7 +114,7 @@ export default function BookingForm() {
       scheduled_date: format(date, 'yyyy-MM-dd'),
       time_slot: formData.time_slot,
       address: formData.address,
-      notes: `房型: ${formData.housing_type || '未填'}, 坪數: ${formData.square_footage || '未填'}, 備註: ${formData.notes || '無'}`,
+      notes: `房型: ${formData.housing_type || '未填'}, 坪數: ${formData.square_footage || '未填'}, 指定清潔師: ${formData.preferred_cleaner || '不指定'}, 備註: ${formData.notes || '無'}`,
     };
 
     const booking = await base44.entities.Booking.create(bookingData);
@@ -354,6 +360,30 @@ export default function BookingForm() {
                         </SelectContent>
                       </Select>
                     </div>
+                  </div>
+
+                  {/* Preferred Cleaner */}
+                  <div className="space-y-2">
+                    <Label>是否有想指定的清潔師？</Label>
+                    <Select
+                      value={formData.preferred_cleaner}
+                      onValueChange={(v) => setFormData({ ...formData, preferred_cleaner: v })}
+                    >
+                      <SelectTrigger className="rounded-xl">
+                        <SelectValue placeholder="不指定（由我們安排最適合的張伴為您服務）" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="不指定">不指定（由我們安排）</SelectItem>
+                        {cleaners.map(c => (
+                          <SelectItem key={c.id} value={c.nickname}>{c.nickname}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {cleaners.length > 0 && (
+                      <p className="text-xs text-stone-400">
+                        想先了解我們的團隊？可參考 <a href="/CleanerTeam" className="text-amber-600 underline" target="_blank">清潔師團隊頁面</a>
+                      </p>
+                    )}
                   </div>
 
                   {/* Notes */}
