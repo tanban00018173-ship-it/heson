@@ -207,7 +207,7 @@ export default function HesonAIChat() {
       {/* Floating Button */}
       <button
         onClick={() => setOpen(o => !o)}
-        className="fixed bottom-6 right-4 z-50 w-14 h-14 bg-amber-500 hover:bg-amber-600 rounded-full shadow-lg flex items-center justify-center transition-all duration-300 hover:scale-110 overflow-hidden"
+        className="fixed bottom-6 right-4 z-50 w-14 h-14 bg-gradient-to-br from-amber-400 to-amber-600 hover:from-amber-500 hover:to-amber-700 rounded-full shadow-xl flex items-center justify-center transition-all duration-300 hover:scale-110 overflow-hidden"
         aria-label="開啟小赫 AI 客服"
       >
         {open
@@ -227,11 +227,11 @@ export default function HesonAIChat() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
             transition={{ duration: 0.2 }}
-            className="fixed bottom-24 right-4 z-50 bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-stone-100"
-            style={{ width: 'min(360px, calc(100vw - 32px))', height: 'min(520px, calc(100vh - 160px))' }}
+            className="fixed bottom-24 right-4 z-50 bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-stone-200"
+            style={{ width: 'min(380px, calc(100vw - 32px))', height: 'min(540px, calc(100vh - 160px))' }}
           >
             {/* Header */}
-            <div className="bg-gradient-to-r from-amber-500 to-amber-600 px-4 py-3 flex items-center gap-3 flex-shrink-0">
+            <div className="bg-gradient-to-r from-amber-500 to-amber-600 px-4 py-3 flex items-center gap-3 flex-shrink-0 shadow-sm">
               <div className="w-9 h-9 rounded-full overflow-hidden bg-white/20">
                 <img src="https://media.base44.com/images/public/6945eea24a533fe8f1a31e80/08fd95ace_generated_image.png" alt="小赫" className="w-full h-full object-cover" />
               </div>
@@ -250,18 +250,18 @@ export default function HesonAIChat() {
             </div>
 
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 bg-stone-50">
+            <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 bg-gradient-to-b from-stone-50 via-white to-stone-50">
               {messages.map((m, i) => (
-                <div key={i} className={`flex gap-2 ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                <div key={i} className={`flex gap-2 ${m.role === 'user' ? 'justify-end' : 'justify-start'} animate-fadeIn`}>
                   {m.role === 'assistant' && (
-                    <div className="w-7 h-7 rounded-full flex-shrink-0 mt-0.5 overflow-hidden bg-amber-100">
+                    <div className="w-7 h-7 rounded-full flex-shrink-0 mt-0.5 overflow-hidden bg-amber-100 shadow-sm">
                       <img src="https://media.base44.com/images/public/6945eea24a533fe8f1a31e80/08fd95ace_generated_image.png" alt="小赫" className="w-full h-full object-cover" />
                     </div>
                   )}
-                  <div className={`max-w-[78%] px-3 py-2 rounded-2xl text-sm leading-relaxed whitespace-pre-line ${
+                  <div className={`max-w-[78%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed whitespace-pre-line transition-all ${
                     m.role === 'user'
-                      ? 'bg-amber-500 text-white rounded-br-sm'
-                      : 'bg-white text-stone-700 shadow-sm rounded-bl-sm border border-stone-100'
+                      ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-br-sm shadow-md'
+                      : 'bg-white text-stone-700 shadow-sm rounded-bl-sm border border-stone-200'
                   }`}>
                     {m.content}
                   </div>
@@ -269,12 +269,12 @@ export default function HesonAIChat() {
               ))}
               {/* Quick suggestion chips - inline in message area, one-time */}
               {messages.length === 1 && !quickShown && !bookingStep && (
-                <div className="flex flex-wrap gap-1.5 pl-9 pb-1">
+                <div className="flex flex-wrap gap-2 pl-9 pb-1">
                   {QUICK_QUESTIONS.map(q => (
                     <button
                       key={q}
                       onClick={() => { setQuickShown(true); handleQuickClick(q); }}
-                      className="text-xs bg-white border border-amber-200 text-amber-700 px-2.5 py-1.5 rounded-full hover:bg-amber-50 transition-colors"
+                      className="text-xs bg-white border border-amber-300 text-amber-700 px-3 py-1.5 rounded-full hover:bg-amber-50 transition-colors font-medium shadow-sm"
                     >
                       {q}
                     </button>
@@ -286,7 +286,7 @@ export default function HesonAIChat() {
                   <div className="w-7 h-7 rounded-full flex-shrink-0 overflow-hidden bg-amber-100">
                     <img src="https://media.base44.com/images/public/6945eea24a533fe8f1a31e80/08fd95ace_generated_image.png" alt="小赫" className="w-full h-full object-cover" />
                   </div>
-                  <div className="bg-white px-4 py-3 rounded-2xl rounded-bl-sm shadow-sm border border-stone-100">
+                  <div className="bg-white px-4 py-3 rounded-2xl rounded-bl-sm shadow-sm border border-stone-200">
                     <Loader2 className="w-4 h-4 animate-spin text-amber-500" />
                   </div>
                 </div>
@@ -305,13 +305,13 @@ export default function HesonAIChat() {
             </div>
 
             {/* Interactive Options Area */}
-            <div className="flex-shrink-0 border-t border-stone-100 bg-white">
+            <div className="flex-shrink-0 border-t border-stone-200 bg-white">
               {/* Service Type Selection */}
               {bookingStep === 'service' && (
-                <div className="px-3 py-2 grid grid-cols-2 gap-1.5">
+                <div className="px-3 py-2 grid grid-cols-2 gap-2">
                   {SERVICE_TYPES.map(s => (
                     <button key={s} onClick={() => handleBookingStep(s, s)}
-                      className="text-xs bg-amber-50 border border-amber-200 text-amber-800 px-2 py-2 rounded-xl hover:bg-amber-100 transition-colors font-medium">
+                      className="text-xs bg-gradient-to-br from-amber-50 to-amber-100 border border-amber-300 text-amber-800 px-2 py-2.5 rounded-xl hover:from-amber-100 hover:to-amber-200 transition-all font-medium shadow-sm">
                       {s}
                     </button>
                   ))}
@@ -320,10 +320,10 @@ export default function HesonAIChat() {
 
               {/* City Selection */}
               {bookingStep === 'city' && (
-                <div className="px-3 py-2 max-h-32 overflow-y-auto grid grid-cols-3 gap-1">
+                <div className="px-3 py-2 max-h-40 overflow-y-auto grid grid-cols-3 gap-1.5">
                   {TAIWAN_CITIES.map(c => (
                     <button key={c} onClick={() => handleBookingStep(c, c)}
-                      className="text-xs bg-stone-50 border border-stone-200 text-stone-700 px-1 py-1.5 rounded-lg hover:bg-amber-50 hover:border-amber-200 transition-colors">
+                      className="text-xs bg-stone-50 border border-stone-300 text-stone-700 px-2 py-1.5 rounded-lg hover:bg-amber-50 hover:border-amber-300 transition-all font-medium">
                       {c}
                     </button>
                   ))}
@@ -333,13 +333,13 @@ export default function HesonAIChat() {
               {/* Date Selection - calendar input */}
               {bookingStep === 'date' && (
                 <div className="px-3 py-3 flex flex-col gap-2">
-                  <p className="text-xs text-stone-500">請點選日期：</p>
+                  <p className="text-xs text-stone-500 font-medium">請點選日期：</p>
                   <input
                     ref={dateInputRef}
                     type="date"
                     min={getMinDate()}
                     onChange={e => { if (e.target.value) handleBookingStep(e.target.value, e.target.value); }}
-                    className="w-full text-sm border border-amber-300 rounded-xl px-3 py-2.5 outline-none focus:border-amber-500 bg-amber-50 cursor-pointer"
+                    className="w-full text-sm border border-amber-400 rounded-xl px-3 py-2.5 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-200 bg-white cursor-pointer transition-all font-medium"
                   />
                 </div>
               )}
@@ -349,7 +349,7 @@ export default function HesonAIChat() {
                 <div className="px-3 py-2 flex flex-col gap-1.5">
                   {TIME_SLOTS.map(t => (
                     <button key={t} onClick={() => handleBookingStep(t, t)}
-                      className="text-xs bg-stone-50 border border-stone-200 text-stone-700 px-3 py-2.5 rounded-xl hover:bg-amber-50 hover:border-amber-200 transition-colors text-left">
+                      className="text-xs bg-stone-50 border border-stone-300 text-stone-700 px-3 py-2.5 rounded-xl hover:bg-amber-50 hover:border-amber-300 transition-all text-left font-medium">
                       {t}
                     </button>
                   ))}
@@ -361,11 +361,11 @@ export default function HesonAIChat() {
                 <div className="px-3 py-3 flex flex-col gap-2">
                   <button
                     onClick={() => base44.auth.redirectToLogin(window.location.pathname)}
-                    className="w-full text-sm bg-amber-500 hover:bg-amber-600 text-white py-2.5 rounded-xl font-medium transition-colors"
+                    className="w-full text-sm bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white py-2.5 rounded-xl font-medium transition-all shadow-md"
                   >
                     🔐 立即登入以完成預約
                   </button>
-                  <button onClick={cancelBooking} className="w-full text-xs text-stone-400 hover:text-stone-600">
+                  <button onClick={cancelBooking} className="w-full text-xs text-stone-400 hover:text-stone-600 transition-colors">
                     取消
                   </button>
                 </div>
@@ -375,11 +375,11 @@ export default function HesonAIChat() {
               {bookingStep === 'confirm' && (
                 <div className="px-3 py-2 flex gap-2">
                   <button onClick={confirmBooking}
-                    className="flex-1 text-sm bg-amber-500 hover:bg-amber-600 text-white py-2.5 rounded-xl font-medium transition-colors">
+                    className="flex-1 text-sm bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white py-2.5 rounded-xl font-medium transition-all shadow-md">
                     ✓ 確認並前往付款
                   </button>
                   <button onClick={cancelBooking}
-                    className="flex-1 text-sm bg-stone-100 hover:bg-stone-200 text-stone-600 py-2.5 rounded-xl font-medium transition-colors">
+                    className="flex-1 text-sm bg-stone-100 hover:bg-stone-200 text-stone-600 py-2.5 rounded-xl font-medium transition-all">
                     ✕ 取消
                   </button>
                 </div>
@@ -387,23 +387,23 @@ export default function HesonAIChat() {
 
               {/* Text Input: always show for free chat & text-entry steps */}
               {(!bookingStep || bookingStep === 'road' || bookingStep === 'name' || bookingStep === 'phone') && (
-                <div className="px-3 py-3 flex gap-2">
+                <div className="px-3 py-3 flex gap-2 bg-gradient-to-r from-amber-50 to-white border-t border-stone-200">
                   <input
                     value={input}
                     onChange={e => setInput(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleTextInput()}
                     placeholder={
-                      bookingStep === 'road' ? '輸入路名與門牌號碼...' :
-                      bookingStep === 'name' ? '輸入您的姓名...' :
-                      bookingStep === 'phone' ? '輸入聯絡電話...' :
+                      bookingStep === 'road' ? '例：中山北路二段100號' :
+                      bookingStep === 'name' ? '請輸入您的姓名' :
+                      bookingStep === 'phone' ? '09XX-XXX-XXX' :
                       '輸入您的問題...'
                     }
-                    className="flex-1 text-sm border border-stone-200 rounded-xl px-3 py-2 outline-none focus:border-amber-400 transition-colors"
+                    className="flex-1 text-sm border border-amber-200 rounded-xl px-4 py-2.5 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-200 transition-all bg-white placeholder-stone-400 font-medium"
                   />
                   <button
                     onClick={handleTextInput}
                     disabled={!input.trim() || loading}
-                    className="w-9 h-9 bg-amber-500 hover:bg-amber-600 disabled:opacity-40 text-white rounded-xl flex items-center justify-center transition-colors"
+                    className="w-10 h-10 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 disabled:opacity-40 text-white rounded-xl flex items-center justify-center transition-all duration-200 shadow-md hover:shadow-lg"
                   >
                     <Send className="w-4 h-4" />
                   </button>
