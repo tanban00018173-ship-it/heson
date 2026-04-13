@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
-import * as XLSX from 'xlsx';
 
 export default function CleanerBulkImport() {
   const [user, setUser] = useState(null);
@@ -23,29 +22,43 @@ export default function CleanerBulkImport() {
     });
   }, []);
 
+  const parseCSV = (text) => {
+    const lines = text.split('\n').filter(l => l.trim());
+    if (lines.length < 2) {
+      toast.error('檔案內容不足');
+      return null;
+    }
+
+    const headers = lines[0].split(',').map(h => h.trim());
+    const dataRows = lines.slice(1).map((line) => {
+      const values = line.split(',').map(v => v.trim());
+      const obj = {};
+      headers.forEach((h, i) => {
+        obj[h] = values[i] || '';
+      });
+      return obj;
+    }).filter(r => r['姓名（同身分證）']);
+
+    return dataRows;
+  };
+
   const parseFile = (selectedFile) => {
     if (!selectedFile) return;
+    
+    if (!selectedFile.name.endsWith('.csv')) {
+      toast.error('目前僅支援 CSV 格式。請將 Excel 檔案另存為 CSV。');
+      return;
+    }
+
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
-        const data = new Uint8Array(e.target.result);
-        const workbook = XLSX.read(data, { type: 'array' });
-        const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-        const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+        const text = e.target.result;
+        const dataRows = parseCSV(text);
         
-        if (rows.length < 2) {
-          toast.error('檔案內容不足');
+        if (!dataRows || dataRows.length === 0) {
           return;
         }
-
-        const headers = rows[0];
-        const dataRows = rows.slice(1).map((row) => {
-          const obj = {};
-          headers.forEach((h, i) => {
-            obj[h] = row[i] || '';
-          });
-          return obj;
-        }).filter(r => r['姓名（同身分證）']); // 只保留有姓名的行
 
         setFile(selectedFile);
         setPreview(dataRows.slice(0, 5));
@@ -54,7 +67,7 @@ export default function CleanerBulkImport() {
         toast.error('檔案解析失敗');
       }
     };
-    reader.readAsArrayBuffer(selectedFile);
+    reader.readAsText(selectedFile);
   };
 
   const mapData = (row) => {
@@ -101,35 +114,40 @@ export default function CleanerBulkImport() {
 
     setLoading(true);
     try {
-      // 先讀取整個檔案
       const reader = new FileReader();
       reader.onload = async (e) => {
-        const data = new Uint8Array(e.target.result);
-        const workbook = XLSX.read(data, { type: 'array' });
-        const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-        const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-        const headers = rows[0];
-        const allRows = rows.slice(1).filter(r => r[0]); // 只要有姓名的行
+        const text = e.target.result;
+        const dataRows = parseCSV(text);
+        
+        if (!dataRows || dataRows.length === 0) {
+          setLoading(false);
+          return;
+        }
 
-        const cleanders = allRows.map(row => {
-          const obj = {};
-          headers.forEach((h, i) => {
-            obj[h] = row[i] || '';
-          });
-          return mapData(obj);
-        });
-
-        // 批量建立
-        await base44.entities.CleanerProfile.bulkCreate(cleanders);
-        toast.success(`已成功匯入 ${cleanders.length} 筆清潔師資料`);
+        const cleaners = dataRows.map(row => mapData(row));
+        await base44.entities.CleanerProfile.bulkCreate(cleaners);
+        toast.success(`已成功匯入 ${cleaners.length} 筆清潔師資料`);
         setImported(true);
         setLoading(false);
       };
-      reader.readAsArrayBuffer(file);
+      reader.readAsText(file);
     } catch (err) {
       toast.error('匯入失敗：' + err.message);
       setLoading(false);
     }
+  };
+
+  const downloadTemplate = () => {
+    const headers = ['姓名（同身分證）', '性別', '期望時薪', '暱稱（用於介紹客戶）', '年齡', '聯絡電話', 'LINE ID（方便派單通知）', '居住地區（縣市 + 鄉鎮/市區）', '最高學歷', '緊急聯絡人（姓名 + 關係）', '緊急聯絡人電話', '您的家事經驗（年資）', '您可以承接的服務項目', '對於寵物的接受程度', '您是否自備清潔工具', '交通工具', '每週可配合的時段', '目前是否還有其他正職/兼職工作', '您希望的接案地區（台北）', '您希望的接案地區（新北）', '您希望的接案地區（基隆）', '您希望的接案地區（桃園）', '您希望的接案地區（宜蘭）', '您希望的接案地區（其他地區）', '匯款銀行', '匯款帳號'];
+    const sample = ['王美麗', '女', '350', '美美', '35', '0912345678', '@wang123', '台北市中山區', '大學', '王先生/父親', '0987654321', '5', '居家清潔,家電清洗', '喜歡', '是', '機車', '週一至週五 09:00-17:00', '否', '是', '是', '', '', '', '', '台灣銀行', '123456789'];
+    
+    const csv = [headers.join(','), sample.join(',')].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = '清潔師資料範本.csv';
+    link.click();
+    toast.success('範本已下載');
   };
 
   if (!user || user.role !== 'admin') {
@@ -165,7 +183,7 @@ export default function CleanerBulkImport() {
       <div className="container mx-auto px-6 lg:px-12 py-12">
         <div className="mb-8">
           <h1 className="text-3xl font-light text-stone-800 mb-2">批量匯入清潔師</h1>
-          <p className="text-stone-600">上傳 CSV 或 Excel 檔案快速新增多位清潔師</p>
+          <p className="text-stone-600">上傳 CSV 檔案快速新增多位清潔師</p>
         </div>
 
         <div className="grid lg:grid-cols-3 gap-8">
@@ -179,7 +197,7 @@ export default function CleanerBulkImport() {
                 <div className="border-2 border-dashed border-stone-300 rounded-xl p-12 text-center hover:border-amber-500 transition-all">
                   <input
                     type="file"
-                    accept=".xlsx,.xls,.csv"
+                    accept=".csv"
                     onChange={(e) => parseFile(e.target.files?.[0])}
                     className="hidden"
                     id="file-input"
@@ -187,7 +205,7 @@ export default function CleanerBulkImport() {
                   <label htmlFor="file-input" className="cursor-pointer">
                     <Upload className="w-12 h-12 text-stone-400 mx-auto mb-3" />
                     <p className="text-lg font-medium text-stone-700 mb-1">點擊上傳或拖入檔案</p>
-                    <p className="text-sm text-stone-500">支援 .xlsx, .xls, .csv 格式</p>
+                    <p className="text-sm text-stone-500">支援 .csv 格式</p>
                   </label>
                 </div>
 
@@ -197,19 +215,9 @@ export default function CleanerBulkImport() {
                   <Button
                     variant="outline"
                     className="w-full border-blue-300 text-blue-600 hover:bg-blue-50"
-                    onClick={() => {
-                      const template = [
-                        ['姓名（同身分證）', '性別', '期望時薪', '暱稱（用於介紹客戶）', '年齡', '聯絡電話', 'LINE ID（方便派單通知）', '居住地區（縣市 + 鄉鎮/市區）', '最高學歷', '緊急聯絡人（姓名 + 關係）', '緊急聯絡人電話', '您的家事經驗（年資）', '您可以承接的服務項目', '對於寵物的接受程度', '您是否自備清潔工具', '交通工具', '每週可配合的時段', '目前是否還有其他正職/兼職工作', '您希望的接案地區（台北）', '您希望的接案地區（新北）', '您希望的接案地區（基隆）', '您希望的接案地區（桃園）', '您希望的接案地區（宜蘭）', '您希望的接案地區（其他地區）', '匯款銀行', '匯款帳號'],
-                        ['王美麗', '女', '350', '美美', '35', '0912345678', '@wang123', '台北市中山區', '大學', '王先生/父親', '0987654321', '5', '居家清潔,家電清洗', '喜歡', '是', '機車', '週一至週五 09:00-17:00', '否', '是', '是', '', '', '', '', '台灣銀行', '123456789']
-                      ];
-                      const ws = XLSX.utils.aoa_to_sheet(template);
-                      const wb = XLSX.utils.book_new();
-                      XLSX.utils.book_append_sheet(wb, ws, 'Cleaners');
-                      XLSX.writeFile(wb, '清潔師資料範本.xlsx');
-                      toast.success('範本已下載');
-                    }}
+                    onClick={downloadTemplate}
                   >
-                    <Download className="w-4 h-4 mr-2" /> 下載 Excel 範本
+                    <Download className="w-4 h-4 mr-2" /> 下載 CSV 範本
                   </Button>
                 </div>
 
@@ -280,8 +288,8 @@ export default function CleanerBulkImport() {
                   <p className="text-xs">在對應的欄位填入「是」或任何文字即可勾選。例：台北欄位填「是」表示願意承接台北市案件。</p>
                 </div>
                 <div>
-                  <p className="font-medium text-stone-800 mb-1">時薪格式</p>
-                  <p className="text-xs">直接填數字（如 350）或「400/450(過年)」等說明。系統會自動提取首個數字。</p>
+                  <p className="font-medium text-stone-800 mb-1">檔案格式</p>
+                  <p className="text-xs">請使用 CSV 格式。若您有 Excel 檔案，可在 Excel 中選擇「另存為 CSV」格式。</p>
                 </div>
                 <div>
                   <p className="font-medium text-stone-800 mb-1">布林值</p>
@@ -292,7 +300,7 @@ export default function CleanerBulkImport() {
 
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">已匯入統計</CardTitle>
+                <CardTitle className="text-lg">已讀取資料</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-3xl font-bold text-amber-600 mb-2">
