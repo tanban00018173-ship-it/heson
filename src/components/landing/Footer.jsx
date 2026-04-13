@@ -1,7 +1,21 @@
 import React from 'react';
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { Phone, Mail, MapPin, MessageCircle } from "lucide-react";
+
+function NavLink({ to, children }) {
+  const navigate = useNavigate();
+  const handleClick = (e) => {
+    e.preventDefault();
+    navigate(to);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+  return (
+    <a href={to} onClick={handleClick} className="hover:text-amber-400 transition-colors">
+      {children}
+    </a>
+  );
+}
 
 export default function Footer() {
   return (
@@ -28,18 +42,10 @@ export default function Footer() {
           <div>
             <h4 className="text-white font-medium mb-4">快速連結</h4>
             <ul className="space-y-3 text-sm">
-              <li>
-                <Link to={createPageUrl("Home")} className="hover:text-amber-400 transition-colors">首頁</Link>
-              </li>
-              <li>
-                <Link to={createPageUrl("About")} className="hover:text-amber-400 transition-colors">關於我們</Link>
-              </li>
-              <li>
-                <Link to={createPageUrl("BookingForm")} className="hover:text-amber-400 transition-colors">立即預約</Link>
-              </li>
-              <li>
-                <Link to={createPageUrl("FAQ")} className="hover:text-amber-400 transition-colors">常見問題</Link>
-              </li>
+              <li><NavLink to={createPageUrl("Home")}>首頁</NavLink></li>
+              <li><NavLink to={createPageUrl("About")}>關於我們</NavLink></li>
+              <li><NavLink to={createPageUrl("BookingForm")}>立即預約</NavLink></li>
+              <li><NavLink to={createPageUrl("FAQ")}>常見問題</NavLink></li>
             </ul>
           </div>
           
@@ -47,12 +53,12 @@ export default function Footer() {
           <div>
             <h4 className="text-white font-medium mb-4">服務項目</h4>
             <ul className="space-y-3 text-sm">
-              <li>鐘點居家清潔</li>
-              <li>定期清潔方案</li>
-              <li>家電深度清洗</li>
-              <li>整理收納服務</li>
-              <li>企業商用清潔</li>
-              <li>裝潢後清潔</li>
+              <li><NavLink to="/ServiceInquiry?service=%E5%B1%85%E5%AE%B6%E6%B8%85%E6%BD%94">鐘點居家清潔</NavLink></li>
+              <li><NavLink to="/ServiceInquiry?service=%E5%AE%9A%E6%9C%9F%E6%B8%85%E6%BD%94">定期清潔方案</NavLink></li>
+              <li><NavLink to="/ServiceInquiry?service=%E5%AE%B6%E9%9B%BB%E6%B8%85%E6%B4%97">家電深度清洗</NavLink></li>
+              <li><NavLink to="/ServiceInquiry?service=%E6%95%B4%E7%90%86%E6%94%B6%E7%B4%8D">整理收納服務</NavLink></li>
+              <li><NavLink to="/ServiceInquiry?service=%E5%95%86%E6%A5%AD%E6%B8%85%E6%BD%94">企業商用清潔</NavLink></li>
+              <li><NavLink to="/ServiceInquiry?service=%E8%A3%9D%E6%BD%A2%E5%BE%8C%E6%B8%85%E6%BD%94">裝潢後清潔</NavLink></li>
             </ul>
           </div>
           
@@ -60,11 +66,11 @@ export default function Footer() {
           <div>
             <h4 className="text-white font-medium mb-4">平台資訊</h4>
             <ul className="space-y-3 text-sm">
-              <li><Link to={createPageUrl("JoinCleaner")} className="hover:text-amber-400 transition-colors">加入服務人員</Link></li>
-              <li><Link to={createPageUrl("BusinessCooperation")} className="hover:text-amber-400 transition-colors">企業合作洽談</Link></li>
-              <li><Link to={createPageUrl("TermsOfService")} className="hover:text-amber-400 transition-colors">服務條款</Link></li>
-              <li><Link to={createPageUrl("PrivacyPolicy")} className="hover:text-amber-400 transition-colors">隱私政策</Link></li>
-              <li><Link to={createPageUrl("Recruitment")} className="hover:text-amber-400 transition-colors">人才招募</Link></li>
+              <li><NavLink to={createPageUrl("JoinCleaner")}>加入服務人員</NavLink></li>
+              <li><NavLink to={createPageUrl("BusinessCooperation")}>企業合作洽談</NavLink></li>
+              <li><NavLink to={createPageUrl("TermsOfService")}>服務條款</NavLink></li>
+              <li><NavLink to={createPageUrl("PrivacyPolicy")}>隱私政策</NavLink></li>
+              <li><NavLink to={createPageUrl("Recruitment")}>人才招募</NavLink></li>
             </ul>
           </div>
           
