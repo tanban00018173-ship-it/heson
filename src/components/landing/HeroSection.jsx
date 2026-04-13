@@ -93,7 +93,7 @@ export default function HeroSection() {
                 <div className="flex flex-wrap gap-3">
                   <Link to={createPageUrl("BookingForm")}>
                     <Button size="lg" className="bg-white text-stone-800 hover:bg-stone-100 rounded-full px-8 py-6 text-base font-medium shadow-xl">
-                      免費預約 <ArrowRight className="ml-2 w-5 h-5" />
+                      開始預約 <ArrowRight className="ml-2 w-5 h-5" />
                     </Button>
                   </Link>
                   <a href="https://lin.ee/xKVxq7Y" target="_blank" rel="noopener noreferrer">
