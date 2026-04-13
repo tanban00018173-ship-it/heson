@@ -30,13 +30,18 @@ export default function HesonAIChat() {
     const history = messages.filter(m => m.role !== 'system');
     setMessages(prev => [...prev, { role: 'user', content: msg }]);
     setLoading(true);
-    const res = await base44.functions.invoke('hesonAI', {
-      message: msg,
-      history: history.map(m => ({ role: m.role, content: m.content })),
-    });
-    const reply = res.data?.reply || '抱歉，我暫時無法回答，請撥打 0906-991-023 聯繫客服。';
-    setMessages(prev => [...prev, { role: 'assistant', content: reply }]);
-    setLoading(false);
+    try {
+      const res = await base44.functions.invoke('hesonAI', {
+        message: msg,
+        history: history.map(m => ({ role: m.role, content: m.content })),
+      });
+      const reply = res.data?.reply || '抱歉，我暫時無法回答，請撥打 0906-991-023 聯繫客服。';
+      setMessages(prev => [...prev, { role: 'assistant', content: reply }]);
+    } catch {
+      setMessages(prev => [...prev, { role: 'assistant', content: '抱歉，目前連線異常，請稍後再試或撥打 0906-991-023。' }]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

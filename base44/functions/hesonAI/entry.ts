@@ -1,19 +1,11 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
-Deno.serve(async (req) => {
-  const base44 = createClientFromRequest(req);
-  const { message, history } = await req.json();
-
-  if (!message) {
-    return Response.json({ error: '請輸入問題' }, { status: 400 });
-  }
-
-  const systemPrompt = `你是「小赫」，HESON 赫頌家事管理平台的 AI 客服助理。
-你的個性：親切、專業、有溫度，回覆簡潔（不超過150字）。
+const SYSTEM_PROMPT = `你是「小赫」，HESON 赫頌家事管理平台的 AI 客服助理。
+個性：親切、專業、有溫度，回覆簡潔（不超過150字）。
 使用繁體中文回答。
 
 【HESON 基本資訊】
-- 公司名稱：HESON 赫頌家事管理
+- 公司：HESON 赫頌家事管理
 - 地址：宜蘭縣羅東鎮中正南路131號5樓
 - 電話：0906-991-023
 - Email：service@heson.tw
@@ -37,19 +29,32 @@ Deno.serve(async (req) => {
 - 有寵物：可接受，預約時請備註
 - 服務區域：全台本島，宜蘭、雙北、台中、高雄為主
 
-如果問題超出你的知識範圍，請引導客戶撥打電話或加LINE聯絡真人客服。`;
+超出知識範圍時，請引導客戶撥打電話或加LINE聯絡真人客服。`;
 
-  // Build messages array with history
-  const messages = [
-    { role: 'system', content: systemPrompt },
-    ...(history || []).slice(-6), // keep last 6 exchanges
-    { role: 'user', content: message },
-  ];
+Deno.serve(async (req) => {
+  try {
+    const base44 = createClientFromRequest(req);
+    const { message, history } = await req.json();
 
-  const reply = await base44.asServiceRole.integrations.Core.InvokeLLM({
-    prompt: `對話記錄：\n${messages.filter(m => m.role !== 'system').map(m => `${m.role === 'user' ? '客戶' : '小赫'}：${m.content}`).join('\n')}\n\n請以小赫身份回覆最後一則客戶訊息。`,
-    model: 'gpt_5_mini',
-  });
+    if (!message) {
+      return Response.json({ error: '請輸入問題' }, { status: 400 });
+    }
 
-  return Response.json({ reply });
+    // Build conversation context string
+    const historyText = (history || []).slice(-8)
+      .map(m => `${m.role === 'user' ? '客戶' : '小赫'}：${m.content}`)
+      .join('\n');
+
+    const prompt = `${SYSTEM_PROMPT}
+
+${historyText ? `【對話記錄】\n${historyText}\n\n` : ''}客戶：${message}
+
+請以小赫身份回覆：`;
+
+    const reply = await base44.asServiceRole.integrations.Core.InvokeLLM({ prompt });
+
+    return Response.json({ reply });
+  } catch (error) {
+    return Response.json({ error: error.message }, { status: 500 });
+  }
 });
