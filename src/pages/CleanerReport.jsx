@@ -8,11 +8,24 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Camera, Upload, Loader2, X, CheckCircle } from "lucide-react";
+import { Camera, Upload, Loader2, X, CheckCircle, Check } from "lucide-react";
 import { motion } from "framer-motion";
 import { format } from "date-fns";
 import { zhTW } from "date-fns/locale";
 import { toast } from "sonner";
+
+const CHECKLIST_ITEMS = [
+  '地板清潔（拖地/吸塵）',
+  '桌面/檯面擦拭',
+  '廚房流理台清潔',
+  '浴室馬桶清潔',
+  '洗手台/浴缸清潔',
+  '鏡子擦拭',
+  '垃圾清理',
+  '窗戶/門框擦拭',
+  '床鋪整理',
+  '微波爐/電器擦拭',
+];
 
 export default function CleanerReport() {
   const [user, setUser] = useState(null);
@@ -22,6 +35,7 @@ export default function CleanerReport() {
   const [afterPhotos, setAfterPhotos] = useState([]);
   const [notes, setNotes] = useState('');
   const [uploading, setUploading] = useState(false);
+  const [checklist, setChecklist] = useState({});
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -88,6 +102,7 @@ export default function CleanerReport() {
         before_photos: beforePhotos,
         after_photos: afterPhotos,
         cleaner_notes: notes,
+        checklist_items: Object.entries(checklist).filter(([,v]) => v).map(([k]) => k),
         service_date: format(new Date(), 'yyyy-MM-dd'),
       });
       
@@ -174,6 +189,31 @@ export default function CleanerReport() {
                         ))}
                       </SelectContent>
                     </Select>
+                  </div>
+
+                  {/* Service Checklist */}
+                  <div className="space-y-3">
+                    <Label>服務項目確認</Label>
+                    <div className="grid grid-cols-2 gap-2 bg-stone-50 rounded-xl p-4">
+                      {CHECKLIST_ITEMS.map((item) => (
+                        <label key={item} className="flex items-center gap-2 py-1.5 cursor-pointer group">
+                          <div
+                            onClick={() => setChecklist({...checklist, [item]: !checklist[item]})}
+                            className={`w-5 h-5 rounded flex items-center justify-center border-2 transition-all cursor-pointer ${
+                              checklist[item] ? 'bg-amber-500 border-amber-500' : 'border-stone-300 group-hover:border-amber-400'
+                            }`}
+                          >
+                            {checklist[item] && <Check className="w-3 h-3 text-white" />}
+                          </div>
+                          <span className={`text-sm transition-colors ${
+                            checklist[item] ? 'text-stone-800 line-through opacity-60' : 'text-stone-700'
+                          }`}>{item}</span>
+                        </label>
+                      ))}
+                    </div>
+                    <p className="text-xs text-stone-400">
+                      {Object.values(checklist).filter(Boolean).length}/{CHECKLIST_ITEMS.length} 項已完成
+                    </p>
                   </div>
 
                   {/* Before Photos */}

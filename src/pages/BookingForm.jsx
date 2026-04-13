@@ -61,6 +61,24 @@ export default function BookingForm() {
     checkAuth();
   }, []);
 
+  const getPriceEstimate = () => {
+    const sqft = parseFloat(formData.square_footage) || 0;
+    switch (formData.service_type) {
+      case '單次清潔':
+        if (!sqft) return null;
+        return { label: '單次預估費用', price: `NT$ ${Math.max(2000, Math.round(sqft * 150)).toLocaleString()}`, note: '（依實際坪數與服務內容調整）' };
+      case '基礎月護-4次':
+        return { label: '月費', price: 'NT$ 8,400', note: '/ 月・4次服務' };
+      case '進階月安-8次':
+        return { label: '月費', price: 'NT$ 16,000', note: '/ 月・8次服務' };
+      case '尊榮月恆-12次':
+        return { label: '月費', price: 'NT$ 24,600', note: '/ 月・12次服務' };
+      default: return null;
+    }
+  };
+
+  const priceEstimate = getPriceEstimate();
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -277,6 +295,17 @@ export default function BookingForm() {
                       ))}
                     </RadioGroup>
                   </div>
+
+                  {/* Price Estimate */}
+                  {priceEstimate && (
+                    <div className="flex items-center justify-between bg-amber-50 border border-amber-200 rounded-xl px-5 py-4">
+                      <div>
+                        <p className="text-xs text-amber-600 font-medium">{priceEstimate.label}</p>
+                        <p className="text-xs text-stone-400 mt-0.5">{priceEstimate.note}</p>
+                      </div>
+                      <p className="text-2xl font-semibold text-amber-700">{priceEstimate.price}</p>
+                    </div>
+                  )}
 
                   {/* Date & Time */}
                   <div className="grid md:grid-cols-2 gap-4">
