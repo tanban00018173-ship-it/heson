@@ -79,11 +79,22 @@ export default function BookingForm() {
 
   const priceEstimate = getPriceEstimate();
 
+  const getAmount = () => {
+    const sqft = parseFloat(formData.square_footage) || 30;
+    switch (formData.service_type) {
+      case '單次清潔': return Math.max(2000, Math.round(sqft * 150));
+      case '基礎月護-4次': return 8400;
+      case '進階月安-8次': return 16000;
+      case '尊榮月恆-12次': return 24600;
+      default: return 2000;
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     
     if (!formData.name || !formData.phone || !formData.address || !date || !formData.time_slot) {
-      toast.error("請填寫所有必填欄位");
+      toast.error('請填寫所有必填欄位');
       return;
     }
 
@@ -100,28 +111,20 @@ export default function BookingForm() {
       notes: `房型: ${formData.housing_type || '未填'}, 坪數: ${formData.square_footage || '未填'}, 備註: ${formData.notes || '無'}`,
     };
 
-    await base44.entities.Booking.create(bookingData);
+    const booking = await base44.entities.Booking.create(bookingData);
     
     // 發送通知給管理員
     await base44.integrations.Core.SendEmail({
       to: "larry87tw@gmail.com",
       subject: `新預約通知 - ${formData.name}`,
-      body: `新的預約已建立：
-
-客戶姓名：${formData.name}
-聯絡電話：${formData.phone}
-服務地址：${formData.address}
-服務類型：${formData.service_type}
-預約日期：${format(date, 'yyyy-MM-dd')}
-時段：${formData.time_slot}
-房屋類型：${formData.housing_type || '未填'}
-坪數：${formData.square_footage || '未填'}
-備註：${formData.notes || '無'}`
+      body: `新的預約已建立：\n\n客戶姓名：${formData.name}\n聯絡電話：${formData.phone}\n服務地址：${formData.address}\n服務類型：${formData.service_type}\n預約日期：${format(date, 'yyyy-MM-dd')}\n時段：${formData.time_slot}\n房屋類型：${formData.housing_type || '未填'}\n坪數：${formData.square_footage || '未填'}\n備註：${formData.notes || '無'}`
     });
-    
+
     setIsSubmitting(false);
-    setIsSuccess(true);
-    toast.success("預約成功！我們將盡快與您聯繫確認。");
+    // 導向付款
+    const amount = getAmount();
+    const itemName = formData.service_type;
+    window.location.href = `/PaymentRedirect?booking_id=${booking.id}&amount=${amount}&item_name=${encodeURIComponent(itemName)}`;
   };
 
   if (isSuccess) {
