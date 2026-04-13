@@ -17,28 +17,41 @@ export default function PaymentRedirect() {
     }
 
     const createPayment = async () => {
-      const returnUrl = `${window.location.origin}/PaymentResult`;
-      const res = await base44.functions.invoke('ecpayCreateOrder', {
-        booking_id: bookingId,
-        amount: Number(amount),
-        item_name: itemName,
-        return_url: returnUrl,
-      });
+      try {
+        const returnUrl = `${window.location.origin}/PaymentResult`;
+        const res = await base44.functions.invoke('ecpayCreateOrder', {
+          booking_id: bookingId,
+          amount: Number(amount),
+          item_name: itemName,
+          return_url: returnUrl,
+        });
 
-      const { formHtml } = res.data;
-      // 建立隱藏的 iframe 並自動提交到綠界
-      const div = document.createElement('div');
-      div.innerHTML = formHtml;
-      document.body.appendChild(div);
+        const { formHtml } = res.data;
+        // 直接寫入完整 HTML，自動提交表單
+        document.open();
+        document.write(formHtml);
+        document.close();
+      } catch (err) {
+        setError(err.message || '付款初始化失敗，請稍後重試');
+      }
     };
 
-    createPayment().catch(e => setError(e.message));
+    createPayment();
   }, []);
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-red-500">付款初始化失敗：{error}</p>
+      <div className="min-h-screen flex items-center justify-center bg-stone-50">
+        <div className="text-center">
+          <p className="text-red-500 text-lg font-medium mb-4">付款初始化失敗</p>
+          <p className="text-stone-600 mb-6">{error}</p>
+          <button
+            onClick={() => window.history.back()}
+            className="bg-stone-800 hover:bg-stone-900 text-white px-6 py-2 rounded-xl transition-colors"
+          >
+            返回
+          </button>
+        </div>
       </div>
     );
   }
