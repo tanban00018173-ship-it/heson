@@ -26,19 +26,10 @@ const TAIWAN_CITIES = [
 // Booking steps: service → city → road → date → time → name → phone → confirm
 const BOOKING_STEPS = ['service', 'city', 'road', 'date', 'time', 'name', 'phone', 'confirm'];
 
-function getTodayAndNext30() {
-  const dates = [];
-  const today = new Date();
-  for (let i = 1; i <= 14; i++) {
-    const d = new Date(today);
-    d.setDate(today.getDate() + i);
-    const yyyy = d.getFullYear();
-    const mm = String(d.getMonth() + 1).padStart(2, '0');
-    const dd = String(d.getDate()).padStart(2, '0');
-    const weekday = ['日', '一', '二', '三', '四', '五', '六'][d.getDay()];
-    dates.push({ value: `${yyyy}-${mm}-${dd}`, label: `${mm}/${dd}（週${weekday}）` });
-  }
-  return dates;
+function getMinDate() {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  return d.toISOString().split('T')[0];
 }
 
 export default function HesonAIChat() {
@@ -51,6 +42,7 @@ export default function HesonAIChat() {
   const [bookingStep, setBookingStep] = useState(null); // null = normal chat
   const [bookingData, setBookingData] = useState({});
   const bottomRef = useRef(null);
+  const dateInputRef = useRef(null);
 
   useEffect(() => {
     if (open) bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -88,8 +80,10 @@ export default function HesonAIChat() {
       setBookingData(newData);
       setBookingStep('road');
     } else if (step === 'date') {
+      const [yyyy, mm, dd] = value.split('-');
+      const weekday = ['日','一','二','三','四','五','六'][new Date(value).getDay()];
       newData.scheduled_date = value;
-      addMessage('user', label || value);
+      addMessage('user', `${mm}/${dd}（週${weekday}）`);
       addMessage('assistant', '請選擇希望的服務時段：');
       setBookingData(newData);
       setBookingStep('time');
@@ -190,7 +184,7 @@ export default function HesonAIChat() {
     addMessage('assistant', '已取消預約流程，有其他問題歡迎繼續詢問！');
   };
 
-  const dates = getTodayAndNext30();
+
 
   return (
     <>
@@ -320,15 +314,17 @@ export default function HesonAIChat() {
                 </div>
               )}
 
-              {/* Date Selection */}
+              {/* Date Selection - calendar input */}
               {bookingStep === 'date' && (
-                <div className="px-3 py-2 max-h-36 overflow-y-auto grid grid-cols-2 gap-1.5">
-                  {dates.map(d => (
-                    <button key={d.value} onClick={() => handleBookingStep(d.value, d.label)}
-                      className="text-xs bg-stone-50 border border-stone-200 text-stone-700 px-2 py-2 rounded-xl hover:bg-amber-50 hover:border-amber-200 transition-colors">
-                      {d.label}
-                    </button>
-                  ))}
+                <div className="px-3 py-3 flex flex-col gap-2">
+                  <p className="text-xs text-stone-500">請點選日期：</p>
+                  <input
+                    ref={dateInputRef}
+                    type="date"
+                    min={getMinDate()}
+                    onChange={e => { if (e.target.value) handleBookingStep(e.target.value, e.target.value); }}
+                    className="w-full text-sm border border-amber-300 rounded-xl px-3 py-2.5 outline-none focus:border-amber-500 bg-amber-50 cursor-pointer"
+                  />
                 </div>
               )}
 
