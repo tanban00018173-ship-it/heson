@@ -3,20 +3,24 @@ import Sidebar from "@/components/dashboard/Sidebar";
 import MobileNav from "@/components/dashboard/MobileNav";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Calendar, Clock, MapPin, Camera, User, ArrowRight, X, Star } from "lucide-react";
+import { Calendar, Clock, MapPin, Camera, User, Star } from "lucide-react";
 import { toast } from "sonner";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { format } from "date-fns";
 import { zhTW } from "date-fns/locale";
+
+const statusStyles = {
+  '待確認': 'bg-amber-100 text-amber-700',
+  '已確認': 'bg-blue-100 text-blue-700',
+  '已完成': 'bg-emerald-100 text-emerald-700',
+  '已取消': 'bg-stone-100 text-stone-500',
+};
 
 export default function ClientHistory() {
   const [user, setUser] = useState(null);
   const [selectedReport, setSelectedReport] = useState(null);
-  const [ratingDialog, setRatingDialog] = useState(null); // { bookingId, cleanerId, cleanerName }
+  const [ratingDialog, setRatingDialog] = useState(null);
   const [ratingValue, setRatingValue] = useState(5);
   const [ratingComment, setRatingComment] = useState('');
   const queryClient = useQueryClient();
@@ -24,10 +28,7 @@ export default function ClientHistory() {
   useEffect(() => {
     const loadUser = async () => {
       const isAuth = await base44.auth.isAuthenticated();
-      if (!isAuth) {
-        base44.auth.redirectToLogin();
-        return;
-      }
+      if (!isAuth) { base44.auth.redirectToLogin(); return; }
       const userData = await base44.auth.me();
       setUser(userData);
     };
@@ -74,141 +75,91 @@ export default function ClientHistory() {
     },
   });
 
-  const getReportForBooking = (bookingId) => {
-    return reports?.find(r => r.booking_id === bookingId);
-  };
-
-  const getReviewForBooking = (bookingId) => {
-    return reviews?.find(r => r.booking_id === bookingId);
-  };
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case '待確認': return 'bg-yellow-100 text-yellow-700';
-      case '已確認': return 'bg-blue-100 text-blue-700';
-      case '已完成': return 'bg-green-100 text-green-700';
-      case '已取消': return 'bg-stone-100 text-stone-500';
-      default: return 'bg-stone-100 text-stone-600';
-    }
-  };
+  const getReport = (id) => reports?.find(r => r.booking_id === id);
+  const getReview = (id) => reviews?.find(r => r.booking_id === id);
 
   if (!user) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full" />
+      <div className="min-h-screen flex items-center justify-center bg-[#f6f9ff]">
+        <div className="animate-spin w-8 h-8 border-2 border-[#131b2e] border-t-transparent rounded-full" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-stone-50 flex">
-      <div className="hidden lg:block">
-        <Sidebar userRole="client" userName={user?.full_name} />
-      </div>
+    <div className="min-h-screen bg-[#f6f9ff] flex font-body">
+      <div className="hidden lg:block"><Sidebar userRole="client" userName={user?.full_name} /></div>
       <MobileNav userRole="client" userName={user?.full_name} />
-      
+
       <main className="flex-1 pt-16 lg:pt-0">
         <div className="p-6 lg:p-8 max-w-5xl mx-auto">
-          {/* Header */}
-          <div className="mb-8">
-            <h1 className="text-2xl font-medium text-stone-800">服務紀錄</h1>
-            <p className="text-stone-500 mt-1">查看您的歷史服務與清潔前後對比</p>
-          </div>
+          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
+            <p className="text-xs font-semibold tracking-widest uppercase text-stone-400 font-headline mb-1">歷史記錄</p>
+            <h1 className="text-3xl font-headline font-extrabold tracking-tight text-stone-900">服務紀錄</h1>
+            <p className="text-stone-500 mt-1">查看歷史服務與清潔前後對比</p>
+          </motion.div>
 
-          {/* Bookings List */}
           {bookings?.length === 0 ? (
-            <Card className="border-dashed">
-              <CardContent className="py-12 text-center">
-                <Calendar className="w-12 h-12 text-stone-300 mx-auto mb-4" />
-                <p className="text-stone-500">目前沒有服務紀錄</p>
-              </CardContent>
-            </Card>
+            <div className="bg-white rounded-3xl border border-dashed border-[#c6c6cd] p-16 text-center">
+              <Calendar className="w-10 h-10 text-stone-300 mx-auto mb-3" />
+              <p className="text-stone-500">目前沒有服務紀錄</p>
+            </div>
           ) : (
             <div className="space-y-4">
               {bookings?.map((booking, index) => {
-                const report = getReportForBooking(booking.id);
+                const report = getReport(booking.id);
+                const review = getReview(booking.id);
                 return (
-                  <motion.div
-                    key={booking.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3, delay: index * 0.05 }}
-                  >
-                    <Card className="hover:shadow-md transition-shadow">
-                      <CardContent className="p-5">
-                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-3 mb-3">
-                              <Badge className={getStatusColor(booking.status)}>
-                                {booking.status}
-                              </Badge>
-                              <span className="text-sm font-medium text-stone-700">{booking.service_type}</span>
-                            </div>
-                            <div className="grid sm:grid-cols-2 gap-2">
-                              <div className="flex items-center gap-2 text-sm text-stone-600">
-                                <Calendar className="w-4 h-4 text-stone-400" />
-                                {booking.scheduled_date && format(new Date(booking.scheduled_date), 'PPP', { locale: zhTW })}
-                              </div>
-                              <div className="flex items-center gap-2 text-sm text-stone-600">
-                                <Clock className="w-4 h-4 text-stone-400" />
-                                {booking.time_slot}
-                              </div>
-                              {booking.address && (
-                                <div className="flex items-center gap-2 text-sm text-stone-600">
-                                  <MapPin className="w-4 h-4 text-stone-400" />
-                                  {booking.address}
-                                </div>
-                              )}
-                              {booking.cleaner_name && (
-                                <div className="flex items-center gap-2 text-sm text-stone-600">
-                                  <User className="w-4 h-4 text-stone-400" />
-                                  {booking.cleaner_name}
-                                </div>
-                              )}
-                            </div>
+                  <motion.div key={booking.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: index * 0.05 }}>
+                    <div className="bg-white rounded-3xl p-6 border border-[#e8eef6] hover:shadow-md transition-shadow">
+                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div className="flex items-start gap-4 flex-1">
+                          <div className="w-11 h-11 bg-[#eef4fc] rounded-2xl flex items-center justify-center flex-shrink-0">
+                            <Calendar className="w-5 h-5 text-stone-700" />
                           </div>
-                          
-                          <div className="flex gap-2 flex-wrap">
-                            {report && booking.status === '已完成' && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="rounded-full"
-                                onClick={() => setSelectedReport(report)}
-                              >
-                                <Camera className="w-4 h-4 mr-2" />
-                                查看照片
-                              </Button>
-                            )}
-                            {booking.status === '已完成' && !getReviewForBooking(booking.id) && (
-                              <Button
-                                size="sm"
-                                className="rounded-full bg-amber-500 hover:bg-amber-600 text-white"
-                                onClick={() => setRatingDialog({
-                                  bookingId: booking.id,
-                                  cleanerId: booking.cleaner_id,
-                                  cleanerName: booking.cleaner_name,
-                                })}
-                              >
-                                <Star className="w-4 h-4 mr-2" />
-                                評價服務
-                              </Button>
-                            )}
-                            {booking.status === '已完成' && getReviewForBooking(booking.id) && (
-                              <div className="flex items-center gap-1">
-                                {[1,2,3,4,5].map(s => (
-                                  <Star key={s} className={`w-4 h-4 ${
-                                    s <= getReviewForBooking(booking.id).rating
-                                      ? 'fill-amber-400 text-amber-400'
-                                      : 'text-stone-200'
-                                  }`} />
-                                ))}
-                              </div>
-                            )}
+                          <div>
+                            <div className="flex items-center gap-2 mb-2 flex-wrap">
+                              <span className={`text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full ${statusStyles[booking.status] || 'bg-stone-100 text-stone-600'}`}>
+                                {booking.status}
+                              </span>
+                              <span className="font-headline font-bold text-stone-900">{booking.service_type}</span>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-3 text-xs text-stone-500 font-medium">
+                              <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5" />{booking.scheduled_date}</span>
+                              <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" />{booking.time_slot}</span>
+                              {booking.address && <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" />{booking.address}</span>}
+                              {booking.cleaner_name && <span className="flex items-center gap-1"><User className="w-3.5 h-3.5" />{booking.cleaner_name}</span>}
+                            </div>
                           </div>
                         </div>
-                      </CardContent>
-                    </Card>
+
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {report && booking.status === '已完成' && (
+                            <button
+                              onClick={() => setSelectedReport(report)}
+                              className="flex items-center gap-2 px-4 py-2 bg-[#eef4fc] rounded-full text-sm font-semibold text-stone-700 hover:bg-[#e3e9f1] transition-colors"
+                            >
+                              <Camera className="w-4 h-4" />查看照片
+                            </button>
+                          )}
+                          {booking.status === '已完成' && !review && (
+                            <button
+                              onClick={() => setRatingDialog({ bookingId: booking.id, cleanerId: booking.cleaner_id, cleanerName: booking.cleaner_name })}
+                              className="flex items-center gap-2 px-4 py-2 bg-stone-900 text-white rounded-full text-sm font-semibold hover:opacity-90 transition-opacity"
+                            >
+                              <Star className="w-4 h-4" />評價服務
+                            </button>
+                          )}
+                          {booking.status === '已完成' && review && (
+                            <div className="flex items-center gap-0.5">
+                              {[1,2,3,4,5].map(s => (
+                                <Star key={s} className={`w-4 h-4 ${s <= review.rating ? 'fill-amber-400 text-amber-400' : 'text-stone-200'}`} />
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
                   </motion.div>
                 );
               })}
@@ -217,56 +168,45 @@ export default function ClientHistory() {
         </div>
       </main>
 
-      {/* Photo Comparison Dialog */}
+      {/* Photo Dialog */}
       <Dialog open={!!selectedReport} onOpenChange={() => setSelectedReport(null)}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto rounded-3xl">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Camera className="w-5 h-5 text-amber-600" />
-              清潔前後對比
+            <DialogTitle className="flex items-center gap-2 font-headline font-bold">
+              <Camera className="w-5 h-5" />清潔前後對比
             </DialogTitle>
           </DialogHeader>
           {selectedReport && (
             <div className="space-y-6">
               <div className="grid md:grid-cols-2 gap-6">
-                <div>
-                  <h3 className="text-sm font-medium text-stone-600 mb-3">清潔前</h3>
-                  <div className="space-y-3">
-                    {selectedReport.before_photos?.length > 0 ? (
-                      selectedReport.before_photos.map((photo, idx) => (
-                        <img key={idx} src={photo} alt={`清潔前 ${idx + 1}`} className="w-full rounded-xl object-cover" />
-                      ))
-                    ) : (
-                      <div className="bg-stone-100 rounded-xl h-48 flex items-center justify-center text-stone-400">暫無照片</div>
-                    )}
+                {['before', 'after'].map((type) => (
+                  <div key={type}>
+                    <h3 className="text-sm font-semibold text-stone-500 mb-3">{type === 'before' ? '清潔前' : '清潔後'}</h3>
+                    <div className="space-y-3">
+                      {selectedReport[`${type}_photos`]?.length > 0 ? (
+                        selectedReport[`${type}_photos`].map((photo, idx) => (
+                          <img key={idx} src={photo} alt={`${idx + 1}`} className="w-full rounded-2xl object-cover" />
+                        ))
+                      ) : (
+                        <div className="bg-[#eef4fc] rounded-2xl h-48 flex items-center justify-center text-stone-400 text-sm">暫無照片</div>
+                      )}
+                    </div>
                   </div>
-                </div>
-                <div>
-                  <h3 className="text-sm font-medium text-stone-600 mb-3">清潔後</h3>
-                  <div className="space-y-3">
-                    {selectedReport.after_photos?.length > 0 ? (
-                      selectedReport.after_photos.map((photo, idx) => (
-                        <img key={idx} src={photo} alt={`清潔後 ${idx + 1}`} className="w-full rounded-xl object-cover" />
-                      ))
-                    ) : (
-                      <div className="bg-stone-100 rounded-xl h-48 flex items-center justify-center text-stone-400">暫無照片</div>
-                    )}
-                  </div>
-                </div>
+                ))}
               </div>
               {selectedReport.checklist_items?.length > 0 && (
-                <div className="bg-stone-50 rounded-xl p-4">
-                  <h3 className="text-sm font-medium text-stone-600 mb-2">服務項目（{selectedReport.checklist_items.length} 項）</h3>
+                <div className="bg-[#eef4fc] rounded-2xl p-4">
+                  <h3 className="text-sm font-semibold text-stone-600 mb-2">服務項目（{selectedReport.checklist_items.length} 項）</h3>
                   <div className="flex flex-wrap gap-2">
                     {selectedReport.checklist_items.map(item => (
-                      <span key={item} className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">✓ {item}</span>
+                      <span key={item} className="text-xs bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full">✓ {item}</span>
                     ))}
                   </div>
                 </div>
               )}
               {selectedReport.cleaner_notes && (
-                <div className="bg-stone-50 rounded-xl p-4">
-                  <h3 className="text-sm font-medium text-stone-600 mb-2">管理師留言</h3>
+                <div className="bg-[#eef4fc] rounded-2xl p-4">
+                  <h3 className="text-sm font-semibold text-stone-600 mb-2">管理師留言</h3>
                   <p className="text-stone-700">{selectedReport.cleaner_notes}</p>
                 </div>
               )}
@@ -277,46 +217,41 @@ export default function ClientHistory() {
 
       {/* Rating Dialog */}
       <Dialog open={!!ratingDialog} onOpenChange={() => setRatingDialog(null)}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md rounded-3xl">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Star className="w-5 h-5 text-amber-500" />
-              服務評價
+            <DialogTitle className="font-headline font-bold flex items-center gap-2">
+              <Star className="w-5 h-5 text-amber-400" />服務評價
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-5 pt-2">
-            {ratingDialog?.cleanerName && (
-              <p className="text-sm text-stone-500">管理師：{ratingDialog.cleanerName}</p>
-            )}
+            {ratingDialog?.cleanerName && <p className="text-sm text-stone-500">管理師：{ratingDialog.cleanerName}</p>}
             <div className="space-y-2">
-              <p className="text-sm font-medium text-stone-700">整體評分</p>
+              <p className="text-sm font-semibold text-stone-700">整體評分</p>
               <div className="flex gap-2">
                 {[1,2,3,4,5].map(s => (
                   <button key={s} onClick={() => setRatingValue(s)}>
-                    <Star className={`w-8 h-8 transition-colors ${
-                      s <= ratingValue ? 'fill-amber-400 text-amber-400' : 'text-stone-200 hover:text-amber-300'
-                    }`} />
+                    <Star className={`w-8 h-8 transition-colors ${s <= ratingValue ? 'fill-amber-400 text-amber-400' : 'text-stone-200 hover:text-amber-300'}`} />
                   </button>
                 ))}
               </div>
               <p className="text-xs text-stone-400">{['', '很差', '差', '普通', '好', '非常好！'][ratingValue]}</p>
             </div>
             <div className="space-y-2">
-              <p className="text-sm font-medium text-stone-700">留言（選填）</p>
+              <p className="text-sm font-semibold text-stone-700">留言（選填）</p>
               <textarea
                 value={ratingComment}
                 onChange={e => setRatingComment(e.target.value)}
                 placeholder="分享您的服務體驗..."
-                className="w-full border border-stone-200 rounded-xl p-3 text-sm resize-none h-24 focus:outline-none focus:ring-2 focus:ring-amber-400"
+                className="w-full bg-[#eef4fc] border-0 rounded-2xl p-4 text-sm resize-none h-24 focus:outline-none focus:ring-2 focus:ring-stone-200"
               />
             </div>
-            <Button
-              className="w-full bg-amber-500 hover:bg-amber-600 text-white rounded-xl py-5"
+            <button
+              className="w-full bg-stone-900 text-white font-headline font-bold py-4 rounded-2xl hover:opacity-90 transition-opacity disabled:opacity-50"
               disabled={reviewMutation.isPending}
               onClick={() => reviewMutation.mutate(ratingDialog)}
             >
               {reviewMutation.isPending ? '提交中...' : '送出評價'}
-            </Button>
+            </button>
           </div>
         </DialogContent>
       </Dialog>
