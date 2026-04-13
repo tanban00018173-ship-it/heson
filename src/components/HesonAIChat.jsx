@@ -1,13 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageCircle, X, Send, Loader2, Bot } from 'lucide-react';
+import { MessageCircle, X, Send, Loader2, Bot, CheckCircle2 } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
+import { Link } from 'react-router-dom';
+import { createPageUrl } from '@/utils';
 
-const WELCOME = '您好！我是小赫 🏠 HESON 的 AI 客服助理，有任何問題都可以問我！';
+const WELCOME = '您好！我是小赫 🏠 HESON 的 AI 客服助理，我可以回答問題，也可以幫您直接完成預約！';
 
 const QUICK_QUESTIONS = [
+  '我要預約服務',
   '服務費用怎麼算？',
-  '如何預約服務？',
   '服務人員有經過審核嗎？',
   '服務區域有哪些？',
 ];
@@ -17,6 +19,7 @@ export default function HesonAIChat() {
   const [messages, setMessages] = useState([{ role: 'assistant', content: WELCOME }]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [bookingResult, setBookingResult] = useState(null);
   const bottomRef = useRef(null);
 
   useEffect(() => {
@@ -37,6 +40,24 @@ export default function HesonAIChat() {
       });
       const reply = res.data?.reply || '抱歉，我暫時無法回答，請撥打 0906-991-023 聯繫客服。';
       setMessages(prev => [...prev, { role: 'assistant', content: reply }]);
+
+      const bd = res.data?.booking_data;
+      if (bd && bd.client_name && bd.phone && bd.address && bd.service_type && bd.scheduled_date && bd.time_slot) {
+        setBookingResult('loading');
+        const isAuth = await base44.auth.isAuthenticated();
+        const user = isAuth ? await base44.auth.me() : null;
+        const booking = await base44.entities.Booking.create({
+          client_id: user?.id || 'guest',
+          client_name: bd.client_name,
+          service_type: bd.service_type,
+          status: '待確認',
+          scheduled_date: bd.scheduled_date,
+          time_slot: bd.time_slot,
+          address: bd.address,
+          notes: `電話: ${bd.phone} (由小赫 AI 協助預約)`,
+        });
+        setBookingResult({ id: booking.id, ...bd });
+      }
     } catch {
       setMessages(prev => [...prev, { role: 'assistant', content: '抱歉，目前連線異常，請稍後再試或撥打 0906-991-023。' }]);
     } finally {
@@ -109,6 +130,26 @@ export default function HesonAIChat() {
                   <div className="bg-white px-4 py-3 rounded-2xl rounded-bl-sm shadow-sm border border-stone-100">
                     <Loader2 className="w-4 h-4 animate-spin text-amber-500" />
                   </div>
+                </div>
+              )}
+              {/* Booking success card */}
+              {bookingResult === 'loading' && (
+                <div className="flex justify-center py-2">
+                  <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-xs text-amber-700 flex items-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    正在建立預約中...
+                  </div>
+                </div>
+              )}
+              {bookingResult && bookingResult !== 'loading' && (
+                <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-3 text-sm">
+                  <div className="flex items-center gap-2 text-green-700 font-medium mb-2">
+                    <CheckCircle2 className="w-4 h-4" />
+                    預約已建立！
+                  </div>
+                  <p className="text-xs text-stone-600">服務日期：{bookingResult.scheduled_date}</p>
+                  <p className="text-xs text-stone-600">時段：{bookingResult.time_slot}</p>
+                  <p className="text-xs text-stone-500 mt-1">客服將於 24 小時內與您確認。</p>
                 </div>
               )}
               <div ref={bottomRef} />

@@ -29,6 +29,18 @@ const SYSTEM_PROMPT = `你是「小赫」，HESON 赫頌家事管理平台的 AI
 - 有寵物：可接受，預約時請備註
 - 服務區域：全台本島，宜蘭、雙北、台中、高雄為主
 
+【智慧預約引導】
+當客戶有預約意圖時，你需要逐步收集以下必填資訊（一次問一項，不要一次問全部）：
+1. 姓名
+2. 聯絡電話
+3. 服務地址
+4. 服務類型（單次清潔 / 基礎月護-4次 / 進階月安-8次 / 尊榮月恆-12次）
+5. 希望服務日期（格式：YYYY-MM-DD，需為今天以後）
+6. 希望時段（上午 08:00-12:00 / 下午 13:00-17:00 / 晚間 18:00-21:00）
+
+當你已收集到全部6項資訊後，請在回覆末尾加上以下 JSON 標記（不要換行，直接接在最後）：
+<<<BOOKING_DATA:{"client_name":"姓名","phone":"電話","address":"地址","service_type":"服務類型","scheduled_date":"日期","time_slot":"時段"}>>>
+
 超出知識範圍時，請引導客戶撥打電話或加LINE聯絡真人客服。`;
 
 Deno.serve(async (req) => {
@@ -51,9 +63,22 @@ ${historyText ? `【對話記錄】\n${historyText}\n\n` : ''}客戶：${message
 
 請以小赫身份回覆：`;
 
-    const reply = await base44.asServiceRole.integrations.Core.InvokeLLM({ prompt });
+    const result = await base44.asServiceRole.integrations.Core.InvokeLLM({ prompt });
+    let reply = result;
+    let booking_data = null;
 
-    return Response.json({ reply });
+    // Extract booking data if AI collected all required fields
+    const match = reply.match(/<<<BOOKING_DATA:(\{.*?\})>>>/);
+    if (match) {
+      try {
+        booking_data = JSON.parse(match[1]);
+        reply = reply.replace(/<<<BOOKING_DATA:\{.*?\}>>>/, '').trim();
+      } catch (e) {
+        // ignore parse error
+      }
+    }
+
+    return Response.json({ reply, booking_data });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }
