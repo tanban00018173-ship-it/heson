@@ -23,9 +23,15 @@ export default function CTASection() {
           className="max-w-3xl mx-auto text-center"
         >
           <h2 className="text-3xl md:text-4xl lg:text-5xl font-light text-white leading-tight">
-            準備好享受
-            <span className="block font-medium text-amber-400 mt-2">潔淨舒適的居家生活了嗎？</span>
+            讓生活回歸
+            <span className="block font-medium text-amber-400 mt-2">美好本質</span>
           </h2>
+          <p className="text-stone-300 mt-4 text-base">媒體報導 &amp; 品牌認證</p>
+          <div className="flex flex-wrap justify-center gap-3 mt-3 mb-4">
+            {['消費者報導', '工商時報', '數位時代', 'ISO 9001 認證', '消保會推薦'].map(m => (
+              <span key={m} className="bg-white/10 text-white/80 text-xs px-3 py-1.5 rounded-full border border-white/20">{m}</span>
+            ))}
+          </div>
           
           <p className="text-stone-400 text-lg mt-6 max-w-xl mx-auto">
             立即預約免費試掃，讓 HESON 專業團隊為您服務

@@ -7,35 +7,33 @@ import { createPageUrl } from "@/utils";
 
 const plans = [
   {
-    name: "BASIC 基本方案",
+    name: "基本方案",
     nameEn: "Basic",
-    visits: "每月 1,100 點",
+    visits: "每月贈送 11 小時券",
     price: "999",
-    perVisit: "95折優惠",
+    perVisit: "月/元",
+    discount: "95 折優惠",
     features: [
-      "每月贈送 1,100 點",
-      "服務享 95 折",
-      "優先派案（高於一般用戶）",
-      "標準客服支援",
-      "訂單歷史無限查閱",
-      "隨時取消，無合約綁定"
+      "每月贈送 11 小時券",
+      "95 折優惠",
+      "優先派案",
+      "專屬客服",
     ],
     popular: false
   },
   {
-    name: "VIP 尊榮方案",
+    name: "VIP 方案",
     nameEn: "VIP",
-    visits: "每月 3,600 點",
+    visits: "每月贈送 36 小時券",
     price: "2,999",
-    perVisit: "9折優惠",
+    perVisit: "月/元",
+    discount: "9 折優惠",
     features: [
-      "每月贈送 3,600 點",
-      "服務享 9 折",
-      "VIP 最高優先派案",
-      "可指定人員服務",
-      "Smart Lock 整合",
-      "多房源管理（B2B）",
-      "專屬客服 VIP 管家"
+      "每月贈送 36 小時券",
+      "9 折優惠",
+      "VIP 優先派案",
+      "指定人員服務",
+      "專屬客服管家",
     ],
     popular: true
   },
@@ -45,12 +43,13 @@ const plans = [
     visits: "依需求選擇",
     price: "599",
     perVisit: "起/次",
+    discount: "彈性不綁約",
     features: [
       "不需訂閱，彈性預約",
       "全台本島服務",
       "照片回報系統",
       "24hr 線上預約",
-      "服務後可評分"
+      "服務後可評分",
     ],
     popular: false
   }
@@ -119,10 +118,10 @@ export default function PricingSection() {
                   <span className={`text-4xl font-semibold ${plan.popular ? 'text-white' : 'text-stone-800'}`}>
                     {plan.price}
                   </span>
-                  <span className={`text-sm ${plan.popular ? 'text-stone-400' : 'text-stone-500'}`}>{plan.name === '單次清潔' ? '' : '/月'}</span>
+                  <span className={`text-sm ${plan.popular ? 'text-stone-400' : 'text-stone-500'}`}>{plan.perVisit}</span>
                 </div>
-                <p className={`text-xs mt-2 ${plan.popular ? 'text-amber-300' : 'text-amber-600'} font-medium`}>
-                  {plan.perVisit}
+                <p className={`text-xs mt-2 px-3 py-1 rounded-full inline-block font-medium ${plan.popular ? 'bg-amber-500 text-white' : 'bg-amber-50 text-amber-600'}`}>
+                  {plan.discount}
                 </p>
               </div>
               

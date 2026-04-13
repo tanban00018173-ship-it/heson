@@ -4,28 +4,28 @@ import { Star, Quote } from "lucide-react";
 
 const testimonials = [
   {
+    name: "林先生",
+    location: "新北市板橋區",
+    service: "深度清潔",
+    comment: "深度清潔服務讓我的廚房煥然一新，油煙機清洗得非常乾淨。人員準時到達，專業度很高。",
+    rating: 5,
+    avatar: "林"
+  },
+  {
+    name: "王太太",
+    location: "台中市西屯區",
+    service: "定期清潔",
+    comment: "訂閱方案後，每次都能指定同一位清潔人員，建立了很好的信任感。強烈推薦！",
+    rating: 5,
+    avatar: "王"
+  },
+  {
     name: "張先生",
     location: "桃園市中壢區",
-    service: "辦公室清潔服務",
-    comment: "商業清潔服務非常專業，辦公室煥然一新！師傅動作俐落，整個流程都有照片記錄，讓我很放心。",
+    service: "商業清潔",
+    comment: "辦公室清潔服務非常專業，整個空間煥然一新。員工都說環境變好了，工作效率也提升了。",
     rating: 5,
     avatar: "張"
-  },
-  {
-    name: "李小姐",
-    location: "高雄市前鎮區",
-    service: "整理收納服務",
-    comment: "整理收納服務讓我的衣帽間大變身！整理師很有耐心，幫我規劃出非常實用的收納方式，每天找衣服變得超輕鬆。",
-    rating: 5,
-    avatar: "李"
-  },
-  {
-    name: "陳小姐",
-    location: "台北市大安區",
-    service: "家庭定期清潔",
-    comment: "細心清潔而且預約流程超簡單！24小時線上預約，師傅準時到達，清潔前後照片讓我完全了解服務成果。",
-    rating: 5,
-    avatar: "陳"
   }
 ];
 

@@ -1,6 +1,7 @@
 import React from 'react';
 import Navbar from "@/components/landing/Navbar";
 import HeroSection from "@/components/landing/HeroSection";
+import ThemeActivities from "@/components/landing/ThemeActivities";
 import ServicesSection from "@/components/landing/ServicesSection";
 import TestimonialsSection from "@/components/landing/TestimonialsSection";
 import FeaturesSection from "@/components/landing/FeaturesSection";
@@ -14,6 +15,7 @@ export default function Home() {
       <Navbar />
       <HeroSection />
       <ServicesSection />
+      <ThemeActivities />
       <FeaturesSection />
       <PricingSection />
       <TestimonialsSection />

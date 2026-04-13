@@ -1,136 +1,146 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Sparkles, Phone } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
+
+const slides = [
+  {
+    bg: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1600&q=85",
+    badge: "限時優惠",
+    title: "新會員首次預約",
+    highlight: "享 85 折",
+    sub: "宜蘭地區・家事清潔全系列",
+    price: "$599 起",
+  },
+  {
+    bg: "https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=1600&q=85",
+    badge: "專業認證",
+    title: "嚴選管理師",
+    highlight: "安心服務",
+    sub: "良民證・身分驗證全程把關",
+    price: "即刻預約",
+  },
+  {
+    bg: "https://images.unsplash.com/photo-1527515545081-5db817172677?w=1600&q=85",
+    badge: "企業方案",
+    title: "商業空間清潔",
+    highlight: "定期維護",
+    sub: "辦公室・商場・工程後清潔",
+    price: "洽詢報價",
+  },
+];
+
+const quickLinks = [
+  { name: "居家清潔", emoji: "🏠" },
+  { name: "家電清洗", emoji: "❄️" },
+  { name: "整理收納", emoji: "📦" },
+  { name: "商業清潔", emoji: "🏢" },
+  { name: "布面清洗", emoji: "🛋️" },
+  { name: "裝潢後清潔", emoji: "🔨" },
+];
 
 export default function HeroSection() {
+  const [current, setCurrent] = useState(0);
+
+  useEffect(() => {
+    const t = setInterval(() => setCurrent(p => (p + 1) % slides.length), 5000);
+    return () => clearInterval(t);
+  }, []);
+
+  const slide = slides[current];
+
   return (
-    <section className="relative min-h-[90vh] flex items-center overflow-hidden bg-gradient-to-br from-stone-50 via-amber-50/30 to-stone-100">
-      {/* Decorative elements */}
-      <div className="absolute top-20 right-10 w-72 h-72 bg-amber-200/20 rounded-full blur-3xl" />
-      <div className="absolute bottom-20 left-10 w-96 h-96 bg-stone-200/30 rounded-full blur-3xl" />
-      
-      <div className="container mx-auto px-6 lg:px-12 relative z-10">
-        <div className="grid lg:grid-cols-2 gap-12 items-center">
-          {/* Left Content */}
+    <div>
+      {/* Hero */}
+      <section className="relative h-[85vh] min-h-[520px] overflow-hidden">
+        <AnimatePresence mode="wait">
           <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
+            key={current}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
             transition={{ duration: 0.8 }}
-            className="space-y-8"
+            className="absolute inset-0"
           >
-            {/* Announcement banner */}
-            <div className="inline-flex items-center gap-2 bg-amber-500/10 border border-amber-200 px-4 py-2 rounded-full">
-              <Sparkles className="w-4 h-4 text-amber-600" />
-              <span className="text-sm text-amber-700 font-medium">🎉 新會員首次預約享 85 折優惠（限時活動）</span>
-            </div>
-            <div className="inline-flex items-center gap-2 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full shadow-sm">
-              <Sparkles className="w-4 h-4 text-amber-600" />
-              <span className="text-sm text-stone-600 font-medium">空下雙手，陪伴家人</span>
-            </div>
-            
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-light text-stone-800 leading-tight tracking-tight">
-              把時間留給
-              <span className="block font-medium text-stone-900">家人</span>
-              <span className="block text-amber-700/90">把清潔交給我們</span>
-            </h1>
-            
-            <p className="text-lg text-stone-600 max-w-md leading-relaxed">
-              HESON 台灣最專業的家事服務媒合平台，提供居家清潔・家電清洗・整理收納・商業清潔，全台本島 24 小時線上預約。
-            </p>
-            
-            <div className="flex flex-col sm:flex-row gap-4">
-              <Link to={createPageUrl("BookingForm")}>
-                <Button 
-                  size="lg" 
-                  className="bg-stone-800 hover:bg-stone-900 text-white px-8 py-6 text-base rounded-full shadow-lg hover:shadow-xl transition-all duration-300"
-                >
-                  立即預約試掃
-                  <ArrowRight className="ml-2 w-5 h-5" />
-                </Button>
-              </Link>
-              <a href="https://lin.ee/xKVxq7Y" target="_blank" rel="noopener noreferrer">
-                <Button 
-                  variant="outline" 
-                  size="lg"
-                  className="border-stone-300 text-stone-700 hover:bg-stone-100 px-8 py-6 text-base rounded-full"
-                >
-                  LINE 諮詢
-                </Button>
-              </a>
-              <a href="tel:0906991023">
-                <Button variant="ghost" size="lg" className="text-stone-500 px-4 py-6 rounded-full">
-                  <Phone className="w-4 h-4 mr-2" />
-                  0906-991-023
-                </Button>
-              </a>
-            </div>
+            <img src={slide.bg} alt="" className="w-full h-full object-cover" />
+            <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/30 to-transparent" />
           </motion.div>
-          
-          {/* Right Image Grid */}
-          <motion.div
-            initial={{ opacity: 0, x: 30 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-            className="relative hidden lg:block"
-          >
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-4">
-                <div className="rounded-3xl overflow-hidden shadow-2xl">
-                  <img 
-                    src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/user_6945eb37fb67abb9152e42a5/a31875814__B3LoM8YEjp6QCYXCqWK6--_aYdkh9q56vtKjMIul8B3FlYCAvYZXxq8V1MBtnRkPAGHVALGVikIixGs9qMn0t_Gk4gl0UxKpZ_Q7qqYyocQtdIYpmXL1ApFq_Mvs8ZokCPUNF5rJUTpUxwFl42Qjw.jpg"
-                    alt="清潔服務"
-                    className="w-full h-48 object-cover"
-                  />
+        </AnimatePresence>
+
+        {/* Content */}
+        <div className="relative z-10 h-full flex flex-col justify-center">
+          <div className="container mx-auto px-6 lg:px-12">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={current}
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.6 }}
+                className="max-w-2xl"
+              >
+                <span className="inline-block bg-amber-500 text-white text-xs font-medium px-3 py-1.5 rounded-full mb-5">
+                  {slide.badge}
+                </span>
+                <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white leading-tight">
+                  {slide.title}<br />
+                  <span className="text-amber-400">{slide.highlight}</span>
+                </h1>
+                <p className="text-white/80 text-lg mt-4 mb-2">{slide.sub}</p>
+                <p className="text-white text-2xl font-semibold mb-8">{slide.price}</p>
+                <div className="flex flex-wrap gap-3">
+                  <Link to={createPageUrl("BookingForm")}>
+                    <Button size="lg" className="bg-white text-stone-800 hover:bg-stone-100 rounded-full px-8 py-6 text-base font-medium shadow-xl">
+                      免費預約 <ArrowRight className="ml-2 w-5 h-5" />
+                    </Button>
+                  </Link>
+                  <a href="https://lin.ee/xKVxq7Y" target="_blank" rel="noopener noreferrer">
+                    <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10 rounded-full px-8 py-6 text-base">
+                      查看方案
+                    </Button>
+                  </a>
                 </div>
-                <div className="rounded-3xl overflow-hidden shadow-xl">
-                  <img 
-                    src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/user_6945eb37fb67abb9152e42a5/55499df64_3.jpg"
-                    alt="浴室清潔"
-                    className="w-full h-64 object-cover"
-                  />
-                </div>
-              </div>
-              <div className="space-y-4 pt-8">
-                <div className="rounded-3xl overflow-hidden shadow-xl">
-                  <img 
-                    src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/user_6945eb37fb67abb9152e42a5/246d43b9c_1.jpg"
-                    alt="專業清潔"
-                    className="w-full h-64 object-cover"
-                  />
-                </div>
-                <div className="rounded-3xl overflow-hidden shadow-2xl">
-                  <img 
-                    src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/user_6945eb37fb67abb9152e42a5/546f6c77d_2.jpg"
-                    alt="居家整潔"
-                    className="w-full h-48 object-cover"
-                  />
-                </div>
-              </div>
-            </div>
-            
-            {/* Floating Card */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.6, delay: 0.5 }}
-              className="absolute -bottom-6 -left-6 bg-white rounded-2xl p-5 shadow-xl"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center">
-                  <Sparkles className="w-6 h-6 text-amber-600" />
-                </div>
-                <div>
-                  <p className="text-2xl font-semibold text-stone-800">2,800+</p>
-                  <p className="text-sm text-stone-500">真實評價</p>
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
+              </motion.div>
+            </AnimatePresence>
+          </div>
         </div>
-      </div>
-    </section>
+
+        {/* Slide Controls */}
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-3 z-10">
+          {slides.map((_, i) => (
+            <button key={i} onClick={() => setCurrent(i)}
+              className={`rounded-full transition-all duration-300 ${i === current ? 'w-8 h-2 bg-amber-400' : 'w-2 h-2 bg-white/50'}`}
+            />
+          ))}
+        </div>
+
+        {/* Stats */}
+        <div className="absolute bottom-0 right-0 hidden md:flex gap-px z-10">
+          {[['58,000+', '媒合戶數'], ['56,000+', '真實評價'], ['679+', '認證人員']].map(([num, label]) => (
+            <div key={label} className="bg-black/40 backdrop-blur-sm px-6 py-4 text-center">
+              <p className="text-white text-xl font-bold">{num}</p>
+              <p className="text-white/70 text-xs mt-0.5">{label}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Quick Service Links */}
+      <section className="bg-white border-b border-stone-100 shadow-sm">
+        <div className="container mx-auto px-6 lg:px-12">
+          <div className="flex items-center justify-around py-4 overflow-x-auto gap-2">
+            {quickLinks.map((q) => (
+              <Link key={q.name} to={createPageUrl("BookingForm")}
+                className="flex flex-col items-center gap-1.5 px-4 py-2 rounded-xl hover:bg-amber-50 transition-colors min-w-[72px] text-center group">
+                <span className="text-2xl">{q.emoji}</span>
+                <span className="text-xs text-stone-600 group-hover:text-amber-700 font-medium whitespace-nowrap">{q.name}</span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+    </div>
   );
 }

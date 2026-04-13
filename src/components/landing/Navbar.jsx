@@ -11,6 +11,7 @@ export default function Navbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [user, setUser] = useState(null);
   const location = useLocation();
+  const [showBanner, setShowBanner] = useState(true);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -46,7 +47,16 @@ export default function Navbar() {
   };
 
   return (
-    <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+    <>
+      {/* Top Announcement Banner */}
+      {showBanner && (
+        <div className="fixed top-0 left-0 right-0 z-50 bg-stone-800 text-white text-xs text-center py-2 px-8 flex items-center justify-center gap-2">
+          <span>🎉 新會員首次預約享 <strong>85 折</strong>優惠！限時活動，立即預約享好康</span>
+          <Link to={createPageUrl("BookingForm")} className="underline text-amber-300 font-medium">立即加入</Link>
+          <button onClick={() => setShowBanner(false)} className="absolute right-4 text-white/60 hover:text-white">×</button>
+        </div>
+      )}
+    <nav className={`fixed ${showBanner ? 'top-8' : 'top-0'} left-0 right-0 z-50 transition-all duration-300 ${
       isScrolled ? 'bg-white/95 backdrop-blur-md shadow-sm' : 'bg-transparent'
     }`}>
       <div className="container mx-auto px-6 lg:px-12">
@@ -170,5 +180,6 @@ export default function Navbar() {
         )}
       </AnimatePresence>
     </nav>
+    </>
   );
 }
