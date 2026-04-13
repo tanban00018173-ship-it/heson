@@ -133,15 +133,28 @@ export default function HesonAIChat() {
     }
   };
 
+  const getAmount = (serviceType) => {
+    if (serviceType === '基礎月護-4次') return 8400;
+    if (serviceType === '進階月安-8次') return 16000;
+    if (serviceType === '尊寵月怡-12次') return 24600;
+    return 2000; // 單次清潔預設
+  };
+
   const confirmBooking = async () => {
     addMessage('user', '確認送出預約');
     setBookingStep(null);
     setLoading(true);
     try {
       const isAuth = await base44.auth.isAuthenticated();
-      const user = isAuth ? await base44.auth.me() : null;
+      if (!isAuth) {
+        addMessage('assistant', '❗ 建立預約需要先登入帳號。請點下方按鈕登入後再完成預約。');
+        setLoading(false);
+        setBookingStep('login_required');
+        return;
+      }
+      const user = await base44.auth.me();
       const booking = await base44.entities.Booking.create({
-        client_id: user?.id || 'guest',
+        client_id: user.id,
         client_name: bookingData.client_name,
         service_type: bookingData.service_type,
         status: '待確認',
@@ -150,10 +163,13 @@ export default function HesonAIChat() {
         address: bookingData.address,
         notes: `電話: ${bookingData.phone} (由小赫 AI 協助預約)`,
       });
-      addMessage('assistant', '🎉 預約已成功建立！客服將於 24 小時內與您確認。');
-      setBookingResult({ id: booking.id, ...bookingData });
-    } catch {
-      addMessage('assistant', '抱歉，預約建立失敗，請撥打 0906-991-023 由客服協助。');
+      addMessage('assistant', '🎉 預約已建立！正在跳轉至付款頁面...');
+      const amount = getAmount(bookingData.service_type);
+      setTimeout(() => {
+        window.location.href = `/PaymentRedirect?booking_id=${booking.id}&amount=${amount}&item_name=${encodeURIComponent(bookingData.service_type)}`;
+      }, 1200);
+    } catch (e) {
+      addMessage('assistant', `抱歉，預約建立失敗（${e.message || '未知錯誤'}），請撥打 0906-991-023 由客服協助。`);
     } finally {
       setLoading(false);
     }
@@ -340,12 +356,27 @@ export default function HesonAIChat() {
                 </div>
               )}
 
+              {/* Login Required Step */}
+              {bookingStep === 'login_required' && (
+                <div className="px-3 py-3 flex flex-col gap-2">
+                  <button
+                    onClick={() => base44.auth.redirectToLogin(window.location.pathname)}
+                    className="w-full text-sm bg-amber-500 hover:bg-amber-600 text-white py-2.5 rounded-xl font-medium transition-colors"
+                  >
+                    🔐 立即登入以完成預約
+                  </button>
+                  <button onClick={cancelBooking} className="w-full text-xs text-stone-400 hover:text-stone-600">
+                    取消
+                  </button>
+                </div>
+              )}
+
               {/* Confirm Step */}
               {bookingStep === 'confirm' && (
                 <div className="px-3 py-2 flex gap-2">
                   <button onClick={confirmBooking}
                     className="flex-1 text-sm bg-amber-500 hover:bg-amber-600 text-white py-2.5 rounded-xl font-medium transition-colors">
-                    ✓ 確認送出
+                    ✓ 確認並前往付款
                   </button>
                   <button onClick={cancelBooking}
                     className="flex-1 text-sm bg-stone-100 hover:bg-stone-200 text-stone-600 py-2.5 rounded-xl font-medium transition-colors">
