@@ -52,10 +52,10 @@ export default function Navbar() {
     <>
       {/* Top Announcement Banner */}
       {showBanner && (
-        <div className="fixed top-0 left-0 right-0 z-50 bg-stone-800 text-white text-xs text-center py-2 pr-10 pl-4 flex items-center justify-center gap-2">
+        <div className="fixed top-0 left-0 right-0 z-50 bg-stone-800 text-white text-xs text-center py-2 pl-4 pr-12 flex items-center justify-center gap-2">
           <span>🎉 新會員首次預約享 <strong>85 折</strong>優惠！限時活動，立即預約享好康</span>
           <Link to={createPageUrl("BookingForm")} className="underline text-amber-300 font-medium whitespace-nowrap">立即預約</Link>
-          <button onClick={() => setShowBanner(false)} className="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center text-white/60 hover:text-white text-lg leading-none">×</button>
+          <button onClick={() => setShowBanner(false)} className="absolute right-0 top-0 bottom-0 w-12 px-3 flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 transition-colors">×</button>
         </div>
       )}
     <nav className={`fixed ${showBanner ? 'top-8' : 'top-0'} left-0 right-0 z-50 transition-all duration-300 ${
