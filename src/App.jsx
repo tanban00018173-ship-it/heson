@@ -17,6 +17,7 @@ import Recruitment from './pages/Recruitment'
 import CleanerTeam from './pages/CleanerTeam'
 import CleanerApplicationForm from './pages/CleanerApplicationForm'
 import CleanerManagement from './pages/CleanerManagement'
+import CleanerBulkImport from './pages/CleanerBulkImport'
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
@@ -90,6 +91,7 @@ const AuthenticatedApp = () => {
       <Route path="/CleanerTeam" element={<CleanerTeam />} />
       <Route path="/CleanerApplicationForm" element={<CleanerApplicationForm />} />
       <Route path="/CleanerManagement" element={<CleanerManagement />} />
+      <Route path="/CleanerBulkImport" element={<CleanerBulkImport />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );
