@@ -78,20 +78,20 @@ const AuthenticatedApp = () => {
           }
         />
       ))}
-      <Route path="/AdminAttendance" element={<AdminAttendance />} />
-      <Route path="/PaymentResult" element={<PaymentResult />} />
-      <Route path="/PaymentRedirect" element={<PaymentRedirect />} />
-      <Route path="/ServiceInquiry" element={<ServiceInquiry />} />
-      <Route path="/OrderQuery" element={<OrderQuery />} />
-      <Route path="/PrivacyPolicy" element={<PrivacyPolicy />} />
-      <Route path="/TermsOfService" element={<TermsOfService />} />
-      <Route path="/JoinCleaner" element={<JoinCleaner />} />
-      <Route path="/BusinessCooperation" element={<BusinessCooperation />} />
-      <Route path="/Recruitment" element={<Recruitment />} />
-      <Route path="/CleanerTeam" element={<CleanerTeam />} />
-      <Route path="/CleanerApplicationForm" element={<CleanerApplicationForm />} />
-      <Route path="/CleanerManagement" element={<CleanerManagement />} />
-      <Route path="/CleanerBulkImport" element={<CleanerBulkImport />} />
+      <Route path="/AdminAttendance" element={<LayoutWrapper currentPageName="AdminAttendance"><AdminAttendance /></LayoutWrapper>} />
+      <Route path="/PaymentResult" element={<LayoutWrapper currentPageName="PaymentResult"><PaymentResult /></LayoutWrapper>} />
+      <Route path="/PaymentRedirect" element={<LayoutWrapper currentPageName="PaymentRedirect"><PaymentRedirect /></LayoutWrapper>} />
+      <Route path="/ServiceInquiry" element={<LayoutWrapper currentPageName="ServiceInquiry"><ServiceInquiry /></LayoutWrapper>} />
+      <Route path="/OrderQuery" element={<LayoutWrapper currentPageName="OrderQuery"><OrderQuery /></LayoutWrapper>} />
+      <Route path="/PrivacyPolicy" element={<LayoutWrapper currentPageName="PrivacyPolicy"><PrivacyPolicy /></LayoutWrapper>} />
+      <Route path="/TermsOfService" element={<LayoutWrapper currentPageName="TermsOfService"><TermsOfService /></LayoutWrapper>} />
+      <Route path="/JoinCleaner" element={<LayoutWrapper currentPageName="JoinCleaner"><JoinCleaner /></LayoutWrapper>} />
+      <Route path="/BusinessCooperation" element={<LayoutWrapper currentPageName="BusinessCooperation"><BusinessCooperation /></LayoutWrapper>} />
+      <Route path="/Recruitment" element={<LayoutWrapper currentPageName="Recruitment"><Recruitment /></LayoutWrapper>} />
+      <Route path="/CleanerTeam" element={<LayoutWrapper currentPageName="CleanerTeam"><CleanerTeam /></LayoutWrapper>} />
+      <Route path="/CleanerApplicationForm" element={<LayoutWrapper currentPageName="CleanerApplicationForm"><CleanerApplicationForm /></LayoutWrapper>} />
+      <Route path="/CleanerManagement" element={<LayoutWrapper currentPageName="CleanerManagement"><CleanerManagement /></LayoutWrapper>} />
+      <Route path="/CleanerBulkImport" element={<LayoutWrapper currentPageName="CleanerBulkImport"><CleanerBulkImport /></LayoutWrapper>} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );
