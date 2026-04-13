@@ -73,7 +73,7 @@ export default function PricingSection() {
             選擇最適合您的 <span className="font-medium">方案</span>
           </h2>
           <p className="text-stone-500 mt-4 max-w-2xl mx-auto">
-            彈性訂閱制，隨時調整，給您最貼心的服務體驗
+            新會員首次預約享 85 折優惠！彈性訂閱制，隨時調整，給您最貼心的服務體驗
           </p>
         </motion.div>
 
