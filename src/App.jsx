@@ -7,6 +7,7 @@ import { pagesConfig } from './pages.config'
 import AdminAttendance from './pages/AdminAttendance'
 import PaymentResult from './pages/PaymentResult'
 import PaymentRedirect from './pages/PaymentRedirect'
+import OrderQuery from './pages/OrderQuery'
 import ServiceInquiry from './pages/ServiceInquiry'
 import PrivacyPolicy from './pages/PrivacyPolicy'
 import TermsOfService from './pages/TermsOfService'
@@ -72,6 +73,7 @@ const AuthenticatedApp = () => {
       <Route path="/PaymentResult" element={<PaymentResult />} />
       <Route path="/PaymentRedirect" element={<PaymentRedirect />} />
       <Route path="/ServiceInquiry" element={<ServiceInquiry />} />
+      <Route path="/OrderQuery" element={<OrderQuery />} />
       <Route path="/PrivacyPolicy" element={<PrivacyPolicy />} />
       <Route path="/TermsOfService" element={<TermsOfService />} />
       <Route path="/JoinCleaner" element={<JoinCleaner />} />
