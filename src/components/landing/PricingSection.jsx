@@ -7,49 +7,50 @@ import { createPageUrl } from "@/utils";
 
 const plans = [
   {
-    name: "基礎月護",
+    name: "BASIC 基本方案",
     nameEn: "Basic",
-    visits: "4次/月",
-    price: "8,400",
-    perVisit: "2,100",
+    visits: "每月 1,100 點",
+    price: "999",
+    perVisit: "95折優惠",
     features: [
-      "每週一次專人服務",
-      "基礎居家清潔",
-      "服務照片回報",
-      "固定管理師"
+      "每月贈送 1,100 點",
+      "服務享 95 折",
+      "優先派案（高於一般用戶）",
+      "標準客服支援",
+      "訂單歷史無限查閱",
+      "隨時取消，無合約綁定"
     ],
     popular: false
   },
   {
-    name: "進階月安",
-    nameEn: "Advanced",
-    visits: "8次/月",
-    price: "16,000",
-    perVisit: "2,000",
+    name: "VIP 尊榮方案",
+    nameEn: "VIP",
+    visits: "每月 3,600 點",
+    price: "2,999",
+    perVisit: "9折優惠",
     features: [
-      "每週兩次專人服務",
-      "深度居家清潔",
-      "服務照片回報",
-      "固定管理師",
-      "優先預約權",
-      "收納整理服務"
+      "每月贈送 3,600 點",
+      "服務享 9 折",
+      "VIP 最高優先派案",
+      "可指定人員服務",
+      "Smart Lock 整合",
+      "多房源管理（B2B）",
+      "專屬客服 VIP 管家"
     ],
     popular: true
   },
   {
-    name: "尊榮月恆",
-    nameEn: "Premium",
-    visits: "12次/月",
-    price: "24,600",
-    perVisit: "2,050",
+    name: "單次清潔",
+    nameEn: "Single",
+    visits: "依需求選擇",
+    price: "599",
+    perVisit: "起/次",
     features: [
-      "每週三次專人服務",
-      "全方位居家管理",
-      "服務照片回報",
-      "專屬管理師",
-      "最高優先預約",
-      "收納整理服務",
-      "特殊需求客製化"
+      "不需訂閱，彈性預約",
+      "全台本島服務",
+      "照片回報系統",
+      "24hr 線上預約",
+      "服務後可評分"
     ],
     popular: false
   }
@@ -118,10 +119,10 @@ export default function PricingSection() {
                   <span className={`text-4xl font-semibold ${plan.popular ? 'text-white' : 'text-stone-800'}`}>
                     {plan.price}
                   </span>
-                  <span className={`text-sm ${plan.popular ? 'text-stone-400' : 'text-stone-500'}`}>/月</span>
+                  <span className={`text-sm ${plan.popular ? 'text-stone-400' : 'text-stone-500'}`}>{plan.name === '單次清潔' ? '' : '/月'}</span>
                 </div>
-                <p className={`text-xs mt-2 ${plan.popular ? 'text-stone-400' : 'text-stone-400'}`}>
-                  約 NT$ {plan.perVisit} / 次
+                <p className={`text-xs mt-2 ${plan.popular ? 'text-amber-300' : 'text-amber-600'} font-medium`}>
+                  {plan.perVisit}
                 </p>
               </div>
               
@@ -162,7 +163,7 @@ export default function PricingSection() {
           transition={{ duration: 0.6, delay: 0.5 }}
           className="text-center text-stone-400 text-sm mt-12"
         >
-          * 以上價格均含稅，首次預約可享免費試掃服務
+          * 每月自動扣款，隨時可取消，無合約綁定，不收違約金。依《消費者保護法》規範，訂閱費用非儲值款項。
         </motion.p>
       </div>
     </section>

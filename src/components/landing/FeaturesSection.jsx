@@ -4,34 +4,34 @@ import { Users, ClipboardCheck, Camera, Shield, Clock, Heart } from "lucide-reac
 
 const features = [
   {
-    icon: Users,
-    title: "固定專人服務",
-    description: "每次都是熟悉您家的管理師，了解您的需求與習慣"
+    icon: Clock,
+    title: "24hr 線上預約",
+    description: "六大服務類型線上選擇，所有流程在平台留存紀錄，隨時查閱"
   },
   {
-    icon: ClipboardCheck,
-    title: "標準 SOP 流程",
-    description: "專業訓練的清潔流程，確保每次服務品質一致"
+    icon: Users,
+    title: "專人快速回覆",
+    description: "預約成功後 24hr 內回覆確認，系統智能派案不讓您久等"
   },
   {
     icon: Camera,
     title: "照片回報系統",
-    description: "清潔前後對比照片，讓您隨時掌握服務成果"
+    description: "清潔前後對比照片透明公開，讓您隨時掌握服務成果"
   },
   {
     icon: Shield,
     title: "嚴格背景審核",
-    description: "良民證、身分驗證，給您最安心的居家服務"
+    description: "良民證、身分驗證，所有管理師皆經嚴格篩選，給您最安心的服務"
   },
   {
-    icon: Clock,
-    title: "彈性時段安排",
-    description: "上午、下午、晚間時段任選，配合您的生活節奏"
+    icon: ClipboardCheck,
+    title: "評價完整公開透明",
+    description: "網友真實評價公開顯示，服務完成後可評分，誠信透明"
   },
   {
     icon: Heart,
-    title: "貼心客製服務",
-    description: "依據您的居家環境，提供最適合的清潔方案"
+    title: "智能推薦方案",
+    description: "AI 分析您的居家狀況與需求，推薦最適合的服務方案"
   }
 ];
 

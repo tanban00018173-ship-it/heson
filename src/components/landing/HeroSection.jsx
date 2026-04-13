@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Sparkles } from "lucide-react";
+import { ArrowRight, Sparkles, Phone } from "lucide-react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { motion } from "framer-motion";
@@ -21,9 +21,14 @@ export default function HeroSection() {
             transition={{ duration: 0.8 }}
             className="space-y-8"
           >
+            {/* Announcement banner */}
+            <div className="inline-flex items-center gap-2 bg-amber-500/10 border border-amber-200 px-4 py-2 rounded-full">
+              <Sparkles className="w-4 h-4 text-amber-600" />
+              <span className="text-sm text-amber-700 font-medium">🎉 新會員首次預約享 85 折優惠（限時活動）</span>
+            </div>
             <div className="inline-flex items-center gap-2 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full shadow-sm">
               <Sparkles className="w-4 h-4 text-amber-600" />
-              <span className="text-sm text-stone-600 font-medium">專業訂閱制家事管理服務</span>
+              <span className="text-sm text-stone-600 font-medium">空下雙手，陪伴家人</span>
             </div>
             
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-light text-stone-800 leading-tight tracking-tight">
@@ -33,8 +38,7 @@ export default function HeroSection() {
             </h1>
             
             <p className="text-lg text-stone-600 max-w-md leading-relaxed">
-              HESON 赫頌家事管理，提供固定專人、標準化SOP、
-              服務前後照片回報，讓您安心享受潔淨生活。
+              HESON 台灣最專業的家事服務媒合平台，提供居家清潔・家電清洗・整理收納・商業清潔，全台本島 24 小時線上預約。
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4">
@@ -47,13 +51,19 @@ export default function HeroSection() {
                   <ArrowRight className="ml-2 w-5 h-5" />
                 </Button>
               </Link>
-              <a href="https://lin.ee/6KgqiOU" target="_blank" rel="noopener noreferrer">
+              <a href="https://lin.ee/xKVxq7Y" target="_blank" rel="noopener noreferrer">
                 <Button 
                   variant="outline" 
                   size="lg"
                   className="border-stone-300 text-stone-700 hover:bg-stone-100 px-8 py-6 text-base rounded-full"
                 >
                   LINE 諮詢
+                </Button>
+              </a>
+              <a href="tel:0906991023">
+                <Button variant="ghost" size="lg" className="text-stone-500 px-4 py-6 rounded-full">
+                  <Phone className="w-4 h-4 mr-2" />
+                  0906-991-023
                 </Button>
               </a>
             </div>
@@ -113,8 +123,8 @@ export default function HeroSection() {
                   <Sparkles className="w-6 h-6 text-amber-600" />
                 </div>
                 <div>
-                  <p className="text-2xl font-semibold text-stone-800">500+</p>
-                  <p className="text-sm text-stone-500">滿意客戶</p>
+                  <p className="text-2xl font-semibold text-stone-800">2,800+</p>
+                  <p className="text-sm text-stone-500">真實評價</p>
                 </div>
               </div>
             </motion.div>
