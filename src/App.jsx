@@ -32,10 +32,10 @@ const LayoutWrapper = ({ children, currentPageName }) => Layout ?
   : <>{children}</>;
 
 const AuthenticatedApp = () => {
-  const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, isAuthenticated } = useAuth();
+  const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, isAuthenticated, appPublicSettings } = useAuth();
 
   // Show loading spinner while checking app public settings or auth
-  if (isLoadingPublicSettings || isLoadingAuth) {
+  if (isLoadingPublicSettings) {
     return (
       <div className="fixed inset-0 flex items-center justify-center">
         <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin"></div>
@@ -43,11 +43,8 @@ const AuthenticatedApp = () => {
     );
   }
 
-  // If not authenticated and no error, redirect to login
-  if (!isLoadingAuth && !isAuthenticated && !authError) {
-    navigateToLogin();
-    return null;
-  }
+  // Check if app is public
+  const isAppPublic = appPublicSettings?.public_settings?.is_public === true;
 
   // Handle authentication errors
   if (authError) {
@@ -57,6 +54,12 @@ const AuthenticatedApp = () => {
       navigateToLogin();
       return null;
     }
+  }
+
+  // If app is private and user is not authenticated, redirect to login
+  if (!isAppPublic && !isAuthenticated && !isLoadingAuth) {
+    navigateToLogin();
+    return null;
   }
 
   // Render the main app
