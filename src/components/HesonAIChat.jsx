@@ -292,8 +292,11 @@ export default function HesonAIChat() {
               {bookingStep === 'service' && (
                 <div className="px-3 py-2 grid grid-cols-2 gap-2">
                   {SERVICE_TYPES.map(s => (
-                    <button key={s} onClick={() => handleBookingStep(s, s)}
-                      className="text-xs bg-gradient-to-br from-amber-50 to-amber-100 border border-amber-300 text-amber-800 px-2 py-2.5 rounded-xl hover:from-amber-100 hover:to-amber-200 transition-all font-medium shadow-sm">
+                    <button
+                      key={s}
+                      onClick={() => handleBookingStep(s, s)}
+                      className="text-xs bg-gradient-to-br from-amber-50 to-amber-100 border border-amber-300 text-amber-800 px-2 py-2.5 rounded-xl hover:from-amber-100 hover:to-amber-200 transition-all font-medium shadow-sm"
+                    >
                       {s}
                     </button>
                   ))}
@@ -303,8 +306,11 @@ export default function HesonAIChat() {
               {bookingStep === 'city' && (
                 <div className="px-3 py-2 max-h-40 overflow-y-auto grid grid-cols-3 gap-1.5">
                   {TAIWAN_CITIES.map(c => (
-                    <button key={c} onClick={() => handleBookingStep(c, c)}
-                      className="text-xs bg-stone-50 border border-stone-300 text-stone-700 px-2 py-1.5 rounded-lg hover:bg-amber-50 hover:border-amber-300 transition-all font-medium">
+                    <button
+                      key={c}
+                      onClick={() => handleBookingStep(c, c)}
+                      className="text-xs bg-stone-50 border border-stone-300 text-stone-700 px-2 py-1.5 rounded-lg hover:bg-amber-50 hover:border-amber-300 transition-all font-medium"
+                    >
                       {c}
                     </button>
                   ))}
@@ -327,8 +333,11 @@ export default function HesonAIChat() {
               {bookingStep === 'time' && (
                 <div className="px-3 py-2 flex flex-col gap-1.5">
                   {TIME_SLOTS.map(t => (
-                    <button key={t} onClick={() => handleBookingStep(t, t)}
-                      className="text-xs bg-stone-50 border border-stone-300 text-stone-700 px-3 py-2.5 rounded-xl hover:bg-amber-50 hover:border-amber-300 transition-all text-left font-medium">
+                    <button
+                      key={t}
+                      onClick={() => handleBookingStep(t, t)}
+                      className="text-xs bg-stone-50 border border-stone-300 text-stone-700 px-3 py-2.5 rounded-xl hover:bg-amber-50 hover:border-amber-300 transition-all text-left font-medium"
+                    >
                       {t}
                     </button>
                   ))}
@@ -351,12 +360,16 @@ export default function HesonAIChat() {
 
               {bookingStep === 'confirm' && (
                 <div className="px-3 py-2 flex gap-2">
-                  <button onClick={confirmBooking}
-                    className="flex-1 text-sm bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white py-2.5 rounded-xl font-medium transition-all shadow-md">
+                  <button
+                    onClick={confirmBooking}
+                    className="flex-1 text-sm bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white py-2.5 rounded-xl font-medium transition-all shadow-md"
+                  >
                     ✓ 確認並前往付款
                   </button>
-                  <button onClick={cancelBooking}
-                    className="flex-1 text-sm bg-stone-100 hover:bg-stone-200 text-stone-600 py-2.5 rounded-xl font-medium transition-all">
+                  <button
+                    onClick={cancelBooking}
+                    className="flex-1 text-sm bg-stone-100 hover:bg-stone-200 text-stone-600 py-2.5 rounded-xl font-medium transition-all"
+                  >
                     ✕ 取消
                   </button>
                 </div>
