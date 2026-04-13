@@ -11,7 +11,8 @@ import {
   LogOut,
   Users,
   FileText,
-  BarChart3
+  BarChart3,
+  UserCheck
 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -40,6 +41,7 @@ export default function MobileNav({ userRole = 'client', userName = '' }) {
     { name: "客戶管理", path: "AdminClients", icon: Users },
     { name: "管理師管理", path: "AdminCleaners", icon: User },
     { name: "預約管理", path: "AdminBookings", icon: ClipboardList },
+    { name: "員工出勤", path: "AdminAttendance", icon: UserCheck },
   ];
 
   const getLinks = () => {
