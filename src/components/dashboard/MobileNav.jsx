@@ -23,6 +23,7 @@ export default function MobileNav({ userRole = 'client', userName = '' }) {
 
   const clientLinks = [
     { name: "我的方案", path: "ClientDashboard", icon: Home },
+    { name: "我的預約", path: "MyBookings", icon: Calendar },
     { name: "新增預約", path: "ClientBooking", icon: Calendar },
     { name: "服務紀錄", path: "ClientHistory", icon: ClipboardList },
     { name: "個人資料", path: "ClientProfile", icon: User },
