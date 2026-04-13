@@ -97,7 +97,7 @@ export default function HeroSection() {
                     </Button>
                   </Link>
                   <a href="https://lin.ee/xKVxq7Y" target="_blank" rel="noopener noreferrer">
-                    <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10 rounded-full px-8 py-6 text-base">
+                    <Button size="lg" variant="outline" className="border-white/80 bg-white/15 text-white hover:bg-white/25 rounded-full px-8 py-6 text-base font-medium">
                       查看方案
                     </Button>
                   </a>
