@@ -51,7 +51,7 @@ export default function CTASection() {
               <Button 
                 variant="outline" 
                 size="lg"
-                className="border-stone-600 text-white hover:bg-stone-700 px-8 py-6 text-base rounded-full"
+                className="border-white/60 bg-white/15 text-white hover:bg-white/25 px-8 py-6 text-base rounded-full font-medium"
               >
                 <MessageCircle className="mr-2 w-5 h-5" />
                 LINE 聯繫我們
