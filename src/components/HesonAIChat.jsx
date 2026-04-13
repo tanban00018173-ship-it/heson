@@ -1,9 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageCircle, X, Send, Loader2, Bot, CheckCircle2 } from 'lucide-react';
+import { X, Send, Loader2, CheckCircle2, ChevronLeft } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
-import { Link } from 'react-router-dom';
-import { createPageUrl } from '@/utils';
+import CalendarExportButton from '@/components/CalendarExportButton';
 
 const WELCOME = '您好！我是小赫 🏠 HESON 的 AI 客服助理，我可以回答問題，也可以幫您直接完成預約！';
 
@@ -14,56 +13,183 @@ const QUICK_QUESTIONS = [
   '服務區域有哪些？',
 ];
 
+const SERVICE_TYPES = ['單次清潔', '基礎月護-4次', '進階月安-8次', '尊寵月怡-12次'];
+const TIME_SLOTS = ['上午 08:00-12:00', '下午 13:00-17:00', '晚間 18:00-21:00'];
+
+const TAIWAN_CITIES = [
+  '台北市', '新北市', '基隆市', '桃園市', '新竹市', '新竹縣',
+  '苗栗縣', '台中市', '彰化縣', '南投縣', '雲林縣', '嘉義市',
+  '嘉義縣', '台南市', '高雄市', '屏東縣', '宜蘭縣', '花蓮縣',
+  '台東縣', '澎湖縣', '金門縣', '連江縣',
+];
+
+// Booking steps: service → city → road → date → time → name → phone → confirm
+const BOOKING_STEPS = ['service', 'city', 'road', 'date', 'time', 'name', 'phone', 'confirm'];
+
+function getTodayAndNext30() {
+  const dates = [];
+  const today = new Date();
+  for (let i = 1; i <= 14; i++) {
+    const d = new Date(today);
+    d.setDate(today.getDate() + i);
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    const weekday = ['日', '一', '二', '三', '四', '五', '六'][d.getDay()];
+    dates.push({ value: `${yyyy}-${mm}-${dd}`, label: `${mm}/${dd}（週${weekday}）` });
+  }
+  return dates;
+}
+
 export default function HesonAIChat() {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState([{ role: 'assistant', content: WELCOME }]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [bookingResult, setBookingResult] = useState(null);
+  const [bookingStep, setBookingStep] = useState(null); // null = normal chat
+  const [bookingData, setBookingData] = useState({});
   const bottomRef = useRef(null);
 
   useEffect(() => {
     if (open) bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, open]);
+  }, [messages, open, bookingStep]);
 
-  const send = async (text) => {
-    const msg = (text || input).trim();
-    if (!msg || loading) return;
+  const addMessage = (role, content) => {
+    setMessages(prev => [...prev, { role, content }]);
+  };
+
+  const handleQuickClick = (text) => {
+    if (text === '我要預約服務') {
+      addMessage('user', '我要預約服務');
+      addMessage('assistant', '好的！請選擇您需要的服務類型：');
+      setBookingStep('service');
+      setBookingData({});
+    } else {
+      sendChat(text);
+    }
+  };
+
+  const handleBookingStep = (value, label) => {
+    const step = bookingStep;
+    const newData = { ...bookingData };
+
+    if (step === 'service') {
+      newData.service_type = value;
+      addMessage('user', value);
+      addMessage('assistant', '請選擇服務縣市：');
+      setBookingData(newData);
+      setBookingStep('city');
+    } else if (step === 'city') {
+      newData.city = value;
+      addMessage('user', value);
+      addMessage('assistant', `已選擇 ${value}，請輸入詳細路名與門牌號碼（例：中山北路二段100號）：`);
+      setBookingData(newData);
+      setBookingStep('road');
+    } else if (step === 'date') {
+      newData.scheduled_date = value;
+      addMessage('user', label || value);
+      addMessage('assistant', '請選擇希望的服務時段：');
+      setBookingData(newData);
+      setBookingStep('time');
+    } else if (step === 'time') {
+      newData.time_slot = value;
+      addMessage('user', value);
+      addMessage('assistant', '請問您的姓名是？');
+      setBookingData(newData);
+      setBookingStep('name');
+    }
+  };
+
+  const handleTextInput = async () => {
+    const text = input.trim();
+    if (!text || loading) return;
     setInput('');
-    const history = messages.filter(m => m.role !== 'system');
-    setMessages(prev => [...prev, { role: 'user', content: msg }]);
+
+    if (bookingStep === 'road') {
+      const newData = { ...bookingData, address: `${bookingData.city || ''}${text}` };
+      addMessage('user', text);
+      addMessage('assistant', '請選擇希望的服務日期：');
+      setBookingData(newData);
+      setBookingStep('date');
+    } else if (bookingStep === 'name') {
+      const newData = { ...bookingData, client_name: text };
+      addMessage('user', text);
+      addMessage('assistant', '請輸入您的聯絡電話：');
+      setBookingData(newData);
+      setBookingStep('phone');
+    } else if (bookingStep === 'phone') {
+      const newData = { ...bookingData, phone: text };
+      addMessage('user', text);
+      addMessage('assistant',
+        `✅ 請確認您的預約資訊：\n\n` +
+        `📋 服務類型：${newData.service_type}\n` +
+        `📅 日期：${newData.scheduled_date}\n` +
+        `⏰ 時段：${newData.time_slot}\n` +
+        `🏠 地址：${newData.address}\n` +
+        `👤 姓名：${newData.client_name}\n` +
+        `📞 電話：${newData.phone}`
+      );
+      setBookingData(newData);
+      setBookingStep('confirm');
+    } else {
+      // Normal chat
+      sendChat(text);
+    }
+  };
+
+  const confirmBooking = async () => {
+    addMessage('user', '確認送出預約');
+    setBookingStep(null);
     setLoading(true);
     try {
-      const res = await base44.functions.invoke('hesonAI', {
-        message: msg,
-        history: history.map(m => ({ role: m.role, content: m.content })),
+      const isAuth = await base44.auth.isAuthenticated();
+      const user = isAuth ? await base44.auth.me() : null;
+      const booking = await base44.entities.Booking.create({
+        client_id: user?.id || 'guest',
+        client_name: bookingData.client_name,
+        service_type: bookingData.service_type,
+        status: '待確認',
+        scheduled_date: bookingData.scheduled_date,
+        time_slot: bookingData.time_slot,
+        address: bookingData.address,
+        notes: `電話: ${bookingData.phone} (由小赫 AI 協助預約)`,
       });
-      const reply = res.data?.reply || '抱歉，我暫時無法回答，請撥打 0906-991-023 聯繫客服。';
-      setMessages(prev => [...prev, { role: 'assistant', content: reply }]);
-
-      const bd = res.data?.booking_data;
-      if (bd && bd.client_name && bd.phone && bd.address && bd.service_type && bd.scheduled_date && bd.time_slot) {
-        setBookingResult('loading');
-        const isAuth = await base44.auth.isAuthenticated();
-        const user = isAuth ? await base44.auth.me() : null;
-        const booking = await base44.entities.Booking.create({
-          client_id: user?.id || 'guest',
-          client_name: bd.client_name,
-          service_type: bd.service_type,
-          status: '待確認',
-          scheduled_date: bd.scheduled_date,
-          time_slot: bd.time_slot,
-          address: bd.address,
-          notes: `電話: ${bd.phone} (由小赫 AI 協助預約)`,
-        });
-        setBookingResult({ id: booking.id, ...bd });
-      }
+      addMessage('assistant', '🎉 預約已成功建立！客服將於 24 小時內與您確認。');
+      setBookingResult({ id: booking.id, ...bookingData });
     } catch {
-      setMessages(prev => [...prev, { role: 'assistant', content: '抱歉，目前連線異常，請稍後再試或撥打 0906-991-023。' }]);
+      addMessage('assistant', '抱歉，預約建立失敗，請撥打 0906-991-023 由客服協助。');
     } finally {
       setLoading(false);
     }
   };
+
+  const sendChat = async (text) => {
+    if (!text || loading) return;
+    const history = messages.filter(m => m.role !== 'system');
+    addMessage('user', text);
+    setLoading(true);
+    try {
+      const res = await base44.functions.invoke('hesonAI', {
+        message: text,
+        history: history.map(m => ({ role: m.role, content: m.content })),
+      });
+      const reply = res.data?.reply || '抱歉，我暫時無法回答，請撥打 0906-991-023 聯繫客服。';
+      addMessage('assistant', reply);
+    } catch {
+      addMessage('assistant', '抱歉，目前連線異常，請稍後再試或撥打 0906-991-023。');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const cancelBooking = () => {
+    setBookingStep(null);
+    setBookingData({});
+    addMessage('assistant', '已取消預約流程，有其他問題歡迎繼續詢問！');
+  };
+
+  const dates = getTodayAndNext30();
 
   return (
     <>
@@ -91,10 +217,10 @@ export default function HesonAIChat() {
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
             transition={{ duration: 0.2 }}
             className="fixed bottom-24 right-4 z-50 bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-stone-100"
-            style={{ width: 'min(360px, calc(100vw - 32px))', height: 'min(480px, calc(100vh - 160px))' }}
+            style={{ width: 'min(360px, calc(100vw - 32px))', height: 'min(520px, calc(100vh - 160px))' }}
           >
             {/* Header */}
-            <div className="bg-gradient-to-r from-amber-500 to-amber-600 px-4 py-3 flex items-center gap-3">
+            <div className="bg-gradient-to-r from-amber-500 to-amber-600 px-4 py-3 flex items-center gap-3 flex-shrink-0">
               <div className="w-9 h-9 rounded-full overflow-hidden bg-white/20">
                 <img src="https://media.base44.com/images/public/6945eea24a533fe8f1a31e80/08fd95ace_generated_image.png" alt="小赫" className="w-full h-full object-cover" />
               </div>
@@ -102,7 +228,12 @@ export default function HesonAIChat() {
                 <p className="text-white font-medium text-sm">小赫 AI 客服</p>
                 <p className="text-amber-100 text-xs">HESON 赫頌 · 24hr 智能回覆</p>
               </div>
-              <button onClick={() => setOpen(false)} className="ml-auto text-white/70 hover:text-white">
+              {bookingStep && (
+                <button onClick={cancelBooking} className="ml-auto mr-1 text-white/70 hover:text-white flex items-center gap-1 text-xs">
+                  <ChevronLeft className="w-3 h-3" /> 取消預約
+                </button>
+              )}
+              <button onClick={() => setOpen(false)} className={`${bookingStep ? '' : 'ml-auto'} text-white/70 hover:text-white`}>
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -116,7 +247,7 @@ export default function HesonAIChat() {
                       <img src="https://media.base44.com/images/public/6945eea24a533fe8f1a31e80/08fd95ace_generated_image.png" alt="小赫" className="w-full h-full object-cover" />
                     </div>
                   )}
-                  <div className={`max-w-[78%] px-3 py-2 rounded-2xl text-sm leading-relaxed ${
+                  <div className={`max-w-[78%] px-3 py-2 rounded-2xl text-sm leading-relaxed whitespace-pre-line ${
                     m.role === 'user'
                       ? 'bg-amber-500 text-white rounded-br-sm'
                       : 'bg-white text-stone-700 shadow-sm rounded-bl-sm border border-stone-100'
@@ -135,60 +266,122 @@ export default function HesonAIChat() {
                   </div>
                 </div>
               )}
-              {/* Booking success card */}
-              {bookingResult === 'loading' && (
-                <div className="flex justify-center py-2">
-                  <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-xs text-amber-700 flex items-center gap-2">
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    正在建立預約中...
-                  </div>
-                </div>
-              )}
-              {bookingResult && bookingResult !== 'loading' && (
+              {bookingResult && (
                 <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-3 text-sm">
                   <div className="flex items-center gap-2 text-green-700 font-medium mb-2">
                     <CheckCircle2 className="w-4 h-4" />
                     預約已建立！
                   </div>
-                  <p className="text-xs text-stone-600">服務日期：{bookingResult.scheduled_date}</p>
-                  <p className="text-xs text-stone-600">時段：{bookingResult.time_slot}</p>
-                  <p className="text-xs text-stone-500 mt-1">客服將於 24 小時內與您確認。</p>
+                  <p className="text-xs text-stone-600 mb-3">服務日期：{bookingResult.scheduled_date} {bookingResult.time_slot}</p>
+                  <CalendarExportButton booking={bookingResult} />
                 </div>
               )}
               <div ref={bottomRef} />
             </div>
 
-            {/* Quick Questions (only on first message) */}
-            {messages.length === 1 && (
-              <div className="px-3 pb-2 flex flex-wrap gap-1.5 bg-stone-50">
-                {QUICK_QUESTIONS.map(q => (
-                  <button
-                    key={q}
-                    onClick={() => send(q)}
-                    className="text-xs bg-white border border-amber-200 text-amber-700 px-2.5 py-1 rounded-full hover:bg-amber-50 transition-colors"
-                  >
-                    {q}
-                  </button>
-                ))}
-              </div>
-            )}
+            {/* Interactive Options Area */}
+            <div className="flex-shrink-0 border-t border-stone-100 bg-white">
+              {/* Quick Questions - only at start */}
+              {messages.length === 1 && !bookingStep && (
+                <div className="px-3 py-2 flex flex-wrap gap-1.5">
+                  {QUICK_QUESTIONS.map(q => (
+                    <button
+                      key={q}
+                      onClick={() => handleQuickClick(q)}
+                      className="text-xs bg-white border border-amber-200 text-amber-700 px-2.5 py-1.5 rounded-full hover:bg-amber-50 transition-colors"
+                    >
+                      {q}
+                    </button>
+                  ))}
+                </div>
+              )}
 
-            {/* Input */}
-            <div className="px-3 py-3 border-t border-stone-100 bg-white flex gap-2">
-              <input
-                value={input}
-                onChange={e => setInput(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && !e.shiftKey && send()}
-                placeholder="輸入您的問題..."
-                className="flex-1 text-sm border border-stone-200 rounded-xl px-3 py-2 outline-none focus:border-amber-400 transition-colors"
-              />
-              <button
-                onClick={() => send()}
-                disabled={!input.trim() || loading}
-                className="w-9 h-9 bg-amber-500 hover:bg-amber-600 disabled:opacity-40 text-white rounded-xl flex items-center justify-center transition-colors"
-              >
-                <Send className="w-4 h-4" />
-              </button>
+              {/* Service Type Selection */}
+              {bookingStep === 'service' && (
+                <div className="px-3 py-2 grid grid-cols-2 gap-1.5">
+                  {SERVICE_TYPES.map(s => (
+                    <button key={s} onClick={() => handleBookingStep(s, s)}
+                      className="text-xs bg-amber-50 border border-amber-200 text-amber-800 px-2 py-2 rounded-xl hover:bg-amber-100 transition-colors font-medium">
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* City Selection */}
+              {bookingStep === 'city' && (
+                <div className="px-3 py-2 max-h-32 overflow-y-auto grid grid-cols-3 gap-1">
+                  {TAIWAN_CITIES.map(c => (
+                    <button key={c} onClick={() => handleBookingStep(c, c)}
+                      className="text-xs bg-stone-50 border border-stone-200 text-stone-700 px-1 py-1.5 rounded-lg hover:bg-amber-50 hover:border-amber-200 transition-colors">
+                      {c}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Date Selection */}
+              {bookingStep === 'date' && (
+                <div className="px-3 py-2 max-h-36 overflow-y-auto grid grid-cols-2 gap-1.5">
+                  {dates.map(d => (
+                    <button key={d.value} onClick={() => handleBookingStep(d.value, d.label)}
+                      className="text-xs bg-stone-50 border border-stone-200 text-stone-700 px-2 py-2 rounded-xl hover:bg-amber-50 hover:border-amber-200 transition-colors">
+                      {d.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Time Slot Selection */}
+              {bookingStep === 'time' && (
+                <div className="px-3 py-2 flex flex-col gap-1.5">
+                  {TIME_SLOTS.map(t => (
+                    <button key={t} onClick={() => handleBookingStep(t, t)}
+                      className="text-xs bg-stone-50 border border-stone-200 text-stone-700 px-3 py-2.5 rounded-xl hover:bg-amber-50 hover:border-amber-200 transition-colors text-left">
+                      {t}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Confirm Step */}
+              {bookingStep === 'confirm' && (
+                <div className="px-3 py-2 flex gap-2">
+                  <button onClick={confirmBooking}
+                    className="flex-1 text-sm bg-amber-500 hover:bg-amber-600 text-white py-2.5 rounded-xl font-medium transition-colors">
+                    ✓ 確認送出
+                  </button>
+                  <button onClick={cancelBooking}
+                    className="flex-1 text-sm bg-stone-100 hover:bg-stone-200 text-stone-600 py-2.5 rounded-xl font-medium transition-colors">
+                    ✕ 取消
+                  </button>
+                </div>
+              )}
+
+              {/* Text Input (road, name, phone, or free chat) */}
+              {(!bookingStep || bookingStep === 'road' || bookingStep === 'name' || bookingStep === 'phone') && (
+                <div className="px-3 py-3 flex gap-2">
+                  <input
+                    value={input}
+                    onChange={e => setInput(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleTextInput()}
+                    placeholder={
+                      bookingStep === 'road' ? '輸入路名與門牌號碼...' :
+                      bookingStep === 'name' ? '輸入您的姓名...' :
+                      bookingStep === 'phone' ? '輸入聯絡電話...' :
+                      '輸入您的問題...'
+                    }
+                    className="flex-1 text-sm border border-stone-200 rounded-xl px-3 py-2 outline-none focus:border-amber-400 transition-colors"
+                  />
+                  <button
+                    onClick={handleTextInput}
+                    disabled={!input.trim() || loading}
+                    className="w-9 h-9 bg-amber-500 hover:bg-amber-600 disabled:opacity-40 text-white rounded-xl flex items-center justify-center transition-colors"
+                  >
+                    <Send className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
             </div>
           </motion.div>
         )}

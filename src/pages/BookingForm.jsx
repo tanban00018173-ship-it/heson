@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import CalendarExportButton from '@/components/CalendarExportButton';
 import Navbar from "@/components/landing/Navbar";
 import Footer from "@/components/landing/Footer";
 import { motion } from "framer-motion";
@@ -150,9 +151,17 @@ export default function BookingForm() {
               <h1 className="text-3xl font-medium text-stone-800 mb-4">
                 預約成功！
               </h1>
-              <p className="text-stone-600 mb-8">
+              <p className="text-stone-600 mb-4">
                 感謝您的預約，我們的客服人員將於 24 小時內與您聯繫確認服務細節。
               </p>
+              <div className="flex justify-center mb-6">
+                <CalendarExportButton booking={{
+                  scheduled_date: date ? format(date, 'yyyy-MM-dd') : '',
+                  time_slot: formData.time_slot,
+                  service_type: formData.service_type,
+                  address: formData.address,
+                }} />
+              </div>
               <Button 
                 onClick={() => setIsSuccess(false)}
                 className="bg-stone-800 hover:bg-stone-900 text-white rounded-full px-8"
