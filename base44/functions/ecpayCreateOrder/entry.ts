@@ -42,8 +42,7 @@ Deno.serve(async (req) => {
     const merchantTradeDate = `${now.getFullYear()}/${pad(now.getMonth()+1)}/${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
 
     const reqUrl = new URL(req.url);
-    const baseApiUrl = `${reqUrl.protocol}//${reqUrl.host}`;
-    const callbackUrl = `${baseApiUrl}${reqUrl.pathname.replace('ecpayCreateOrder', 'ecpayCallback')}`;
+    const callbackUrl = `https://api.base44.com/api/apps/${Deno.env.get('BASE44_APP_ID')}/functions/ecpayCallback`;
 
     const params = {
       MerchantID: merchantID,
@@ -56,7 +55,7 @@ Deno.serve(async (req) => {
       ReturnURL: callbackUrl,
       ChoosePayment: 'Credit',
       EncryptType: '1',
-      OrderResultURL: return_url || `${reqUrl.protocol}//${reqUrl.host}/PaymentResult`,
+      OrderResultURL: return_url || `https://heson.base44.app/PaymentResult`,
     };
 
     params.CheckMacValue = await generateCheckMac(params, hashKey, hashIV);
