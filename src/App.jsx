@@ -56,11 +56,7 @@ const AuthenticatedApp = () => {
     }
   }
 
-  // If app is private and user is not authenticated, redirect to login
-  if (!isAppPublic && !isAuthenticated && !isLoadingAuth) {
-    navigateToLogin();
-    return null;
-  }
+  // App is accessible to all visitors; login is only required for member-specific actions
 
   // Render the main app
   return (
