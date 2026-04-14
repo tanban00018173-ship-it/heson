@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { motion, AnimatePresence } from "framer-motion";
+import { requireAuth } from "@/utils/requireAuth";
 
 const slides = [
   {
@@ -43,6 +44,12 @@ const quickLinks = [
 
 export default function HeroSection() {
   const [current, setCurrent] = useState(0);
+  const navigate = useNavigate();
+
+  const handleBooking = async () => {
+    const ok = await requireAuth(navigate, 'BookingForm');
+    if (ok) navigate('/BookingForm');
+  };
 
   useEffect(() => {
     const t = setInterval(() => setCurrent(p => (p + 1) % slides.length), 5000);
@@ -91,11 +98,9 @@ export default function HeroSection() {
                 <p className="text-white/80 text-lg mt-4 mb-2">{slide.sub}</p>
                 <p className="text-white text-2xl font-semibold mb-8">{slide.price}</p>
                 <div className="flex flex-wrap gap-3">
-                  <Link to={createPageUrl("BookingForm")}>
-                    <Button size="lg" className="bg-white text-stone-800 hover:bg-stone-100 rounded-full px-8 py-6 text-base font-medium shadow-xl">
-                      開始預約 <ArrowRight className="ml-2 w-5 h-5" />
-                    </Button>
-                  </Link>
+                  <Button size="lg" onClick={handleBooking} className="bg-white text-stone-800 hover:bg-stone-100 rounded-full px-8 py-6 text-base font-medium shadow-xl">
+                    開始預約 <ArrowRight className="ml-2 w-5 h-5" />
+                  </Button>
                   <a href="https://lin.ee/xKVxq7Y" target="_blank" rel="noopener noreferrer">
                     <Button size="lg" variant="outline" className="border-white/80 bg-white/15 text-white hover:bg-white/25 rounded-full px-8 py-6 text-base font-medium">
                       查看方案
@@ -132,11 +137,11 @@ export default function HeroSection() {
         <div className="container mx-auto px-6 lg:px-12">
           <div className="flex items-center justify-around py-4 overflow-x-auto gap-2">
             {quickLinks.map((q) => (
-              <Link key={q.name} to={createPageUrl("BookingForm")}
+              <button key={q.name} onClick={handleBooking}
                 className="flex flex-col items-center gap-1.5 px-4 py-2 rounded-xl hover:bg-amber-50 transition-colors min-w-[72px] text-center group">
                 <span className="text-2xl">{q.emoji}</span>
                 <span className="text-xs text-stone-600 group-hover:text-amber-700 font-medium whitespace-nowrap">{q.name}</span>
-              </Link>
+              </button>
             ))}
           </div>
         </div>

@@ -2,10 +2,23 @@ import React from 'react';
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, MessageCircle } from "lucide-react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
+import { requireAuth } from "@/utils/requireAuth";
 
 export default function CTASection() {
+  const navigate = useNavigate();
+
+  const handleBooking = async () => {
+    const { base44 } = await import('@/api/base44Client');
+    const isAuth = await base44.auth.isAuthenticated();
+    if (!isAuth) {
+      base44.auth.redirectToLogin(window.location.origin + '/BookingForm');
+      return;
+    }
+    navigate('/BookingForm');
+  };
+
   return (
     <section className="py-24 bg-stone-800 relative overflow-hidden">
       {/* Decorative elements */}
@@ -38,15 +51,14 @@ export default function CTASection() {
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center mt-10">
-            <Link to={createPageUrl("BookingForm")}>
               <Button 
                 size="lg"
+                onClick={handleBooking}
                 className="bg-amber-500 hover:bg-amber-600 text-white px-8 py-6 text-base rounded-full shadow-lg hover:shadow-xl transition-all duration-300"
               >
                 立即預約試掃
                 <ArrowRight className="ml-2 w-5 h-5" />
               </Button>
-            </Link>
             <a href="https://lin.ee/xKVxq7Y" target="_blank" rel="noopener noreferrer">
               <Button 
                 variant="outline" 

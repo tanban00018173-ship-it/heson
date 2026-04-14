@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { Button } from "@/components/ui/button";
 import { Menu, X, User } from "lucide-react";
@@ -12,6 +12,16 @@ export default function Navbar() {
   const [user, setUser] = useState(null);
   const location = useLocation();
   const [showBanner, setShowBanner] = useState(true);
+  const navigate = useNavigate();
+
+  const handleBooking = async () => {
+    const isAuth = await base44.auth.isAuthenticated();
+    if (!isAuth) {
+      base44.auth.redirectToLogin(window.location.origin + '/BookingForm');
+      return;
+    }
+    navigate('/BookingForm');
+  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -107,11 +117,9 @@ export default function Navbar() {
                 >
                   登入
                 </Button>
-                <Link to={createPageUrl("BookingForm")}>
-                  <Button className="bg-stone-800 hover:bg-stone-900 text-white rounded-full px-6">
-                    立即預約
-                  </Button>
-                </Link>
+                <Button onClick={handleBooking} className="bg-stone-800 hover:bg-stone-900 text-white rounded-full px-6">
+                  立即預約
+                </Button>
               </>
             )}
           </div>
@@ -168,11 +176,9 @@ export default function Navbar() {
                       >
                         登入
                       </Button>
-                      <Link to={createPageUrl("BookingForm")}>
-                        <Button className="w-full bg-stone-800 hover:bg-stone-900 text-white rounded-full">
-                          立即預約
-                        </Button>
-                      </Link>
+                      <Button onClick={handleBooking} className="w-full bg-stone-800 hover:bg-stone-900 text-white rounded-full">
+                        立即預約
+                      </Button>
                     </div>
                   )}
                 </div>
