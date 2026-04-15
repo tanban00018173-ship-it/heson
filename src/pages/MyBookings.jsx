@@ -93,8 +93,8 @@ export default function MyBookings() {
           <div className="container mx-auto px-4 lg:px-8 py-8">
             {/* Header */}
             <div className="mb-8">
-              <h1 className="text-3xl font-light text-stone-800 mb-2">我的預約</h1>
-              <p className="text-stone-500">查詢與管理您的服務預約</p>
+              <h1 className="text-2xl md:text-3xl font-light text-stone-800 mb-2 break-words">我的預約</h1>
+              <p className="text-sm md:text-base text-stone-500">查詢與管理您的服務預約</p>
             </div>
 
             {isLoading && (
