@@ -84,7 +84,6 @@ const hesonPlans = [
   {
     id: "fine_cleaning",
     name: "細清案件",
-    subtitle: "高利潤",
     icon: "✨",
     price: 3000,
     duration: "6小時/人",
@@ -98,7 +97,6 @@ const hesonPlans = [
   {
     id: "raw_unit",
     name: "毛坯案件",
-    subtitle: "高客單",
     icon: "🏗️",
     price: "500-800/坪",
     duration: "場勘估價",
@@ -275,9 +273,6 @@ export default function PricingSection() {
                   <h3 className="text-2xl font-semibold text-stone-800 mb-1">
                     {plan.name}
                   </h3>
-                  <p className="text-sm text-amber-600 font-medium mb-4">
-                    {plan.subtitle}
-                  </p>
 
                   <div className="mb-6 pb-6 border-b border-stone-200">
                     <p className="text-2xl font-bold text-stone-800">
