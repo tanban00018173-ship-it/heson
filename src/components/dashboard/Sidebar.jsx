@@ -39,7 +39,6 @@ export default function Sidebar({ userRole = 'client', userName = '' }) {
     { name: "派單管理", path: "AdminDispatch", icon: Calendar },
     { name: "客戶管理", path: "AdminClients", icon: Users },
     { name: "管理師管理", path: "AdminCleaners", icon: User },
-    { name: "預約管理", path: "AdminBookings", icon: ClipboardList },
     { name: "員工出勤", path: "AdminAttendance", icon: UserCheck },
     { name: "Google 表格填寫", path: "GoogleSheetsManager", icon: Sheet },
   ];

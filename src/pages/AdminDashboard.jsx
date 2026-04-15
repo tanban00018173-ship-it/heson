@@ -131,9 +131,7 @@ export default function AdminDashboard() {
               <Card className="border-0 shadow-sm">
                 <CardHeader className="flex flex-row items-center justify-between">
                   <CardTitle className="text-lg">最新預約</CardTitle>
-                  <Link to={createPageUrl("AdminBookings")} className="text-sm text-amber-600 hover:text-amber-700">
-                    查看全部
-                  </Link>
+
                 </CardHeader>
                 <CardContent>
                   {bookings?.slice(0, 5).length === 0 ? (
@@ -195,17 +193,7 @@ export default function AdminDashboard() {
                       </div>
                     </Link>
 
-                    <Link to={createPageUrl("AdminBookings")}>
-                      <div className="flex items-center justify-between p-4 bg-stone-50 rounded-xl hover:bg-stone-100 transition-colors cursor-pointer">
-                        <div className="flex items-center gap-3">
-                          <ClipboardList className="w-5 h-5 text-stone-600" />
-                          <span className="text-stone-700">總預約數</span>
-                        </div>
-                        <Badge className="bg-stone-200 text-stone-700">
-                          {bookings?.length || 0}
-                        </Badge>
-                      </div>
-                    </Link>
+
                   </div>
                 </CardContent>
               </Card>
