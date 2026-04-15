@@ -9,7 +9,6 @@ const platformPlans = [
   {
     id: "light",
     name: "輕量方案",
-    subtitle: "引流+定錨",
     icon: "⚡",
     hourly_rate: 600,
     min_hours: 3,
@@ -24,7 +23,6 @@ const platformPlans = [
   {
     id: "recurring_biweekly",
     name: "雙週方案",
-    subtitle: "CP值+現金流",
     icon: "📅",
     price: 4600,
     visits: "2次/共8小時",
@@ -38,7 +36,6 @@ const platformPlans = [
   {
     id: "recurring_monthly_lite",
     name: "小資包月",
-    subtitle: "CP值+現金流",
     icon: "🏠",
     price: 8400,
     visits: "4次/共16小時",
@@ -53,7 +50,6 @@ const platformPlans = [
   {
     id: "recurring_monthly",
     name: "家庭包月",
-    subtitle: "CP值+現金流",
     icon: "👨‍👩‍👧",
     price: 14400,
     visits: "8次/共32小時",
@@ -67,7 +63,6 @@ const platformPlans = [
   {
     id: "recurring_enterprise",
     name: "企業/別墅",
-    subtitle: "CP值+現金流",
     icon: "🏢",
     price: 25600,
     visits: "16次/共64小時",
@@ -201,12 +196,9 @@ export default function PricingSection() {
                   )}
 
                   <div className="text-3xl mb-3">{plan.icon}</div>
-                  <h3 className={`text-lg font-semibold mb-1 ${plan.popular ? 'text-white' : 'text-stone-800'}`}>
+                  <h3 className={`text-lg font-semibold mb-4 ${plan.popular ? 'text-white' : 'text-stone-800'}`}>
                     {plan.name}
                   </h3>
-                  <p className={`text-xs mb-4 ${plan.popular ? 'text-amber-400' : 'text-amber-600'}`}>
-                    {plan.subtitle}
-                  </p>
 
                   <div className="mb-6 pb-6 border-b border-opacity-20" style={{ borderColor: plan.popular ? 'white' : 'black' }}>
                     {plan.price_range ? (
