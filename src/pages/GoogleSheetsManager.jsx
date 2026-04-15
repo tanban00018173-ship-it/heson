@@ -207,11 +207,30 @@ export default function GoogleSheetsManager() {
                         {log.data_filled && (
                           <details className="mb-3">
                             <summary className="text-xs font-medium text-stone-700 cursor-pointer hover:text-stone-900">
+                              {log.data_filled.row_label && (
+                                <span className="inline-block px-2 py-1 bg-blue-100 text-blue-800 rounded mr-2 text-xs font-bold">
+                                  {log.data_filled.row_label}
+                                </span>
+                              )}
                               查看填入資料
                             </summary>
-                            <pre className="text-xs bg-stone-900 text-stone-100 p-2 rounded mt-2 overflow-x-auto max-h-[150px]">
-                              {JSON.stringify(log.data_filled, null, 2)}
-                            </pre>
+                            <div className="text-xs bg-stone-50 p-3 rounded mt-2 space-y-2">
+                              {log.data_filled.client_name && (
+                                <p><span className="font-medium text-stone-700">客戶：</span> {log.data_filled.client_name}</p>
+                              )}
+                              {log.data_filled.phone && (
+                                <p><span className="font-medium text-stone-700">電話：</span> {log.data_filled.phone}</p>
+                              )}
+                              {log.data_filled.service_type && (
+                                <p><span className="font-medium text-stone-700">服務類型：</span> {log.data_filled.service_type}</p>
+                              )}
+                              {log.data_filled.booking_id && (
+                                <p><span className="font-medium text-stone-700">預約編號：</span> {log.data_filled.booking_id}</p>
+                              )}
+                              <pre className="text-xs bg-stone-900 text-stone-100 p-2 rounded mt-2 overflow-x-auto max-h-[150px]">
+                                {JSON.stringify(log.data_filled, null, 2)}
+                              </pre>
+                            </div>
                           </details>
                         )}
 

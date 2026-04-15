@@ -83,10 +83,34 @@ Deno.serve(async (req) => {
       throw new Error(`Sheet API error: ${JSON.stringify(error)}`);
     }
 
+    // 記錄同步到 GoogleSheetLog
+    try {
+      await base44.entities.GoogleSheetLog.create({
+        spreadsheet_id: SHEET_ID,
+        spreadsheet_name: '清潔預約表',
+        sheet_name: SHEET_NAME,
+        operation_type: 'auto_sync',
+        status: 'success',
+        data_filled: {
+          row: lastRow,
+          row_label: `L${lastRow - 1}`,
+          booking_id: bookingId,
+          client_name: bookingData.client_name,
+          service_type: bookingData.service_type,
+          phone: bookingData.phone,
+        },
+        cells_affected: [`A${lastRow}:X${lastRow}`],
+        notes: `自動同步預約至第 ${lastRow} 行 (L${lastRow - 1})`,
+      });
+    } catch (logErr) {
+      console.warn('Failed to log sync:', logErr);
+    }
+
     return Response.json({
       success: true,
       message: 'Booking synced to sheet',
-      row: lastRow
+      row: lastRow,
+      rowLabel: `L${lastRow - 1}`
     });
   } catch (error) {
     console.error('Sync error:', error);
