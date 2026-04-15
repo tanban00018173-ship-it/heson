@@ -15,7 +15,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format } from "date-fns";
 import { zhTW } from "date-fns/locale";
-import { CalendarIcon, Check, Loader2, Sparkles } from "lucide-react";
+import { CalendarIcon, Check, Loader2, Sparkles, AlertCircle, Phone, MapPin } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -176,11 +176,21 @@ export default function BookingForm() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
+    // 驗證用戶是否登入且擁有必要信息
+    if (!user) {
+      toast.error('請先登入帳號');
+      base44.auth.redirectToLogin(`/BookingForm`);
+      return;
+    }
+
+    if (!formData.phone || !formData.address) {
+      toast.error('請先完善聯繫電話和服務地址');
+      return;
+    }
+    
     // 驗證必填欄位
     const missingFields = [];
     if (!formData.name) missingFields.push('姓名');
-    if (!formData.phone) missingFields.push('聯絡電話');
-    if (!formData.address) missingFields.push('服務地址');
     if (!date) missingFields.push('希望服務日期');
     if (!formData.time_slot) missingFields.push('希望時段');
     
@@ -362,6 +372,78 @@ export default function BookingForm() {
                 </TabsContent>
               ))}
             </Tabs>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Account Info Alert */}
+      <section className="py-8 bg-stone-50">
+        <div className="container mx-auto px-6 lg:px-12">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="max-w-2xl mx-auto"
+          >
+            {!user ? (
+              <Card className="border-2 border-amber-200 bg-amber-50">
+                <CardContent className="p-6">
+                  <div className="flex items-start gap-4">
+                    <AlertCircle className="w-6 h-6 text-amber-600 flex-shrink-0 mt-1" />
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-amber-900 mb-2">請先登入</h3>
+                      <p className="text-sm text-amber-800 mb-4">登入後才能完成預約，系統將自動帶入您的會員資料。</p>
+                      <a href={`/`} onClick={(e) => {
+                        e.preventDefault();
+                        base44.auth.redirectToLogin(`/BookingForm`);
+                      }}>
+                        <Button className="bg-amber-600 hover:bg-amber-700 text-white">登入帳號</Button>
+                      </a>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (!formData.phone || !formData.address) ? (
+              <Card className="border-2 border-orange-200 bg-orange-50">
+                <CardContent className="p-6">
+                  <div className="flex items-start gap-4">
+                    <AlertCircle className="w-6 h-6 text-orange-600 flex-shrink-0 mt-1" />
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-orange-900 mb-3">請先完善您的聯繫資訊</h3>
+                      <div className="space-y-2 mb-4">
+                        {!formData.phone && (
+                          <div className="flex items-center gap-2 text-sm text-orange-800">
+                            <Phone className="w-4 h-4" />
+                            <span>聯絡電話</span>
+                          </div>
+                        )}
+                        {!formData.address && (
+                          <div className="flex items-center gap-2 text-sm text-orange-800">
+                            <MapPin className="w-4 h-4" />
+                            <span>服務地址</span>
+                          </div>
+                        )}
+                      </div>
+                      <a href={`/ClientProfile`}>
+                        <Button className="bg-orange-600 hover:bg-orange-700 text-white">完善個人資料</Button>
+                      </a>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (!formData.housing_type && selectedCategory.id === 'home_cleaning') ? (
+              <Card className="border-2 border-blue-200 bg-blue-50">
+                <CardContent className="p-6">
+                  <div className="flex items-start gap-4">
+                    <AlertCircle className="w-6 h-6 text-blue-600 flex-shrink-0 mt-1" />
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-blue-900 mb-2">建議先填寫居家資訊</h3>
+                      <p className="text-sm text-blue-800">填寫房屋類型和坪數，能幫助我們更準確地評估清潔成本和安排時間。</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : null}
           </motion.div>
         </div>
       </section>
