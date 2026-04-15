@@ -66,27 +66,10 @@ Deno.serve(async (req) => {
 
     const sheetId = targetSheet.properties.sheetId;
 
-    // 使用 values:append 方法（自動処理列數）
+    // 使用 values:append 方法 - 指定範圍從 A2 開始（跳過標題列）
     const sheetTitle = targetSheet.properties.title;
     const appendValuesResponse = await fetch(
-      `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/'${sheetTitle}':append`,
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          values: [values],
-          majorDimension: 'ROWS'
-        }),
-        params: { valueInputOption: 'RAW' }
-      }
-    );
-
-    // 處理帶查詢參數的請求
-    const appendValuesResponseWithParams = await fetch(
-      `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/'${sheetTitle}':append?valueInputOption=RAW`,
+      `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/'${sheetTitle}'!A2:I:append?valueInputOption=RAW`,
       {
         method: 'POST',
         headers: {
@@ -100,12 +83,12 @@ Deno.serve(async (req) => {
       }
     );
 
-    if (!appendValuesResponseWithParams.ok) {
-      const error = await appendValuesResponseWithParams.json();
+    if (!appendValuesResponse.ok) {
+      const error = await appendValuesResponse.json();
       throw new Error(`Sheet API error: ${JSON.stringify(error)}`);
     }
 
-    const appendData = await appendValuesResponseWithParams.json();
+    const appendData = await appendValuesResponse.json();
 
     // 記錄同步到 GoogleSheetLog
     try {
