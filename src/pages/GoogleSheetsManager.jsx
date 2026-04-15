@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { AlertCircle, Loader2, CheckCircle2, Clock, Eye } from 'lucide-react';
 import { toast } from 'sonner';
+import GoogleSheetDataViewer from '@/components/GoogleSheetDataViewer';
 
 export default function GoogleSheetsManager() {
   const [spreadsheetId, setSpreadsheetId] = useState('1lQc70QbKE0U_BvG7LNa_iR9AymWzO4y5g4SkDo0LtHY');
@@ -271,6 +272,11 @@ export default function GoogleSheetsManager() {
               </CardContent>
             </Card>
           </div>
+        </div>
+
+        {/* 即時表單資料 */}
+        <div className="mt-8">
+          <GoogleSheetDataViewer spreadsheetId={spreadsheetId} />
         </div>
 
         {/* 說明 */}
