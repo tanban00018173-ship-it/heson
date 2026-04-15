@@ -97,80 +97,16 @@ export default function GoogleSheetsManager() {
           <p className="text-stone-600 mt-2">透過 AI 智能填寫 Google 表格，並記錄每次操作以便追蹤和復原</p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-6">
-          {/* 填寫表單 */}
-          <div className="md:col-span-1">
-            <Card className="border-0 shadow-lg sticky top-6">
-              <CardHeader>
-                <CardTitle className="text-lg">AI 自動填寫</CardTitle>
-                <CardDescription>輸入要求，AI 會自動生成和填寫資料</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div>
-                    <Label htmlFor="spreadsheet">表格 ID</Label>
-                    <Input
-                      id="spreadsheet"
-                      value={spreadsheetId}
-                      onChange={(e) => setSpreadsheetId(e.target.value)}
-                      className="text-sm"
-                      placeholder="Google 表格 ID"
-                    />
-                    <p className="text-xs text-stone-400 mt-1">
-                      從表格 URL 複製 ID
-                    </p>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="prompt">填寫需求 *</Label>
-                    <Textarea
-                      id="prompt"
-                      value={prompt}
-                      onChange={(e) => setPrompt(e.target.value)}
-                      placeholder="例如：填寫一個客戶記錄，包含姓名、電話、地址、服務日期等資訊"
-                      className="min-h-[100px] text-sm"
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="format">資料格式要求（選填）</Label>
-                    <Textarea
-                      id="format"
-                      value={dataFormat}
-                      onChange={(e) => setDataFormat(e.target.value)}
-                      placeholder="例如：電話格式：09xx-xxx-xxx，日期格式：YYYY-MM-DD，金額使用逗號分隔"
-                      className="min-h-[80px] text-sm"
-                    />
-                  </div>
-
-                  <Button
-                    type="submit"
-                    disabled={isSubmitting || fillMutation.isPending}
-                    className="w-full bg-stone-800 hover:bg-stone-900"
-                  >
-                    {isSubmitting || fillMutation.isPending ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        處理中...
-                      </>
-                    ) : (
-                      '發送給 AI 填寫'
-                    )}
-                  </Button>
-                </form>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* 操作日誌 */}
-          <div className="md:col-span-2">
+        <div className="grid gap-6">
+          {/* 同步記錄 */}
+          <div>
             <Card className="border-0 shadow-lg">
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
                   <Eye className="w-5 h-5" />
-                  操作記錄（追蹤和復原）
+                  同步記錄
                 </CardTitle>
-                <CardDescription>所有 AI 填寫操作都會被記錄，支援復原</CardDescription>
+                <CardDescription>所有預約自動同步到 Google Sheet 的記錄</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3 max-h-[600px] overflow-y-auto">
@@ -187,7 +123,7 @@ export default function GoogleSheetsManager() {
                             <div className="flex items-center gap-2 mb-1">
                               {getStatusIcon(log.status)}
                               <span className="font-medium text-stone-900">
-                                {log.operation_type === 'ai_fill' ? 'AI 自動填寫' : log.operation_type}
+                                {log.operation_type === 'auto_sync' ? '自動同步' : log.operation_type === 'ai_fill' ? 'AI 自動填寫' : log.operation_type}
                               </span>
                               <Badge className={getStatusColor(log.status)}>
                                 {log.status === 'success' ? '已確認' : log.status === 'pending_review' ? '待審核' : '已失敗'}
@@ -282,13 +218,13 @@ export default function GoogleSheetsManager() {
         {/* 說明 */}
         <Card className="border-0 shadow-lg mt-6 bg-blue-50 border-l-4 border-l-blue-500">
           <CardHeader>
-            <CardTitle className="text-base">使用說明</CardTitle>
+            <CardTitle className="text-base">自動同步說明</CardTitle>
           </CardHeader>
           <CardContent className="text-sm space-y-2 text-stone-700">
-            <p>✓ 每次 AI 填寫都會記錄到操作日誌，包括填寫的資料、提示文本和 AI 回應</p>
-            <p>✓ 您可以查看詳細資料並決定是否批准該操作</p>
-            <p>✓ 拒絕的操作不會生效，可以防止 AI 理解錯誤導致的資料損壞</p>
-            <p>✓ 所有操作都有時間戳記，便於追蹤和復原</p>
+            <p>✓ 客戶預約時，系統會自動將資料填寫到 Google Sheet</p>
+            <p>✓ 所有同步操作都會記錄在「同步記錄」中，包括填寫的行號和具體資料</p>
+            <p>✓ 可在下方「Google Sheet 即時資料」中查看表格的實時內容</p>
+            <p>✓ 所有操作都有時間戳記，便於追蹤</p>
           </CardContent>
         </Card>
       </div>
