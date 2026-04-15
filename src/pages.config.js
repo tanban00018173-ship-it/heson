@@ -11,7 +11,7 @@ import CleanerSchedule from './pages/CleanerSchedule';
 import CleanerReport from './pages/CleanerReport';
 import CleanerProfile from './pages/CleanerProfile';
 import AdminDashboard from './pages/AdminDashboard';
-import AdminBookings from './pages/AdminBookings';
+
 import AdminCleaners from './pages/AdminCleaners';
 import AdminDispatch from './pages/AdminDispatch';
 import AdminClients from './pages/AdminClients';
@@ -31,7 +31,7 @@ export const PAGES = {
     "CleanerReport": CleanerReport,
     "CleanerProfile": CleanerProfile,
     "AdminDashboard": AdminDashboard,
-    "AdminBookings": AdminBookings,
+
     "AdminCleaners": AdminCleaners,
     "AdminDispatch": AdminDispatch,
     "AdminClients": AdminClients,
