@@ -21,32 +21,17 @@ Deno.serve(async (req) => {
     // 獲取Google Sheets訪問令牌
     const { accessToken } = await base44.asServiceRole.connectors.getConnection('googlesheets');
 
-    // 映射預約數據到Sheet列 (A-X 共24列)
+    // 映射預約數據到Sheet列（按照實際表頭對應）
     const values = [
       '', // A: 編號 (auto-fill by user)
       '', // B: 清潔人員 (manual assign)
-      '已報名', // C: 目前進度
+      '', // C: 清掃時間 (manual input)
       bookingData.client_name || '', // D: 姓名
-      '', // E: 收款情況 (manual update)
-      bookingData.phone || '', // F: 聯絡電話
-      bookingData.address || '', // G: 需要服務地址
-      bookingData.service_area || '', // H: 服務地區
-      bookingData.housing_type || '', // I: 空間型態
-      bookingData.square_footage || '', // J: 需求清潔坪數
-      bookingData.has_pets ? '是' : '否', // K: 是否有寵物？
-      bookingData.status || '日常清潔', // L: 目前狀態
-      bookingData.service_type || '', // M: 想要的時長 × 次數 /訂閱制
-      '', // N: 現場掃具 (manual input)
-      '', // O: 您想申請的服務類型 (manual input)
-      '', // P: 加強清潔 (manual input)
-      bookingData.notes || '', // Q: 特殊需求 / 備注
-      bookingData.scheduled_date || '', // R: 預計開始日期
-      bookingData.time_slot || '', // S: 偏好時段
-      '', // T: 偏好的星期（可複選）(manual input)
-      '是', // U: 我已閱讀並同意以下條款
-      '', // V: 您是從哪裡知道赫頌家事管理？ (manual input)
-      bookingData.email || '', // W: 電子郵件地址
-      new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }) // X: 時間戳記
+      bookingData.phone || '', // E: 電話
+      bookingData.service_area || '', // F: 場址區域
+      '', // G: 撥具數設 (manual input)
+      bookingData.address || '', // H: 需要服務地址
+      bookingData.housing_type || '', // I: 地址區銘/空間型態
     ];
 
     // 先取得所有工作表信息
