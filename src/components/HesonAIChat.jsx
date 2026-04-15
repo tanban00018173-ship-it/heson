@@ -87,12 +87,20 @@ export default function HesonAIChat() {
       setBookingData(newData);
       setBookingStep('time');
     } else if (step === 'time') {
-      newData.time_slot = value;
+      newData.time_slot = normalizeTimeSlot(value);
       addMessage('user', value);
       addMessage('assistant', '請問您的姓名是？');
       setBookingData(newData);
       setBookingStep('name');
     }
+  };
+
+  const normalizeTimeSlot = (input) => {
+    const lower = input.toLowerCase();
+    if (lower.includes('早') || lower.includes('上午') || lower.includes('08')) return '上午 08:00-12:00';
+    if (lower.includes('下午') || lower.includes('13')) return '下午 13:00-17:00';
+    if (lower.includes('晚') || lower.includes('18')) return '晚間 18:00-21:00';
+    return input;
   };
 
   const handleTextInput = async () => {
