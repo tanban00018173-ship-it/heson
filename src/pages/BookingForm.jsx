@@ -187,6 +187,20 @@ export default function BookingForm() {
 
       const booking = await base44.entities.Booking.create(bookingData);
       
+      // 同步到Google Sheet
+      await base44.functions.invoke('syncBookingToSheet', {
+        bookingId: booking.id,
+        bookingData: {
+          ...bookingData,
+          phone: formData.phone,
+          email: user?.email || '',
+          service_area: formData.housing_type || selectedCategory.label,
+          housing_type: formData.housing_type,
+          square_footage: formData.square_footage,
+          has_pets: formData.notes?.includes('寵物'),
+        }
+      });
+      
       // 發送通知給管理員
       await base44.integrations.Core.SendEmail({
         to: "larry87tw@gmail.com",
