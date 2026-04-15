@@ -7,6 +7,15 @@ import Sidebar from '@/components/dashboard/Sidebar';
 import MobileNav from '@/components/dashboard/MobileNav';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Calendar, MapPin, Clock, User, Trash2, AlertCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { zhTW } from 'date-fns/locale';
@@ -22,6 +31,7 @@ const statusConfig = {
 export default function MyBookings() {
   const [user, setUser] = useState(null);
   const [cancelingId, setCancelingId] = useState(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState(null);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -50,6 +60,18 @@ export default function MyBookings() {
       toast.error('取消失敗：' + error.message);
     } finally {
       setCancelingId(null);
+    }
+  };
+
+  const handleDeleteBooking = async (bookingId) => {
+    try {
+      await base44.entities.Booking.delete(bookingId);
+      toast.success('預約已刪除');
+      refetch();
+    } catch (error) {
+      toast.error('刪除失敗：' + error.message);
+    } finally {
+      setDeleteConfirmId(null);
     }
   };
 
@@ -103,30 +125,39 @@ export default function MyBookings() {
                     <Card key={booking.id} className={`border-2 ${config.border} ${config.bg}`}>
                       <CardContent className="p-6">
                         <div className="flex items-start justify-between gap-4 mb-4">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-2">
-                              <h3 className="text-lg font-medium text-stone-800">
-                                {booking.service_type}
-                              </h3>
-                              <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${config.badge} ${config.text}`}>
-                                {booking.status}
-                              </span>
-                            </div>
-                          </div>
-                          {booking.status === '待確認' && (
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              onClick={() => handleCancelBooking(booking.id)}
-                              disabled={cancelingId === booking.id}
-                              className="rounded-lg"
-                            >
-                              {cancelingId === booking.id ? '取消中...' : ''}
-                              <Trash2 className="w-4 h-4 mr-1" />
-                              取消
-                            </Button>
-                          )}
-                        </div>
+                           <div className="flex-1">
+                             <div className="flex items-center gap-2 mb-2">
+                               <h3 className="text-lg font-medium text-stone-800">
+                                 {booking.service_type}
+                               </h3>
+                               <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${config.badge} ${config.text}`}>
+                                 {booking.status}
+                               </span>
+                             </div>
+                           </div>
+                           <div className="flex gap-2">
+                             {booking.status === '待確認' && (
+                               <Button
+                                 variant="outline"
+                                 size="sm"
+                                 onClick={() => handleCancelBooking(booking.id)}
+                                 disabled={cancelingId === booking.id}
+                                 className="rounded-lg"
+                               >
+                                 {cancelingId === booking.id ? '取消中...' : '取消'}
+                               </Button>
+                             )}
+                             <Button
+                               variant="destructive"
+                               size="sm"
+                               onClick={() => setDeleteConfirmId(booking.id)}
+                               className="rounded-lg"
+                             >
+                               <Trash2 className="w-4 h-4 mr-1" />
+                               刪除
+                             </Button>
+                           </div>
+                         </div>
 
                         <div className="grid md:grid-cols-2 gap-4 mb-4">
                           <div className="flex items-start gap-3">
@@ -181,6 +212,27 @@ export default function MyBookings() {
       </div>
 
       <Footer />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!deleteConfirmId} onOpenChange={(open) => !open && setDeleteConfirmId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>確認刪除預約？</AlertDialogTitle>
+            <AlertDialogDescription>
+              此操作無法撤銷，預約將永久刪除。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="flex gap-3 justify-end">
+            <AlertDialogCancel>取消</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => handleDeleteBooking(deleteConfirmId)}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              確認刪除
+            </AlertDialogAction>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
