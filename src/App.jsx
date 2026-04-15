@@ -5,6 +5,7 @@ import VisualEditAgent from '@/lib/VisualEditAgent'
 import NavigationTracker from '@/lib/NavigationTracker'
 import { pagesConfig } from './pages.config'
 import AdminAttendance from './pages/AdminAttendance'
+import MyBookings from './pages/MyBookings'
 import PaymentResult from './pages/PaymentResult'
 import PaymentRedirect from './pages/PaymentRedirect'
 import OrderQuery from './pages/OrderQuery'
@@ -80,6 +81,7 @@ const AuthenticatedApp = () => {
         />
       ))}
       <Route path="/AdminAttendance" element={<LayoutWrapper currentPageName="AdminAttendance"><AdminAttendance /></LayoutWrapper>} />
+      <Route path="/MyBookings" element={<LayoutWrapper currentPageName="MyBookings"><MyBookings /></LayoutWrapper>} />
       <Route path="/PaymentResult" element={<LayoutWrapper currentPageName="PaymentResult"><PaymentResult /></LayoutWrapper>} />
       <Route path="/PaymentRedirect" element={<LayoutWrapper currentPageName="PaymentRedirect"><PaymentRedirect /></LayoutWrapper>} />
       <Route path="/ServiceInquiry" element={<LayoutWrapper currentPageName="ServiceInquiry"><ServiceInquiry /></LayoutWrapper>} />
