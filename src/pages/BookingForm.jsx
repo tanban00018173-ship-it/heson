@@ -126,7 +126,7 @@ export default function BookingForm() {
         const userData = await base44.auth.me();
         setUser(userData);
         
-        // 從 ClientProfile 取得已填的資料
+        // 從 ClientProfile 取得已設定的預設資料
         try {
           const profiles = await base44.entities.ClientProfile.filter({ user_id: userData.id });
           const profile = profiles[0];
