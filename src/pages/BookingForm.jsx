@@ -99,6 +99,8 @@ export default function BookingForm() {
   const [selectedCategory, setSelectedCategory] = useState(serviceCategories[0]);
   const [appliances, setAppliances] = useState({});
   const [fabricItems, setFabricItems] = useState({});
+  const [selectedPlan, setSelectedPlan] = useState(null);
+  const [showLinePrompt, setShowLinePrompt] = useState(false);
   const { data: cleaners = [] } = useQuery({
     queryKey: ['activeCleaners'],
     queryFn: () => base44.entities.CleanerProfile.filter({ is_active: true }),
@@ -122,6 +124,13 @@ export default function BookingForm() {
 
   useEffect(() => {
     const loadUserData = async () => {
+      // 從會話存儲獲取選擇的方案
+      const planStr = sessionStorage.getItem('selectedPlan');
+      if (planStr) {
+        setSelectedPlan(JSON.parse(planStr));
+        sessionStorage.removeItem('selectedPlan');
+      }
+
       const isAuth = await base44.auth.isAuthenticated();
       if (isAuth) {
         const userData = await base44.auth.me();
@@ -256,7 +265,14 @@ export default function BookingForm() {
       });
 
       setIsSubmitting(false);
-      window.location.href = `/PaymentRedirect?booking_id=${booking.id}&amount=${getAmount()}&item_name=${encodeURIComponent(`HESON ${selectedCategory.label}`)}`;
+
+      // 如果是赫頌直營，跳轉到LINE提示頁面
+      if (selectedPlan?.plan_type === 'heson_direct') {
+        setShowLinePrompt(true);
+        window.location.href = `/PaymentRedirect?booking_id=${booking.id}&amount=${getAmount()}&item_name=${encodeURIComponent(`HESON ${selectedPlan.name}`)}&plan_type=heson_direct`;
+      } else {
+        window.location.href = `/PaymentRedirect?booking_id=${booking.id}&amount=${getAmount()}&item_name=${encodeURIComponent(`HESON ${selectedCategory.label}`)}`;
+      }
     } catch (error) {
       setIsSubmitting(false);
       toast.error('預約建立失敗，請稍後重試');
