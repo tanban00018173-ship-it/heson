@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import CalendarExportButton from '@/components/CalendarExportButton';
+import CancellationPolicy from '@/components/CancellationPolicy';
 import Navbar from "@/components/landing/Navbar";
 import Footer from "@/components/landing/Footer";
 import { motion } from "framer-motion";
@@ -101,6 +102,7 @@ export default function BookingForm() {
   const [fabricItems, setFabricItems] = useState({});
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [showLinePrompt, setShowLinePrompt] = useState(false);
+  const [policyAgreed, setPolicyAgreed] = useState(false);
   const { data: cleaners = [] } = useQuery({
     queryKey: ['activeCleaners'],
     queryFn: () => base44.entities.CleanerProfile.filter({ is_active: true }),
@@ -184,6 +186,12 @@ export default function BookingForm() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // 驗證用戶是否同意取消政策
+    if (!policyAgreed) {
+      toast.error('請同意取消及退款政策才能繼續');
+      return;
+    }
     
     // 驗證用戶是否登入且擁有必要信息
     if (!user) {
@@ -738,10 +746,13 @@ export default function BookingForm() {
                       placeholder="有寵物、特殊需求等請在此說明..."
                       className="rounded-xl min-h-[100px]"
                     />
-                  </div>
+                    </div>
 
-                  {/* Submit */}
-                  <Button
+                    {/* Cancellation Policy */}
+                    <CancellationPolicy agreed={policyAgreed} onAgreeChange={setPolicyAgreed} />
+
+                    {/* Submit */}
+                    <Button
                     type="submit"
                     disabled={isSubmitting}
                     className="w-full bg-stone-800 hover:bg-stone-900 text-white py-6 rounded-xl text-base"
