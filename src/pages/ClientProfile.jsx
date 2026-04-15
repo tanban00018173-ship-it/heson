@@ -21,6 +21,8 @@ export default function ClientProfile() {
     square_footage: '',
     family_members: '',
     has_pets: false,
+    subscription_plan: '無',
+    remaining_visits: 0,
   });
 
   useEffect(() => {
@@ -50,6 +52,8 @@ export default function ClientProfile() {
         square_footage: p.square_footage || '',
         family_members: p.family_members || '',
         has_pets: p.has_pets || false,
+        subscription_plan: p.subscription_plan || '無',
+        remaining_visits: p.remaining_visits || 0,
       });
     }
   }, [clientProfile]);
@@ -213,6 +217,38 @@ export default function ClientProfile() {
                   <Switch
                     checked={formData.has_pets}
                     onCheckedChange={(checked) => setFormData({ ...formData, has_pets: checked })}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-3xl border border-[#e8eef6] p-6">
+              <p className="text-xs font-semibold tracking-widest uppercase text-stone-400 mb-5">訂閱資訊</p>
+              <div className="grid grid-cols-2 gap-3">
+                {/* Subscription Plan */}
+                <div className="p-4 bg-[#eef4fc] rounded-2xl">
+                  <p className="text-xs text-stone-400 font-semibold uppercase tracking-wide mb-2">目前方案</p>
+                  <Select value={formData.subscription_plan} onValueChange={(v) => setFormData({ ...formData, subscription_plan: v })} disabled>
+                    <SelectTrigger className="border-0 bg-transparent p-0 h-auto font-semibold text-stone-900 text-sm focus:ring-0">
+                      <SelectValue placeholder="請選擇" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="基礎月護-4次">基礎月護-4次</SelectItem>
+                      <SelectItem value="進階月安-8次">進階月安-8次</SelectItem>
+                      <SelectItem value="尊榮月恆-12次">尊榮月恆-12次</SelectItem>
+                      <SelectItem value="單次清潔">單次清潔</SelectItem>
+                      <SelectItem value="無">無</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                {/* Remaining Visits */}
+                <div className="p-4 bg-[#eef4fc] rounded-2xl">
+                  <p className="text-xs text-stone-400 font-semibold uppercase tracking-wide mb-1">剩餘次數</p>
+                  <Input
+                    type="number"
+                    value={formData.remaining_visits}
+                    disabled
+                    className="border-0 bg-transparent p-0 h-auto font-semibold text-stone-900 placeholder:text-stone-300 focus-visible:ring-0 text-sm disabled:opacity-100"
                   />
                 </div>
               </div>
