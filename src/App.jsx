@@ -21,6 +21,7 @@ import CleanerManagement from './pages/CleanerManagement'
 import CleanerBulkImport from './pages/CleanerBulkImport'
 import GoogleSheetsManager from './pages/GoogleSheetsManager'
 import SheetSyncLog from './pages/SheetSyncLog'
+import ServiceCaseManager from './pages/ServiceCaseManager'
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
@@ -97,6 +98,7 @@ const AuthenticatedApp = () => {
       <Route path="/CleanerBulkImport" element={<LayoutWrapper currentPageName="CleanerBulkImport"><CleanerBulkImport /></LayoutWrapper>} />
       <Route path="/GoogleSheetsManager" element={<LayoutWrapper currentPageName="GoogleSheetsManager"><GoogleSheetsManager /></LayoutWrapper>} />
       <Route path="/SheetSyncLog" element={<LayoutWrapper currentPageName="SheetSyncLog"><SheetSyncLog /></LayoutWrapper>} />
+      <Route path="/ServiceCaseManager" element={<LayoutWrapper currentPageName="ServiceCaseManager"><ServiceCaseManager /></LayoutWrapper>} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );
