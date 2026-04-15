@@ -64,7 +64,7 @@ export default function Sidebar({ userRole = 'client', userName = '' }) {
     <div className="w-64 min-h-screen bg-white border-r border-stone-200 flex flex-col">
       {/* Header */}
       <div className="p-6 border-b border-stone-100">
-        <Link to={createPageUrl("Home")} className="flex items-center gap-2">
+        <Link to={createPageUrl("Home")} className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity">
           <img 
             src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/user_6945eb37fb67abb9152e42a5/b0c86a022_557043631_1369298458531323_7985963993755754895_n.jpg"
             alt="HESON"

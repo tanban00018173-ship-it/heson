@@ -64,7 +64,7 @@ export default function MobileNav({ userRole = 'client', userName = '' }) {
   return (
     <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-white border-b border-stone-200">
       <div className="flex items-center justify-between px-4 py-3">
-        <Link to={createPageUrl("Home")}>
+        <Link to={createPageUrl("Home")} className="cursor-pointer hover:opacity-80 transition-opacity">
           <img 
             src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/user_6945eb37fb67abb9152e42a5/b0c86a022_557043631_1369298458531323_7985963993755754895_n.jpg"
             alt="HESON"
