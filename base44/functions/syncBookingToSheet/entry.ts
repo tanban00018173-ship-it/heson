@@ -51,8 +51,9 @@ Deno.serve(async (req) => {
     ];
 
     // 獲取Sheet中的最後一行以找出插入位置
+    const encodedSheetName = encodeURIComponent(SHEET_NAME);
     const rangeResponse = await fetch(
-      `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${SHEET_NAME}!A:A`,
+      `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/'${SHEET_NAME}'!A:A`,
       {
         headers: { 'Authorization': `Bearer ${accessToken}` }
       }
@@ -60,7 +61,7 @@ Deno.serve(async (req) => {
 
     const rangeData = await rangeResponse.json();
     const lastRow = (rangeData.values?.length || 1) + 1;
-    const insertRange = `${SHEET_NAME}!A${lastRow}:X${lastRow}`;
+    const insertRange = `'${SHEET_NAME}'!A${lastRow}:X${lastRow}`;
 
     // 插入數據到Google Sheets
     const appendResponse = await fetch(
