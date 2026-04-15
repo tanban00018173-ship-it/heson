@@ -120,18 +120,42 @@ export default function BookingForm() {
   });
 
   useEffect(() => {
-    const checkAuth = async () => {
+    const loadUserData = async () => {
       const isAuth = await base44.auth.isAuthenticated();
       if (isAuth) {
         const userData = await base44.auth.me();
         setUser(userData);
-        setFormData(prev => ({
-          ...prev,
-          name: userData.full_name || '',
-        }));
+        
+        // 從 ClientProfile 取得已填的資料
+        try {
+          const profiles = await base44.entities.ClientProfile.filter({ user_id: userData.id });
+          const profile = profiles[0];
+          
+          if (profile) {
+            setFormData(prev => ({
+              ...prev,
+              name: userData.full_name || '',
+              phone: profile.phone || '',
+              address: profile.address || '',
+              housing_type: profile.housing_type || '',
+              square_footage: profile.square_footage?.toString() || '',
+            }));
+          } else {
+            setFormData(prev => ({
+              ...prev,
+              name: userData.full_name || '',
+            }));
+          }
+        } catch (err) {
+          console.warn('Failed to load client profile:', err);
+          setFormData(prev => ({
+            ...prev,
+            name: userData.full_name || '',
+          }));
+        }
       }
     };
-    checkAuth();
+    loadUserData();
   }, []);
 
   const getAmount = () => {
@@ -151,8 +175,16 @@ export default function BookingForm() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!formData.name || !formData.phone || !formData.address || !date || !formData.time_slot) {
-      toast.error('請填寫所有必填欄位');
+    // 驗證必填欄位
+    const missingFields = [];
+    if (!formData.name) missingFields.push('姓名');
+    if (!formData.phone) missingFields.push('聯絡電話');
+    if (!formData.address) missingFields.push('服務地址');
+    if (!date) missingFields.push('希望服務日期');
+    if (!formData.time_slot) missingFields.push('希望時段');
+    
+    if (missingFields.length > 0) {
+      toast.error(`請填寫必填欄位: ${missingFields.join('、')}`);
       return;
     }
 
@@ -347,30 +379,30 @@ export default function BookingForm() {
                   {/* Contact Info */}
                   <div className="grid md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="name">姓名 *</Label>
-                      <Input
-                        id="name"
-                        value={formData.name}
-                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                        placeholder="請輸入您的姓名"
-                        className="rounded-xl"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="phone">聯絡電話 *</Label>
-                      <Input
-                        id="phone"
-                        value={formData.phone}
-                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                        placeholder="0912-345-678"
-                        className="rounded-xl"
-                      />
-                    </div>
+                       <Label htmlFor="name">姓名 * {user && <span className="text-xs text-stone-400">(已帶入會員資料)</span>}</Label>
+                       <Input
+                         id="name"
+                         value={formData.name}
+                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                         placeholder="請輸入您的姓名"
+                         className="rounded-xl"
+                       />
+                     </div>
+                     <div className="space-y-2">
+                       <Label htmlFor="phone">聯絡電話 * {user && <span className="text-xs text-stone-400">(已帶入會員資料)</span>}</Label>
+                       <Input
+                         id="phone"
+                         value={formData.phone}
+                         onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                         placeholder="0912-345-678"
+                         className="rounded-xl"
+                       />
+                     </div>
                   </div>
 
                   {/* Address */}
                   <div className="space-y-2">
-                    <Label htmlFor="address">服務地址 *</Label>
+                    <Label htmlFor="address">服務地址 * {user && <span className="text-xs text-stone-400">(已帶入會員資料)</span>}</Label>
                     <Input
                       id="address"
                       value={formData.address}
