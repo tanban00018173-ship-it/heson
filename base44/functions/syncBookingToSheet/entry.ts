@@ -1,7 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
 const SHEET_ID = '1lQc70QbKE0U_BvG7LNa_iR9AymWzO4y5g4SkDo0LtHY';
-const SHEET_NAME = '清潔預約'; // 實際工作表名稱
 
 Deno.serve(async (req) => {
   try {
@@ -50,57 +49,95 @@ Deno.serve(async (req) => {
       new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }) // X: 時間戳記
     ];
 
-    // 獲取Sheet中的最後一行以找出插入位置
-    const encodedSheetName = encodeURIComponent(SHEET_NAME);
-    const rangeResponse = await fetch(
-      `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/'${SHEET_NAME}'!A:A`,
+    // 先取得所有工作表信息
+    const sheetsInfoResponse = await fetch(
+      `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}`,
       {
         headers: { 'Authorization': `Bearer ${accessToken}` }
       }
     );
 
-    const rangeData = await rangeResponse.json();
-    const lastRow = (rangeData.values?.length || 1) + 1;
-    const insertRange = `'${SHEET_NAME}'!A${lastRow}:X${lastRow}`;
+    if (!sheetsInfoResponse.ok) {
+      throw new Error('Failed to get spreadsheet info');
+    }
 
-    // 插入數據到Google Sheets
-    const appendResponse = await fetch(
-      `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${insertRange}?valueInputOption=RAW`,
+    const sheetsInfo = await sheetsInfoResponse.json();
+    
+    // 嘗試找到名稱包含「預約」或「清潔」的工作表，或使用第一個工作表
+    let targetSheet = sheetsInfo.sheets?.find(sheet => 
+      sheet.properties.title.includes('清潔') || sheet.properties.title.includes('預約')
+    );
+    
+    if (!targetSheet) {
+      // 如果沒找到，使用第一個工作表
+      targetSheet = sheetsInfo.sheets?.[0];
+    }
+    
+    if (!targetSheet) {
+      throw new Error('No sheets found in spreadsheet');
+    }
+    
+    console.log('Using sheet:', targetSheet.properties.title);
+
+    const sheetId = targetSheet.properties.sheetId;
+
+    // 使用 values:append 方法（自動処理列數）
+    const sheetTitle = targetSheet.properties.title;
+    const appendValuesResponse = await fetch(
+      `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/'${sheetTitle}':append`,
       {
-        method: 'PUT',
+        method: 'POST',
         headers: {
           'Authorization': `Bearer ${accessToken}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          values: [values]
+          values: [values],
+          majorDimension: 'ROWS'
+        }),
+        params: { valueInputOption: 'RAW' }
+      }
+    );
+
+    // 處理帶查詢參數的請求
+    const appendValuesResponseWithParams = await fetch(
+      `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/'${sheetTitle}':append?valueInputOption=RAW`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          values: [values],
+          majorDimension: 'ROWS'
         })
       }
     );
 
-    if (!appendResponse.ok) {
-      const error = await appendResponse.json();
+    if (!appendValuesResponseWithParams.ok) {
+      const error = await appendValuesResponseWithParams.json();
       throw new Error(`Sheet API error: ${JSON.stringify(error)}`);
     }
+
+    const appendData = await appendValuesResponseWithParams.json();
 
     // 記錄同步到 GoogleSheetLog
     try {
       await base44.entities.GoogleSheetLog.create({
         spreadsheet_id: SHEET_ID,
         spreadsheet_name: '清潔預約表',
-        sheet_name: SHEET_NAME,
+        sheet_name: '清潔預約',
         operation_type: 'auto_sync',
         status: 'success',
         data_filled: {
-          row: lastRow,
-          row_label: `L${lastRow - 1}`,
           booking_id: bookingId,
           client_name: bookingData.client_name,
           service_type: bookingData.service_type,
           phone: bookingData.phone,
         },
-        cells_affected: [`A${lastRow}:X${lastRow}`],
-        notes: `自動同步預約至第 ${lastRow} 行 (L${lastRow - 1})`,
+        cells_affected: ['A:X'],
+        notes: `自動同步預約 - ${bookingData.client_name}`,
       });
     } catch (logErr) {
       console.warn('Failed to log sync:', logErr);
@@ -109,8 +146,7 @@ Deno.serve(async (req) => {
     return Response.json({
       success: true,
       message: 'Booking synced to sheet',
-      row: lastRow,
-      rowLabel: `L${lastRow - 1}`
+      sheetId: sheetId
     });
   } catch (error) {
     console.error('Sync error:', error);
