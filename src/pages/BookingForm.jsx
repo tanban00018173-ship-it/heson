@@ -12,6 +12,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format } from "date-fns";
 import { zhTW } from "date-fns/locale";
 import { CalendarIcon, Check, Loader2, Sparkles } from "lucide-react";
@@ -321,7 +322,7 @@ export default function BookingForm() {
         </div>
       </section>
 
-      {/* Service Category Selection */}
+      {/* Service Category Tabs */}
       <section className="py-12 bg-gradient-to-b from-stone-50 to-white">
         <div className="container mx-auto px-6 lg:px-12">
           <motion.div
@@ -329,31 +330,38 @@ export default function BookingForm() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
           >
-            <Card className="max-w-4xl mx-auto shadow-xl border-0">
-              <CardHeader className="pb-4">
-                <CardTitle className="text-xl text-stone-800">選擇服務類型</CardTitle>
-                <CardDescription>請選擇您需要的清潔服務</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  {serviceCategories.map((cat) => (
-                    <button
-                      key={cat.id}
-                      type="button"
-                      onClick={() => setSelectedCategory(cat)}
-                      className={`p-4 rounded-xl text-center transition-all ${
-                        selectedCategory.id === cat.id
-                          ? 'bg-amber-100 border-2 border-amber-500'
-                          : 'bg-stone-50 border-2 border-stone-200 hover:border-stone-300'
-                      }`}
-                    >
-                      <div className="text-3xl mb-2">{cat.emoji}</div>
-                      <p className="font-medium text-sm text-stone-800">{cat.label}</p>
-                    </button>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+            <Tabs 
+              value={selectedCategory.id} 
+              onValueChange={(value) => setSelectedCategory(serviceCategories.find(c => c.id === value))}
+              className="max-w-4xl mx-auto"
+            >
+              <TabsList className="grid w-full grid-cols-2 md:grid-cols-6 gap-2 p-2 bg-stone-100 rounded-xl h-auto mb-8">
+                {serviceCategories.map((cat) => (
+                  <TabsTrigger 
+                    key={cat.id} 
+                    value={cat.id}
+                    className="flex flex-col items-center gap-1 py-3 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-lg transition-all"
+                  >
+                    <span className="text-lg">{cat.emoji}</span>
+                    <span className="text-xs text-center">{cat.label}</span>
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+              
+              {serviceCategories.map((cat) => (
+                <TabsContent key={cat.id} value={cat.id} className="mt-0">
+                  <Card className="shadow-xl border-0">
+                    <CardHeader className="pb-4">
+                      <CardTitle className="text-xl text-stone-800 flex items-center gap-2">
+                        <span>{cat.emoji}</span>
+                        {cat.label}
+                      </CardTitle>
+                      <CardDescription>{cat.description}</CardDescription>
+                    </CardHeader>
+                  </Card>
+                </TabsContent>
+              ))}
+            </Tabs>
           </motion.div>
         </div>
       </section>
@@ -367,13 +375,6 @@ export default function BookingForm() {
             transition={{ duration: 0.6, delay: 0.2 }}
           >
             <Card className="max-w-2xl mx-auto shadow-xl border-0">
-              <CardHeader className="pb-4">
-                <CardTitle className="text-xl text-stone-800 flex items-center gap-2">
-                  <span>{selectedCategory.emoji}</span>
-                  {selectedCategory.label}
-                </CardTitle>
-                <CardDescription>{selectedCategory.description}</CardDescription>
-              </CardHeader>
               <CardContent>
                 <form onSubmit={handleSubmit} className="space-y-6">
                   {/* Contact Info */}
