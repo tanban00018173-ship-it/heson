@@ -151,21 +151,40 @@ export default function HesonAIChat() {
         return;
       }
       const user = await base44.auth.me();
-      const booking = await base44.entities.Booking.create({
-        client_id: user.id,
-        client_name: bookingData.client_name,
-        service_type: bookingData.service_type,
-        status: '待確認',
-        scheduled_date: bookingData.scheduled_date,
-        time_slot: bookingData.time_slot,
-        address: bookingData.address,
-        notes: `電話: ${bookingData.phone} (由小赫 AI 協助預約)`,
-      });
-      addMessage('assistant', '🎉 預約已建立！正在跳轉至付款頁面...');
-      const amount = getAmount(bookingData.service_type);
-      setTimeout(() => {
-        window.location.href = `/PaymentRedirect?booking_id=${booking.id}&amount=${amount}&item_name=${encodeURIComponent(bookingData.service_type)}`;
-      }, 1200);
+       const booking = await base44.entities.Booking.create({
+         client_id: user.id,
+         client_name: bookingData.client_name,
+         service_type: bookingData.service_type,
+         status: '待確認',
+         scheduled_date: bookingData.scheduled_date,
+         time_slot: bookingData.time_slot,
+         address: bookingData.address,
+         notes: `電話: ${bookingData.phone} (由小赫 AI 協助預約)`,
+       });
+
+       // 同步到 Google Sheet
+       try {
+         await base44.functions.invoke('syncBookingToSheet', {
+           bookingId: booking.id,
+           bookingData: {
+             client_name: bookingData.client_name,
+             phone: bookingData.phone,
+             address: bookingData.address,
+             service_type: bookingData.service_type,
+             scheduled_date: bookingData.scheduled_date,
+             time_slot: bookingData.time_slot,
+             email: user.email || '',
+           }
+         });
+       } catch (syncErr) {
+         console.warn('Sheet sync failed:', syncErr);
+       }
+
+       addMessage('assistant', '🎉 預約已建立！正在跳轉至付款頁面...');
+       const amount = getAmount(bookingData.service_type);
+       setTimeout(() => {
+         window.location.href = `/PaymentRedirect?booking_id=${booking.id}&amount=${amount}&item_name=${encodeURIComponent(bookingData.service_type)}`;
+       }, 1200);
     } catch (e) {
       addMessage('assistant', `抱歉，預約建立失敗（${e.message || '未知錯誤'}），請撥打 0906-991-023 由客服協助。`);
     } finally {
