@@ -914,11 +914,7 @@ export default function InternalSpreadsheet() {
               </>
             ) : (
               /* Custom sheet editor */
-              <SpreadsheetEditor 
-                spreadsheetId={activeSpreadsheet} 
-                spreadsheetName={currentSheet?.name}
-                isBookingSheet={activeSpreadsheet === 'booking'}
-              />
+              <SpreadsheetEditor spreadsheetId={activeSpreadsheet} spreadsheetName={currentSheet?.name} />
             )}
           </div>
         )}

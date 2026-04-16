@@ -3,11 +3,10 @@ import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Copy, Trash2, Plus, Type, Search, ZoomIn, ZoomOut } from "lucide-react";
+import { Copy, Trash2, Plus, Type } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { format } from "date-fns";
 
-export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBookingSheet = false }) {
+export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName }) {
   const queryClient = useQueryClient();
   const [editCell, setEditCell] = useState(null); // { row, col }
   const [editValue, setEditValue] = useState('');
@@ -16,8 +15,6 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
   const [formatData, setFormatData] = useState({ bg: '#ffffff', color: '#000000', bold: false });
   const [renamingCol, setRenamingCol] = useState(null);
   const [newColName, setNewColName] = useState('');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [zoom, setZoom] = useState(1);
   const tableRef = useRef(null);
 
   const { data: sheetData, isLoading, refetch } = useQuery({
@@ -25,50 +22,18 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
     queryFn: async () => {
       const sheets = await base44.entities.CustomSheet.filter({ spreadsheet_id: spreadsheetId });
       if (sheets.length === 0) {
-        if (isBookingSheet) {
-          // 從 Booking 導入資料
-          const bookings = await base44.entities.Booking.list('-created_date', 500);
-          const bookingData = bookings.map(b => [
-            b.client_name || '',
-            b.service_type || '',
-            b.scheduled_date ? format(new Date(b.scheduled_date), 'yyyy-MM-dd') : '',
-            b.time_slot || '',
-            b.status || '',
-            b.address || '',
-            b.cleaner_name || '',
-            b.notes || '',
-            b.created_date ? format(new Date(b.created_date), 'yyyy-MM-dd HH:mm') : ''
-          ]);
-          // 新增空行
-          while (bookingData.length < 20) {
-            bookingData.push(Array(9).fill(''));
-          }
-          const colNames = ['客戶姓名', '服務類型', '預約日期', '時段', '狀態', '地址', '管理師', '備註', '建立時間'];
-          const newSheet = {
-            spreadsheet_id: spreadsheetId,
-            data: bookingData,
-            row_count: bookingData.length,
-            col_count: 9,
-            col_widths: Array(9).fill(120),
-            row_heights: Array(bookingData.length).fill(30),
-            cell_formats: {},
-            col_names: colNames
-          };
-          return await base44.entities.CustomSheet.create(newSheet);
-        } else {
-          // 建立空試算表
-          const newSheet = {
-            spreadsheet_id: spreadsheetId,
-            data: Array(20).fill(null).map(() => Array(10).fill('')),
-            row_count: 20,
-            col_count: 10,
-            col_widths: Array(10).fill(100),
-            row_heights: Array(20).fill(30),
-            cell_formats: {},
-            col_names: Array(10).fill(null).map((_, i) => String.fromCharCode(65 + (i % 26)))
-          };
-          return await base44.entities.CustomSheet.create(newSheet);
-        }
+        // 建立空試算表
+        const newSheet = {
+          spreadsheet_id: spreadsheetId,
+          data: Array(20).fill(null).map(() => Array(10).fill('')),
+          row_count: 20,
+          col_count: 10,
+          col_widths: Array(10).fill(100),
+          row_heights: Array(20).fill(30),
+          cell_formats: {},
+          col_names: Array(10).fill(null).map((_, i) => String.fromCharCode(65 + (i % 26)))
+        };
+        return await base44.entities.CustomSheet.create(newSheet);
       }
       return sheets[0];
     },
@@ -207,45 +172,21 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
     setContextMenu(null);
   };
 
-  const changeZoom = (delta) => setZoom(z => Math.min(2, Math.max(0.4, +(z + delta).toFixed(1))));
-
-  const filteredData = sheetData?.data.filter((row, idx) => {
-    if (!searchTerm) return true;
-    const q = searchTerm.toLowerCase();
-    return row.some(cell => String(cell).toLowerCase().includes(q));
-  }) || [];
-
   if (isLoading || !sheetData) {
     return <div className="flex items-center justify-center h-40">載入中...</div>;
   }
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
-      {/* Toolbar */}
-      <div className="px-4 py-3 bg-white border-b border-stone-100 flex items-center gap-3">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-stone-400" />
-          <Input
-            value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
-            placeholder="搜尋試算表..."
-            className="pl-8 h-8 text-xs"
-          />
-        </div>
-        {searchTerm && (
-          <span className="text-xs text-stone-400">找到 {filteredData.length} 筆</span>
-        )}
-        <div className="flex items-center gap-1 ml-auto">
-          <button onClick={() => changeZoom(-0.1)} className="p-1 rounded hover:bg-stone-100 text-stone-500"><ZoomOut className="w-4 h-4" /></button>
-          <span className="text-xs text-stone-500 w-10 text-center">{Math.round(zoom * 100)}%</span>
-          <button onClick={() => changeZoom(0.1)} className="p-1 rounded hover:bg-stone-100 text-stone-500"><ZoomIn className="w-4 h-4" /></button>
-        </div>
+      {/* Info bar */}
+      <div className="px-4 py-2 bg-stone-50 border-b border-stone-200 flex items-center justify-between text-xs text-stone-600">
+        <span>{spreadsheetName} · {sheetData.row_count} 行 × {sheetData.col_count} 列</span>
       </div>
 
       {/* Table */}
       <div ref={tableRef} className="flex-1 overflow-auto">
-        <table className="border-collapse border border-stone-300 bg-white" style={{ transformOrigin: 'top left', transform: `scale(${zoom})`, width: `${100 / zoom}%` }}>
-          <thead className="sticky top-0 z-10">
+        <table className="border-collapse border border-stone-300 bg-white">
+          <thead>
             <tr>
               <th className="w-8 h-7 bg-stone-100 border border-stone-300 text-xs text-stone-500 text-center"></th>
               {sheetData.col_names.map((name, colIdx) => (
@@ -265,14 +206,7 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
             </tr>
           </thead>
           <tbody>
-            {filteredData.length === 0 ? (
-              <tr>
-                <td colSpan={sheetData.col_count + 1} className="text-center py-12 text-stone-400">
-                  {searchTerm ? '找不到符合的資料' : '暫無資料'}
-                </td>
-              </tr>
-            ) : (
-              filteredData.map((row, rowIdx) => (
+            {sheetData.data.map((row, rowIdx) => (
               <tr key={rowIdx}>
                 <td
                   className="w-8 bg-stone-100 border border-stone-300 text-xs text-stone-500 text-center cursor-pointer hover:bg-stone-200 font-medium"
@@ -284,24 +218,23 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
                   {rowIdx + 1}
                 </td>
                 {row.map((cell, colIdx) => {
-                  const actualRowIdx = sheetData.data.indexOf(row);
-                  const format = sheetData.cell_formats?.[`${actualRowIdx}_${colIdx}`] || {};
-                  const isEditing = editCell?.row === actualRowIdx && editCell?.col === colIdx;
+                  const format = sheetData.cell_formats?.[`${rowIdx}_${colIdx}`] || {};
+                  const isEditing = editCell?.row === rowIdx && editCell?.col === colIdx;
                   return (
                     <td
-                      key={`${actualRowIdx}_${colIdx}`}
+                      key={`${rowIdx}_${colIdx}`}
                       style={{
                         width: sheetData.col_widths[colIdx],
-                        height: sheetData.row_heights[actualRowIdx],
+                        height: sheetData.row_heights[rowIdx],
                         backgroundColor: format.bg || 'white',
                         color: format.color || 'black',
                         fontWeight: format.bold ? 'bold' : 'normal'
                       }}
                       className="border border-stone-300 px-2 py-1 text-xs cursor-cell"
-                      onClick={() => setEditCell({ row: actualRowIdx, col: colIdx })}
+                      onClick={() => setEditCell({ row: rowIdx, col: colIdx })}
                       onContextMenu={(e) => {
                         e.preventDefault();
-                        setContextMenu({ x: e.clientX, y: e.clientY, type: 'cell', row: actualRowIdx, col: colIdx });
+                        setContextMenu({ x: e.clientX, y: e.clientY, type: 'cell', row: rowIdx, col: colIdx });
                       }}
                     >
                       {isEditing ? (
@@ -309,9 +242,9 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
                           autoFocus
                           value={editValue}
                           onChange={(e) => setEditValue(e.target.value)}
-                          onBlur={() => handleCellChange(actualRowIdx, colIdx, editValue)}
+                          onBlur={() => handleCellChange(rowIdx, colIdx, editValue)}
                           onKeyDown={(e) => {
-                            if (e.key === 'Enter') handleCellChange(actualRowIdx, colIdx, editValue);
+                            if (e.key === 'Enter') handleCellChange(rowIdx, colIdx, editValue);
                             if (e.key === 'Escape') setEditCell(null);
                           }}
                           className="h-6 p-1 text-xs"
