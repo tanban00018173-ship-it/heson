@@ -45,8 +45,8 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
     return data;
   };
 
-  const { data: sheetData, isLoading, refetch } = useQuery({
-    queryKey: ['customSheet', spreadsheetId],
+  const { data: sheetData, isLoading, refetch: refetchSheet } = useQuery({
+    queryKey: ['customSheet', spreadsheetId, bookings],
     queryFn: async () => {
       if (isBookingSheet) {
         const data = convertBookingsToData(bookings);
@@ -94,10 +94,11 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
 
   const updateBookingMutation = useMutation({
     mutationFn: async ({ bookingId, field, value }) => {
-      return base44.entities.Booking.update(bookingId, { [field]: value });
+      await base44.entities.Booking.update(bookingId, { [field]: value });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['spreadsheetBookings'] });
+      refetchSheet();
     },
   });
 
