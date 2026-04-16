@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { zhTW } from "date-fns/locale";
-import { Bot, Send, Edit2, Check, X, Download, RefreshCw, Table, Search, Loader2, ShieldCheck, ZoomIn, ZoomOut, Monitor, ArrowLeft, Plus, Trash2, Menu, EyeOff, Eye, Copy, Undo2 } from "lucide-react";
+import { Bot, Send, Edit2, Check, X, RefreshCw, Table, Search, Loader2, ShieldCheck, Monitor, ArrowLeft, Plus, Trash2, Menu, EyeOff, Eye, Copy, Undo2 } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { motion, AnimatePresence } from "framer-motion";
@@ -202,7 +202,6 @@ export default function InternalSpreadsheet() {
        return [];
      }
    });
-   const [zoom, setZoom] = useState(1);
    const [newSheetName, setNewSheetName] = useState('');
    const [showNewSheetInput, setShowNewSheetInput] = useState(false);
    const [editingSheetId, setEditingSheetId] = useState(null);
@@ -212,12 +211,9 @@ export default function InternalSpreadsheet() {
    const [renameDialogSheet, setRenameDialogSheet] = useState(null);
    const [renameValue, setRenameValue] = useState('');
    const longPressTimerRef = useRef(null);
-   const tableWrapperRef = useRef(null);
    const queryClient = useQueryClient();
    const [undoStack, setUndoStack] = useState([]); // Undo history
    const [undoing, setUndoing] = useState(false);
-
-  const changeZoom = (delta) => setZoom(z => Math.min(2, Math.max(0.4, +(z + delta).toFixed(1))));
 
   // Persist spreadsheets and hiddenSheets to localStorage
   useEffect(() => {
@@ -227,19 +223,6 @@ export default function InternalSpreadsheet() {
   useEffect(() => {
     localStorage.setItem('hiddenSheets', JSON.stringify(hiddenSheets));
   }, [hiddenSheets]);
-
-  useEffect(() => {
-    const el = tableWrapperRef.current;
-    if (!el) return;
-    const onWheel = (e) => {
-      if (e.ctrlKey || e.metaKey) {
-        e.preventDefault();
-        changeZoom(e.deltaY < 0 ? 0.1 : -0.1);
-      }
-    };
-    el.addEventListener('wheel', onWheel, { passive: false });
-    return () => el.removeEventListener('wheel', onWheel);
-  }, [authChecked]);
 
   useEffect(() => {
     const check = async () => {
@@ -345,25 +328,7 @@ export default function InternalSpreadsheet() {
     );
   });
 
-  const exportCSV = () => {
-    const header = COLUMNS.map(c => c.label).join(',');
-    const rows = filtered.map(b =>
-      COLUMNS.map(c => {
-        let val = b[c.key] ?? '';
-        if (c.key === 'created_date' && val) val = format(new Date(val), 'yyyy/MM/dd HH:mm');
-        return `"${String(val).replace(/"/g, '""')}"`;
-      }).join(',')
-    );
-    const csv = [header, ...rows].join('\n');
-    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    const currentSheet = spreadsheets.find(s => s.id === activeSpreadsheet);
-    a.download = `${currentSheet?.name || '試算表'}_${format(new Date(), 'yyyyMMdd')}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
+
 
   const addSpreadsheet = () => {
     if (!newSheetName.trim()) return;
@@ -544,10 +509,7 @@ export default function InternalSpreadsheet() {
              <RefreshCw className="w-3 h-3" />
              <span className="hidden sm:inline">重整</span>
            </Button>
-           <Button variant="outline" size="sm" onClick={exportCSV} className="gap-1 text-xs px-2">
-             <Download className="w-3 h-3" />
-             <span className="hidden sm:inline">匯出 CSV</span>
-           </Button>
+
          </div>
        </div>
 
@@ -834,88 +796,13 @@ export default function InternalSpreadsheet() {
         {activeTab === 'sheet' && (
           <div className="flex-1 flex flex-col overflow-hidden">
             {/* Check if current sheet is booking (default) or custom */}
-            {activeSpreadsheet === 'booking' ? (
-              <>
-                {/* Toolbar for booking sheet */}
-                <div className="px-4 py-3 bg-white border-b border-stone-100 flex items-center gap-3">
-                  <div className="relative flex-1 max-w-sm">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-stone-400" />
-                    <Input
-                      value={searchTerm}
-                      onChange={e => setSearchTerm(e.target.value)}
-                      placeholder="搜尋客戶、服務類型、狀態..."
-                      className="pl-8 h-8 text-xs"
-                    />
-                  </div>
-                  {searchTerm && (
-                    <span className="text-xs text-stone-400">找到 {filtered.length} 筆</span>
-                  )}
-                  <div className="flex items-center gap-1 ml-auto">
-                    <button onClick={() => changeZoom(-0.1)} className="p-1 rounded hover:bg-stone-100 text-stone-500"><ZoomOut className="w-4 h-4" /></button>
-                    <span className="text-xs text-stone-500 w-10 text-center">{Math.round(zoom * 100)}%</span>
-                    <button onClick={() => changeZoom(0.1)} className="p-1 rounded hover:bg-stone-100 text-stone-500"><ZoomIn className="w-4 h-4" /></button>
-                  </div>
-                </div>
-
-                {/* Booking table */}
-                <div ref={tableWrapperRef} className="flex-1 overflow-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
-                  {isLoading ? (
-                    <div className="flex items-center justify-center h-40">
-                      <Loader2 className="w-6 h-6 animate-spin text-amber-500" />
-                    </div>
-                  ) : (
-                    <table className="w-full text-xs border-collapse min-w-[1000px]" style={{ transformOrigin: 'top left', transform: `scale(${zoom})`, width: `${100 / zoom}%` }}>
-                      <thead className="sticky top-0 z-10">
-                        <tr className="bg-stone-100">
-                          <th className="text-left px-3 py-2 font-medium text-stone-500 border-b border-r border-stone-200 w-8">#</th>
-                          {COLUMNS.map(col => (
-                            <th key={col.key} className="text-left px-3 py-2 font-medium text-stone-600 border-b border-r border-stone-200 whitespace-nowrap">
-                              {col.label}
-                            </th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {filtered.length === 0 ? (
-                          <tr>
-                            <td colSpan={COLUMNS.length + 1} className="text-center py-12 text-stone-400">
-                              {searchTerm ? '找不到符合的資料' : '暫無預約資料'}
-                            </td>
-                          </tr>
-                        ) : (
-                          filtered.map((booking, idx) => (
-                            <tr key={booking.id} className={`border-b border-stone-100 hover:bg-amber-50/30 transition-colors ${idx % 2 === 0 ? 'bg-white' : 'bg-stone-50/50'}`}>
-                              <td className="px-3 py-1.5 text-stone-400 border-r border-stone-100">{idx + 1}</td>
-                              {COLUMNS.map(col => (
-                                <td key={col.key} className="px-2 py-1 border-r border-stone-100">
-                                  {col.editable ? (
-                                    <EditableCell
-                                      value={col.key === 'scheduled_date' && booking[col.key]
-                                        ? format(new Date(booking[col.key]), 'yyyy/MM/dd')
-                                        : booking[col.key]}
-                                      onSave={val => handleCellUpdate(booking, col.key, val)}
-                                    />
-                                  ) : (
-                                    <span className="text-stone-500 px-1">
-                                      {col.key === 'created_date' && booking[col.key]
-                                        ? format(new Date(booking[col.key]), 'yyyy/MM/dd HH:mm')
-                                        : booking[col.key] ?? '-'}
-                                    </span>
-                                  )}
-                                </td>
-                              ))}
-                            </tr>
-                          ))
-                        )}
-                      </tbody>
-                    </table>
-                  )}
-                </div>
-              </>
-            ) : (
-              /* Custom sheet editor */
-              <SpreadsheetEditor spreadsheetId={activeSpreadsheet} spreadsheetName={currentSheet?.name} />
-            )}
+            {/* Unified spreadsheet editor for all sheet types */}
+            <SpreadsheetEditor 
+              spreadsheetId={activeSpreadsheet} 
+              spreadsheetName={currentSheet?.name}
+              isBookingSheet={activeSpreadsheet === 'booking'}
+              bookings={activeSpreadsheet === 'booking' ? filtered : []}
+            />
           </div>
         )}
 

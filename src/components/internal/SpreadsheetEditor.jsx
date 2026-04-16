@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Copy, Trash2, Plus, Type } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 
-export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName }) {
+export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBookingSheet = false, bookings = [] }) {
   const queryClient = useQueryClient();
   const [editCell, setEditCell] = useState(null); // { row, col }
   const [editValue, setEditValue] = useState('');
@@ -15,14 +15,56 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName }) {
   const [formatData, setFormatData] = useState({ bg: '#ffffff', color: '#000000', bold: false });
   const [renamingCol, setRenamingCol] = useState(null);
   const [newColName, setNewColName] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [zoom, setZoom] = useState(1);
   const tableRef = useRef(null);
+
+  const BOOKING_COLUMNS = [
+    { key: 'client_name', label: '客戶姓名' },
+    { key: 'service_type', label: '服務類型' },
+    { key: 'scheduled_date', label: '預約日期' },
+    { key: 'time_slot', label: '時段' },
+    { key: 'status', label: '狀態' },
+    { key: 'address', label: '地址' },
+    { key: 'cleaner_name', label: '指派管理師' },
+    { key: 'notes', label: '備註' },
+    { key: 'created_date', label: '建立時間' },
+  ];
+
+  const convertBookingsToData = (bookingsList) => {
+    const data = [BOOKING_COLUMNS.map(c => c.label)];
+    bookingsList.forEach(b => {
+      const row = BOOKING_COLUMNS.map(col => {
+        if (col.key === 'created_date' && b[col.key]) {
+          return new Date(b[col.key]).toLocaleDateString('zh-TW');
+        }
+        return b[col.key] ?? '';
+      });
+      data.push(row);
+    });
+    return data;
+  };
 
   const { data: sheetData, isLoading, refetch } = useQuery({
     queryKey: ['customSheet', spreadsheetId],
     queryFn: async () => {
+      if (isBookingSheet) {
+        const data = convertBookingsToData(bookings);
+        return {
+          id: 'booking',
+          spreadsheet_id: spreadsheetId,
+          data,
+          row_count: data.length,
+          col_count: BOOKING_COLUMNS.length,
+          col_widths: Array(BOOKING_COLUMNS.length).fill(120),
+          row_heights: Array(data.length).fill(30),
+          cell_formats: {},
+          col_names: BOOKING_COLUMNS.map(c => c.label)
+        };
+      }
+
       const sheets = await base44.entities.CustomSheet.filter({ spreadsheet_id: spreadsheetId });
       if (sheets.length === 0) {
-        // 建立空試算表
         const newSheet = {
           spreadsheet_id: spreadsheetId,
           data: Array(20).fill(null).map(() => Array(10).fill('')),
@@ -44,8 +86,10 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName }) {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['customSheet', spreadsheetId] }),
   });
 
+  const changeZoom = (delta) => setZoom(z => Math.min(2, Math.max(0.4, +(z + delta).toFixed(1))));
+
   const handleCellChange = (row, col, value) => {
-    if (!sheetData) return;
+    if (!sheetData || isBookingSheet) return; // 預約表只讀
     const newData = sheetData.data.map(r => [...r]);
     newData[row][col] = value;
     updateMutation.mutate({ data: newData });
@@ -53,7 +97,7 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName }) {
   };
 
   const insertCol = (beforeCol) => {
-    if (!sheetData) return;
+    if (!sheetData || isBookingSheet) return;
     const newData = sheetData.data.map(row => {
       const newRow = [...row];
       newRow.splice(beforeCol, 0, '');
@@ -73,7 +117,7 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName }) {
   };
 
   const deleteCol = (colIdx) => {
-    if (!sheetData || sheetData.col_count <= 1) return;
+    if (!sheetData || isBookingSheet || sheetData.col_count <= 1) return;
     const newData = sheetData.data.map(row => {
       const newRow = [...row];
       newRow.splice(colIdx, 1);
@@ -93,7 +137,7 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName }) {
   };
 
   const copyCol = (colIdx) => {
-    if (!sheetData) return;
+    if (!sheetData || isBookingSheet) return;
     const newData = sheetData.data.map(row => {
       const newRow = [...row];
       newRow.splice(colIdx + 1, 0, row[colIdx]);
@@ -113,7 +157,7 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName }) {
   };
 
   const insertRow = (beforeRow) => {
-    if (!sheetData) return;
+    if (!sheetData || isBookingSheet) return;
     const newData = [...sheetData.data];
     newData.splice(beforeRow, 0, Array(sheetData.col_count).fill(''));
     const newRowHeights = [...sheetData.row_heights];
@@ -127,7 +171,7 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName }) {
   };
 
   const deleteRow = (rowIdx) => {
-    if (!sheetData || sheetData.row_count <= 1) return;
+    if (!sheetData || isBookingSheet || sheetData.row_count <= 1) return;
     const newData = [...sheetData.data];
     newData.splice(rowIdx, 1);
     const newRowHeights = [...sheetData.row_heights];
@@ -141,7 +185,7 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName }) {
   };
 
   const copyRow = (rowIdx) => {
-    if (!sheetData) return;
+    if (!sheetData || isBookingSheet) return;
     const newData = [...sheetData.data];
     newData.splice(rowIdx + 1, 0, [...newData[rowIdx]]);
     const newRowHeights = [...sheetData.row_heights];
@@ -163,7 +207,7 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName }) {
   };
 
   const renameCol = (colIdx) => {
-    if (!sheetData || !newColName.trim()) return;
+    if (!sheetData || isBookingSheet || !newColName.trim()) return;
     const newColNames = [...sheetData.col_names];
     newColNames[colIdx] = newColName;
     updateMutation.mutate({ col_names: newColNames });
@@ -176,16 +220,39 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName }) {
     return <div className="flex items-center justify-center h-40">載入中...</div>;
   }
 
+  const filteredData = isBookingSheet ? sheetData.data.filter((row, idx) => {
+    if (idx === 0 || !searchTerm) return true;
+    const q = searchTerm.toLowerCase();
+    return row.some(cell => String(cell).toLowerCase().includes(q));
+  }) : sheetData.data;
+
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
-      {/* Info bar */}
-      <div className="px-4 py-2 bg-stone-50 border-b border-stone-200 flex items-center justify-between text-xs text-stone-600">
+      {/* Info bar with search and zoom */}
+      <div className="px-4 py-2 bg-stone-50 border-b border-stone-200 flex items-center justify-between text-xs text-stone-600 gap-3">
         <span>{spreadsheetName} · {sheetData.row_count} 行 × {sheetData.col_count} 列</span>
+        {isBookingSheet && (
+          <>
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="搜尋..."
+              className="px-2 py-1 text-xs border border-stone-300 rounded"
+            />
+            {searchTerm && <span className="text-stone-500">找到 {filteredData.length - 1} 筆</span>}
+          </>
+        )}
+        <div className="flex items-center gap-1 ml-auto">
+          <button onClick={() => changeZoom(-0.1)} className="p-1 hover:bg-stone-200 text-stone-600">−</button>
+          <span className="w-10 text-center text-xs text-stone-600">{Math.round(zoom * 100)}%</span>
+          <button onClick={() => changeZoom(0.1)} className="p-1 hover:bg-stone-200 text-stone-600">+</button>
+        </div>
       </div>
 
       {/* Table */}
       <div ref={tableRef} className="flex-1 overflow-auto">
-        <table className="border-collapse border border-stone-300 bg-white">
+        <table className="border-collapse border border-stone-300 bg-white" style={{ transformOrigin: 'top left', transform: `scale(${zoom})`, width: `${100 / zoom}%` }}>
           <thead>
             <tr>
               <th className="w-8 h-7 bg-stone-100 border border-stone-300 text-xs text-stone-500 text-center"></th>
@@ -206,7 +273,7 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName }) {
             </tr>
           </thead>
           <tbody>
-            {sheetData.data.map((row, rowIdx) => (
+            {filteredData.map((row, rowIdx) => (
               <tr key={rowIdx}>
                 <td
                   className="w-8 bg-stone-100 border border-stone-300 text-xs text-stone-500 text-center cursor-pointer hover:bg-stone-200 font-medium"
@@ -219,7 +286,7 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName }) {
                 </td>
                 {row.map((cell, colIdx) => {
                   const format = sheetData.cell_formats?.[`${rowIdx}_${colIdx}`] || {};
-                  const isEditing = editCell?.row === rowIdx && editCell?.col === colIdx;
+                  const isEditing = !isBookingSheet && editCell?.row === rowIdx && editCell?.col === colIdx;
                   return (
                     <td
                       key={`${rowIdx}_${colIdx}`}
@@ -230,11 +297,13 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName }) {
                         color: format.color || 'black',
                         fontWeight: format.bold ? 'bold' : 'normal'
                       }}
-                      className="border border-stone-300 px-2 py-1 text-xs cursor-cell"
-                      onClick={() => setEditCell({ row: rowIdx, col: colIdx })}
+                      className={`border border-stone-300 px-2 py-1 text-xs ${isBookingSheet ? 'cursor-default' : 'cursor-cell'}`}
+                      onClick={() => !isBookingSheet && setEditCell({ row: rowIdx, col: colIdx })}
                       onContextMenu={(e) => {
                         e.preventDefault();
-                        setContextMenu({ x: e.clientX, y: e.clientY, type: 'cell', row: rowIdx, col: colIdx });
+                        if (!isBookingSheet) {
+                          setContextMenu({ x: e.clientX, y: e.clientY, type: 'cell', row: rowIdx, col: colIdx });
+                        }
                       }}
                     >
                       {isEditing ? (
@@ -262,8 +331,8 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName }) {
         </table>
       </div>
 
-      {/* Context menus */}
-      {contextMenu && (
+      {/* Context menus - only for non-booking sheets */}
+      {contextMenu && !isBookingSheet && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setContextMenu(null)} />
           <div
@@ -355,7 +424,8 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName }) {
         </>
       )}
 
-      {/* Rename column dialog */}
+      {/* Rename column dialog - only for non-booking sheets */}
+      {!isBookingSheet && (
       <Dialog open={renamingCol !== null} onOpenChange={() => setRenamingCol(null)}>
         <DialogContent>
           <DialogHeader>
@@ -376,8 +446,10 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName }) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      )}
 
-      {/* Cell format dialog */}
+      {/* Cell format dialog - only for non-booking sheets */}
+      {!isBookingSheet && (
       <Dialog open={!!formatDialog} onOpenChange={() => setFormatDialog(null)}>
         <DialogContent>
           <DialogHeader>
@@ -417,6 +489,7 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName }) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      )}
     </div>
   );
 }
