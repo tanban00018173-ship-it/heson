@@ -143,17 +143,21 @@ export default function RoleManager() {
   return (
     <div className="flex flex-col h-full">
       {/* Stats */}
-      <div className="p-4 border-b border-stone-100 bg-white flex gap-4 flex-wrap items-center">
-        <div className="flex items-center gap-2 text-sm">
+      <div className="p-4 border-b border-stone-100 bg-white">
+        {/* Total user count */}
+        <div className="flex items-center gap-2 text-sm mb-3">
           <Users className="w-4 h-4 text-stone-400" />
           <span className="text-stone-500">共 <strong className="text-stone-800">{users.length}</strong> 位用戶</span>
         </div>
-        {ROLES.map(r => (
-          <div key={r.value} className="flex items-center gap-1.5">
-            <Badge className={r.badgeClass + ' text-xs'}>{r.label}</Badge>
-            <span className="text-sm font-medium text-stone-700">{roleStats[r.value] || 0}</span>
-          </div>
-        ))}
+        {/* Role breakdown */}
+        <div className="flex gap-3 flex-wrap">
+          {ROLES.map(r => (
+            <div key={r.value} className="flex items-center gap-1.5">
+              <Badge className={r.badgeClass + ' text-xs'}>{r.label}</Badge>
+              <span className="text-sm font-medium text-stone-700">{roleStats[r.value] || 0}</span>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Search */}
