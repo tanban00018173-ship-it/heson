@@ -9,10 +9,47 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const { fingerprint, reason, notes, userAgent, action, recordId } = await req.json();
+    const { fingerprint, reason, notes, userAgent, action, recordId, email } = await req.json();
 
     if (action === 'unban') {
       await base44.asServiceRole.entities.BannedDevice.update(recordId, { is_active: false });
+      return Response.json({ success: true });
+    }
+
+    // Ban all devices associated with an email
+    if (action === 'banByEmail') {
+      const allDevices = await base44.asServiceRole.entities.BannedDevice.list();
+      const matched = (allDevices || []).filter(d => (d.associated_emails || []).includes(email));
+      if (matched.length === 0) {
+        // No device records found — create a placeholder fingerprint tied to email
+        await base44.asServiceRole.entities.BannedDevice.create({
+          fingerprint: 'email:' + email,
+          reason: reason || '帳號封禁',
+          banned_by: user.email,
+          user_agent: '',
+          is_active: true,
+          notes: notes || '',
+          associated_emails: [email],
+        });
+      } else {
+        for (const d of matched) {
+          await base44.asServiceRole.entities.BannedDevice.update(d.id, {
+            is_active: true,
+            reason: reason || d.reason || '帳號封禁',
+            banned_by: user.email,
+          });
+        }
+      }
+      return Response.json({ success: true });
+    }
+
+    // Unban all devices associated with an email
+    if (action === 'unbanByEmail') {
+      const allDevices = await base44.asServiceRole.entities.BannedDevice.list();
+      const matched = (allDevices || []).filter(d => (d.associated_emails || []).includes(email));
+      for (const d of matched) {
+        await base44.asServiceRole.entities.BannedDevice.update(d.id, { is_active: false });
+      }
       return Response.json({ success: true });
     }
 
@@ -38,6 +75,13 @@ Deno.serve(async (req) => {
         });
       }
       return Response.json({ success: true });
+    }
+
+    // Check if any active banned device is associated with an email
+    if (action === 'checkByEmail') {
+      const allDevices = await base44.asServiceRole.entities.BannedDevice.list();
+      const banned = (allDevices || []).some(d => d.is_active && (d.associated_emails || []).includes(email));
+      return Response.json({ banned });
     }
 
     return Response.json({ error: 'Invalid action' }, { status: 400 });
