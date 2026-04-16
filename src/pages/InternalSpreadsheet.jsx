@@ -7,10 +7,13 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { zhTW } from "date-fns/locale";
-import { Bot, Send, Edit2, Check, X, RefreshCw, Table, Loader2, ShieldCheck, Monitor, ArrowLeft } from "lucide-react";
+import { Bot, Send, Edit2, Check, X, RefreshCw, Table, Search, Loader2, ShieldCheck, Monitor, ArrowLeft, Plus, Trash2, Menu, EyeOff, Eye, Copy, Undo2 } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { motion, AnimatePresence } from "framer-motion";
 import RoleManager from "@/components/internal/RoleManager";
 import DeviceManager from "@/components/internal/DeviceManager";
-
+import SpreadsheetEditor from "@/components/internal/SpreadsheetEditor";
 
 // Editable cell component
 function EditableCell({ value, onSave, type = 'text' }) {
@@ -177,11 +180,49 @@ export default function InternalSpreadsheet() {
    const navigate = useNavigate();
    const [user, setUser] = useState(null);
    const [authChecked, setAuthChecked] = useState(false);
+   const [searchTerm, setSearchTerm] = useState('');
    const [activeTab, setActiveTab] = useState('sheet'); // 'sheet' | 'ai' | 'roles' | 'devices'
-   const [googleSheetId, setGoogleSheetId] = useState(() => localStorage.getItem('bookingSheetId') || '');
+   const [activeSpreadsheet, setActiveSpreadsheet] = useState('sheet_booking'); // Unified sheet ID for bookings
+   const defaultSpreadsheets = [
+     { id: 'sheet_booking', name: '清潔訂單' }
+   ];
+   const [spreadsheets, setSpreadsheets] = useState(() => {
+     try {
+       const saved = localStorage.getItem('spreadsheets');
+       return saved ? JSON.parse(saved) : defaultSpreadsheets;
+     } catch {
+       return defaultSpreadsheets;
+     }
+   });
+   const [hiddenSheets, setHiddenSheets] = useState(() => {
+     try {
+       const saved = localStorage.getItem('hiddenSheets');
+       return saved ? JSON.parse(saved) : [];
+     } catch {
+       return [];
+     }
+   });
+   const [newSheetName, setNewSheetName] = useState('');
+   const [showNewSheetInput, setShowNewSheetInput] = useState(false);
+   const [editingSheetId, setEditingSheetId] = useState(null);
+   const [editingSheetName, setEditingSheetName] = useState('');
+   const [longPressMenu, setLongPressMenu] = useState(null); // { id, x, y }
+   const [sheetContextMenu, setSheetContextMenu] = useState(null); // { id, x, y }
+   const [renameDialogSheet, setRenameDialogSheet] = useState(null);
+   const [renameValue, setRenameValue] = useState('');
+   const longPressTimerRef = useRef(null);
    const queryClient = useQueryClient();
+   const [undoStack, setUndoStack] = useState([]); // Undo history
+   const [undoing, setUndoing] = useState(false);
 
+  // Persist spreadsheets and hiddenSheets to localStorage
+  useEffect(() => {
+    localStorage.setItem('spreadsheets', JSON.stringify(spreadsheets));
+  }, [spreadsheets]);
 
+  useEffect(() => {
+    localStorage.setItem('hiddenSheets', JSON.stringify(hiddenSheets));
+  }, [hiddenSheets]);
 
   useEffect(() => {
     const check = async () => {
@@ -204,16 +245,276 @@ export default function InternalSpreadsheet() {
     enabled: authChecked,
   });
 
+  // Auto-sync bookings to CustomSheet when they change
+  useEffect(() => {
+    if (!authChecked || bookings.length === 0) return;
+    
+    const syncBookingsToSheet = async () => {
+      try {
+        // Convert bookings to sheet data
+        const sheetData = bookings.map(b => [
+          b.client_name || '',
+          b.service_type || '',
+          b.scheduled_date || '',
+          b.time_slot || '',
+          b.status || '',
+          b.address || '',
+          b.cleaner_name || '',
+          b.notes || '',
+          b.created_date || ''
+        ]);
 
+        // Fetch or create the sheet
+        const sheets = await base44.entities.CustomSheet.filter({ spreadsheet_id: 'sheet_booking' });
+        const sheetRecord = sheets[0];
+        
+        if (sheetRecord) {
+          // Update existing sheet
+          await base44.entities.CustomSheet.update(sheetRecord.id, {
+            data: sheetData,
+            row_count: bookings.length
+          });
+        } else {
+          // Create new sheet if it doesn't exist
+          await base44.entities.CustomSheet.create({
+            spreadsheet_id: 'sheet_booking',
+            data: sheetData,
+            row_count: bookings.length,
+            col_count: 9,
+            col_widths: Array(9).fill(100),
+            row_heights: Array(bookings.length).fill(30),
+            cell_formats: {},
+            col_names: ['客戶姓名', '服務類型', '預約日期', '時段', '狀態', '地址', '指派管理師', '備註', '建立時間']
+          });
+        }
+      } catch (err) {
+        console.error('Failed to sync bookings to sheet:', err);
+      }
+    };
+
+    syncBookingsToSheet();
+  }, [bookings, authChecked]);
 
   const updateMutation = useMutation({
     mutationFn: ({ id, fields }) => base44.entities.Booking.update(id, fields),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['spreadsheetBookings'] }),
   });
 
+  // Record a change for undo
+  const recordUndo = (item) => {
+    setUndoStack(prev => [...prev.slice(-49), item]); // Keep last 50 items
+  };
+
+  // Undo last action
+  const handleUndo = async () => {
+    if (undoStack.length === 0 || undoing) return;
+    setUndoing(true);
+    const lastAction = undoStack[undoStack.length - 1];
+    try {
+      if (lastAction.type === 'single') {
+        await base44.entities.Booking.update(lastAction.id, lastAction.oldFields);
+      } else if (lastAction.type === 'ai') {
+        for (const item of lastAction.items) {
+          if (item.delete) {
+            // Restore deleted booking
+            await base44.entities.Booking.create(item.oldFields);
+          } else {
+            // Restore updated fields
+            await base44.entities.Booking.update(item.id, item.oldFields);
+          }
+        }
+      } else if (lastAction.type === 'sheet_add') {
+        setSpreadsheets(prev => prev.filter(s => s.id !== lastAction.id));
+        if (activeSpreadsheet === lastAction.id) {
+          const first = spreadsheets.find(s => s.id !== lastAction.id);
+          setActiveSpreadsheet(first?.id);
+        }
+      } else if (lastAction.type === 'sheet_delete') {
+        const updated = [...spreadsheets, lastAction.sheet];
+        setSpreadsheets(updated);
+        if (lastAction.wasHidden) {
+          setHiddenSheets(prev => [...prev, lastAction.id]);
+        }
+      } else if (lastAction.type === 'sheet_rename') {
+        setSpreadsheets(prev => prev.map(s => 
+          s.id === lastAction.id ? { ...s, name: lastAction.oldName } : s
+        ));
+      } else if (lastAction.type === 'sheet_hide') {
+        setHiddenSheets(prev => prev.filter(h => h !== lastAction.id));
+      } else if (lastAction.type === 'sheet_unhide') {
+        setHiddenSheets(prev => [...prev, lastAction.id]);
+      }
+      queryClient.invalidateQueries({ queryKey: ['spreadsheetBookings'] });
+      setUndoStack(prev => prev.slice(0, -1));
+    } catch (err) {
+      console.error('Undo failed:', err);
+    }
+    setUndoing(false);
+  };
+
+  // Update cell with undo support
+  const handleCellUpdate = (booking, field, newValue) => {
+    const oldValue = booking[field];
+    if (oldValue === newValue) return;
+    recordUndo({
+      type: 'single',
+      id: booking.id,
+      oldFields: { [field]: oldValue },
+      newFields: { [field]: newValue },
+      description: `修改 ${booking.client_name || '資料'} 的${COLUMNS.find(c => c.key === field)?.label || field}`
+    });
+    updateMutation.mutate({ id: booking.id, fields: { [field]: newValue } });
+  };
+
+  const filtered = bookings.filter(b => {
+    if (!searchTerm) return true;
+    const q = searchTerm.toLowerCase();
+    return (
+      (b.client_name || '').toLowerCase().includes(q) ||
+      (b.service_type || '').toLowerCase().includes(q) ||
+      (b.status || '').toLowerCase().includes(q) ||
+      (b.address || '').toLowerCase().includes(q) ||
+      (b.cleaner_name || '').toLowerCase().includes(q)
+    );
+  });
 
 
 
+  const addSpreadsheet = () => {
+    if (!newSheetName.trim()) return;
+    const newId = 'sheet_' + Date.now();
+    setSpreadsheets([...spreadsheets, { id: newId, name: newSheetName }]);
+    setActiveSpreadsheet(newId);
+    recordUndo({
+      type: 'sheet_add',
+      id: newId,
+      description: `新增試算表「${newSheetName}」`
+    });
+    setNewSheetName('');
+    setShowNewSheetInput(false);
+  };
+
+  const removeSpreadsheet = (id) => {
+    if (spreadsheets.length <= 1) return;
+    const sheet = spreadsheets.find(s => s.id === id);
+    if (!sheet) return;
+    const updated = spreadsheets.filter(s => s.id !== id);
+    const wasHidden = hiddenSheets.includes(id);
+    setSpreadsheets(updated);
+    if (wasHidden) {
+      setHiddenSheets(prev => prev.filter(h => h !== id));
+    }
+    const newActive = activeSpreadsheet === id ? updated[0]?.id : activeSpreadsheet;
+    if (activeSpreadsheet === id) {
+      setActiveSpreadsheet(newActive);
+    }
+    recordUndo({
+      type: 'sheet_delete',
+      id,
+      sheet,
+      wasHidden,
+      description: `刪除試算表「${sheet.name}」`
+    });
+  };
+
+  const startEditingSheet = (id, name) => {
+    setEditingSheetId(id);
+    setEditingSheetName(name);
+  };
+
+  const saveEditingSheet = () => {
+    if (!editingSheetName.trim()) return;
+    const oldName = spreadsheets.find(s => s.id === editingSheetId)?.name;
+    setSpreadsheets(spreadsheets.map(s => 
+      s.id === editingSheetId ? { ...s, name: editingSheetName } : s
+    ));
+    recordUndo({
+      type: 'sheet_rename',
+      id: editingSheetId,
+      oldName,
+      newName: editingSheetName,
+      description: `重新命名試算表為「${editingSheetName}」`
+    });
+    setEditingSheetId(null);
+    setEditingSheetName('');
+  };
+
+  const hideSheet = (id) => {
+    setHiddenSheets(prev => [...prev, id]);
+    setLongPressMenu(null);
+    if (activeSpreadsheet === id) {
+      const firstVisible = spreadsheets.find(s => s.id !== id && !hiddenSheets.includes(s.id));
+      if (firstVisible) setActiveSpreadsheet(firstVisible.id);
+    }
+    recordUndo({
+      type: 'sheet_hide',
+      id,
+      description: `隱藏試算表「${spreadsheets.find(s => s.id === id)?.name}」`
+    });
+  };
+
+  const unhideSheet = (id) => {
+    setHiddenSheets(prev => prev.filter(h => h !== id));
+    setActiveSpreadsheet(id);
+    recordUndo({
+      type: 'sheet_unhide',
+      id,
+      description: `恢復試算表「${spreadsheets.find(s => s.id === id)?.name}」`
+    });
+  };
+
+  const handleLongPressStart = (e, sheetId) => {
+    if (activeSpreadsheet !== sheetId) return;
+    const visibleCount = spreadsheets.filter(s => !hiddenSheets.includes(s.id)).length;
+    if (visibleCount <= 1) return;
+    longPressTimerRef.current = setTimeout(() => {
+      const rect = e.currentTarget.getBoundingClientRect();
+      setLongPressMenu({ id: sheetId, x: rect.left, y: rect.bottom + 4 });
+    }, 500);
+  };
+
+  const handleLongPressEnd = () => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  };
+
+  const visibleSheets = spreadsheets.filter(s => !hiddenSheets.includes(s.id));
+  const hiddenSheetsList = spreadsheets.filter(s => hiddenSheets.includes(s.id));
+
+  const copySheet = (id) => {
+    const sheet = spreadsheets.find(s => s.id === id);
+    if (!sheet) return;
+    const newId = 'sheet_' + Date.now();
+    const newName = sheet.name + ' (複製)';
+    setSpreadsheets([...spreadsheets, { id: newId, name: newName }]);
+    recordUndo({
+      type: 'sheet_add',
+      id: newId,
+      description: `複製試算表為「${newName}」`
+    });
+    setSheetContextMenu(null);
+  };
+
+  const openRenameDialog = (id) => {
+    const sheet = spreadsheets.find(s => s.id === id);
+    if (!sheet) return;
+    setRenameDialogSheet(sheet);
+    setRenameValue(sheet.name);
+    setSheetContextMenu(null);
+  };
+
+  const saveRename = () => {
+    if (!renameValue.trim()) return;
+    setSpreadsheets(spreadsheets.map(s =>
+      s.id === renameDialogSheet.id ? { ...s, name: renameValue } : s
+    ));
+    setRenameDialogSheet(null);
+    setRenameValue('');
+  };
+
+  const currentSheet = spreadsheets.find(s => s.id === activeSpreadsheet);
 
   if (!authChecked || !user) {
     return (
@@ -235,15 +536,30 @@ export default function InternalSpreadsheet() {
              <Table className="w-4 h-4 text-amber-600" />
            </div>
            <div className="min-w-0">
-             <h1 className="font-semibold text-stone-800 text-sm">Google Sheets 後台</h1>
-             <p className="text-xs text-stone-400">清潔訂單管理 · 共 {bookings.length} 筆</p>
+             <h1 className="font-semibold text-stone-800 text-sm">內部試算表</h1>
+             <p className="text-xs text-stone-400">{currentSheet?.name || '試算表'} · 共 {bookings.length} 筆</p>
            </div>
          </div>
          <div className="flex items-center gap-1 flex-shrink-0">
+           <Button
+             variant="outline"
+             size="sm"
+             onClick={handleUndo}
+             disabled={undoStack.length === 0 || undoing}
+             className="gap-1 text-xs px-2"
+             title={undoStack.length > 0 ? `復原: ${undoStack[undoStack.length - 1]?.description || '上一步'}` : '沒有可復原的操作'}
+           >
+             <Undo2 className="w-3 h-3" />
+             <span className="hidden sm:inline">復原</span>
+             {undoStack.length > 0 && (
+               <Badge className="ml-1 h-4 px-1 text-[10px] bg-amber-100 text-amber-700">{undoStack.length}</Badge>
+             )}
+           </Button>
            <Button variant="outline" size="sm" onClick={() => refetch()} className="gap-1 text-xs px-2">
              <RefreshCw className="w-3 h-3" />
              <span className="hidden sm:inline">重整</span>
            </Button>
+
          </div>
        </div>
 
@@ -268,33 +584,281 @@ export default function InternalSpreadsheet() {
         ))}
       </div>
 
+      {/* Spreadsheet tabs (only show in sheet tab) */}
+      {activeTab === 'sheet' && (
+        <div className="bg-stone-50 border-b border-stone-200 px-2 py-2 flex items-center gap-0 flex-shrink-0 relative">
+          {/* Hamburger menu — restore hidden sheets */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <button className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-stone-200 text-stone-500 transition-colors relative">
+                <Menu className="w-4 h-4" />
+                {hiddenSheetsList.length > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-amber-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
+                    {hiddenSheetsList.length}
+                  </span>
+                )}
+              </button>
+            </PopoverTrigger>
+            <PopoverContent align="start" className="w-56 p-2">
+              {/* Hide current sheet action */}
+              {visibleSheets.length > 1 && (
+                <>
+                  <button
+                    onClick={() => hideSheet(activeSpreadsheet)}
+                    className="w-full flex items-center gap-2 px-2 py-2 rounded-lg text-xs text-stone-600 hover:bg-red-50 hover:text-red-600 transition-colors"
+                  >
+                    <EyeOff className="w-3.5 h-3.5" />
+                    <span>隱藏目前試算表</span>
+                  </button>
+                </>
+              )}
+              {/* Delete current sheet action */}
+              {spreadsheets.length > 1 && (
+                <>
+                  <button
+                    onClick={() => removeSpreadsheet(activeSpreadsheet)}
+                    className="w-full flex items-center gap-2 px-2 py-2 rounded-lg text-xs text-stone-600 hover:bg-red-50 hover:text-red-600 transition-colors"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>刪除試算表</span>
+                  </button>
+                </>
+              )}
+              {(visibleSheets.length > 1 || activeSpreadsheet !== 'booking') && hiddenSheetsList.length > 0 && (
+                <div className="border-t border-stone-100 my-1" />
+              )}
+              <p className="text-xs font-medium text-stone-500 px-2 py-1.5">隱藏的試算表</p>
+              {hiddenSheetsList.length === 0 ? (
+                <p className="text-xs text-stone-400 px-2 py-3 text-center">沒有隱藏的試算表</p>
+              ) : (
+                <div className="space-y-1">
+                  {hiddenSheetsList.map(sheet => (
+                    <button
+                      key={sheet.id}
+                      onClick={() => unhideSheet(sheet.id)}
+                      className="w-full flex items-center gap-2 px-2 py-2 rounded-lg text-xs text-stone-600 hover:bg-amber-50 hover:text-amber-700 transition-colors"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                      <span>{sheet.name}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </PopoverContent>
+          </Popover>
 
+          {/* Scrollable sheet tabs */}
+          <div className="flex-1 overflow-x-auto flex items-center gap-2 px-2 scrollbar-thin" style={{ scrollbarWidth: 'thin' }}>
+            {visibleSheets.map((sheet) => (
+              <div key={sheet.id} className="flex items-center gap-1 flex-shrink-0">
+                {editingSheetId === sheet.id ? (
+                  <>
+                    <Input
+                      value={editingSheetName}
+                      onChange={e => setEditingSheetName(e.target.value)}
+                      className="h-7 text-xs px-2 py-0 w-32"
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') saveEditingSheet();
+                        if (e.key === 'Escape') setEditingSheetId(null);
+                      }}
+                      autoFocus
+                    />
+                    <Button
+                      onClick={saveEditingSheet}
+                      disabled={!editingSheetName.trim()}
+                      size="icon"
+                      className="h-7 w-7 bg-green-500 hover:bg-green-600 flex-shrink-0"
+                    >
+                      <Check className="w-3 h-3" />
+                    </Button>
+                    <Button
+                      onClick={() => setEditingSheetId(null)}
+                      size="icon"
+                      variant="outline"
+                      className="h-7 w-7 flex-shrink-0"
+                    >
+                      <X className="w-3 h-3" />
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      onClick={(e) => {
+                        if (activeSpreadsheet === sheet.id) {
+                          const rect = e.currentTarget.getBoundingClientRect();
+                          setSheetContextMenu({ id: sheet.id, x: rect.left, y: rect.bottom + 4 });
+                        } else {
+                          setActiveSpreadsheet(sheet.id);
+                        }
+                      }}
+                      onContextMenu={(e) => e.preventDefault()}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors select-none ${
+                        activeSpreadsheet === sheet.id
+                          ? 'bg-white border border-amber-500 text-amber-600'
+                          : 'bg-white border border-stone-200 text-stone-600 hover:border-stone-300'
+                      }`}
+                    >
+                      {sheet.name}
+                    </button>
+
+                  </>
+                )}
+              </div>
+            ))}
+
+            {/* Add new sheet */}
+            <div className="flex items-center gap-1 ml-1 pl-2 border-l border-stone-200 flex-shrink-0">
+              {showNewSheetInput && (
+                <>
+                  <Input
+                    value={newSheetName}
+                    onChange={e => setNewSheetName(e.target.value)}
+                    placeholder="新試算表..."
+                    className="h-7 text-xs px-2 py-0 w-32"
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') addSpreadsheet();
+                      if (e.key === 'Escape') setShowNewSheetInput(false);
+                    }}
+                    autoFocus
+                  />
+                  <Button
+                    onClick={addSpreadsheet}
+                    disabled={!newSheetName.trim()}
+                    size="icon"
+                    className="h-7 w-7 bg-amber-500 hover:bg-amber-600 flex-shrink-0"
+                  >
+                    <Check className="w-3 h-3" />
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      setShowNewSheetInput(false);
+                      setNewSheetName('');
+                    }}
+                    size="icon"
+                    variant="outline"
+                    className="h-7 w-7 flex-shrink-0"
+                  >
+                    <X className="w-3 h-3" />
+                  </Button>
+                </>
+              )}
+              {!showNewSheetInput && (
+                <Button
+                  onClick={() => setShowNewSheetInput(true)}
+                  size="icon"
+                  className="h-7 w-7 bg-amber-500 hover:bg-amber-600 flex-shrink-0"
+                >
+                  <Plus className="w-3 h-3" />
+                </Button>
+              )}
+            </div>
+          </div>
+
+          {/* Long press context menu */}
+          {longPressMenu && (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setLongPressMenu(null)} />
+              <div
+                className="fixed z-50 bg-white border border-stone-200 rounded-lg shadow-lg py-1 min-w-[140px]"
+                style={{ left: longPressMenu.x, top: longPressMenu.y }}
+              >
+                <button
+                  onClick={() => hideSheet(longPressMenu.id)}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-stone-600 hover:bg-stone-50 transition-colors"
+                >
+                  <EyeOff className="w-3.5 h-3.5" />
+                  隱藏此試算表
+                </button>
+              </div>
+            </>
+          )}
+
+          {/* Sheet context menu */}
+          {sheetContextMenu && (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setSheetContextMenu(null)} />
+              <div
+                className="fixed z-50 bg-white border border-stone-200 rounded-lg shadow-lg py-1 min-w-[140px]"
+                style={{ left: sheetContextMenu.x, top: sheetContextMenu.y }}
+              >
+                <button
+                  onClick={() => copySheet(sheetContextMenu.id)}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-stone-600 hover:bg-stone-50 transition-colors"
+                >
+                  <Copy className="w-3.5 h-3.5" />
+                  複製試算表
+                </button>
+                <button
+                  onClick={() => openRenameDialog(sheetContextMenu.id)}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-stone-600 hover:bg-stone-50 transition-colors"
+                >
+                  <Edit2 className="w-3.5 h-3.5" />
+                  重新命名
+                </button>
+                <button
+                  onClick={() => { hideSheet(sheetContextMenu.id); setSheetContextMenu(null); }}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-stone-600 hover:bg-stone-50 transition-colors border-t border-stone-100"
+                >
+                  <EyeOff className="w-3.5 h-3.5" />
+                  隱藏試算表
+                </button>
+                {spreadsheets.length > 1 && (
+                  <button
+                    onClick={() => { removeSpreadsheet(sheetContextMenu.id); setSheetContextMenu(null); }}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-xs text-red-600 hover:bg-red-50 transition-colors"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    刪除試算表
+                  </button>
+                )}
+              </div>
+            </>
+          )}
+
+          {/* Rename dialog */}
+          <Dialog open={!!renameDialogSheet} onOpenChange={() => setRenameDialogSheet(null)}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>重新命名試算表</DialogTitle>
+              </DialogHeader>
+              <Input
+                value={renameValue}
+                onChange={e => setRenameValue(e.target.value)}
+                placeholder="輸入新名稱..."
+                className="mt-3"
+                onKeyDown={e => {
+                  if (e.key === 'Enter') saveRename();
+                  if (e.key === 'Escape') setRenameDialogSheet(null);
+                }}
+                autoFocus
+              />
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setRenameDialogSheet(null)}>取消</Button>
+                <Button onClick={saveRename} disabled={!renameValue.trim()}>保存</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
+      )}
 
       {/* Content */}
       <div className="flex-1 overflow-hidden flex min-h-0">
         {activeTab === 'sheet' && (
           <div className="flex-1 flex flex-col overflow-hidden">
-            {googleSheetId ? (
-              <iframe
-                src={`https://docs.google.com/spreadsheets/d/${googleSheetId}/edit?usp=sharing`}
-                style={{ border: 'none', width: '100%', height: '100%' }}
-                allowFullScreen
-              />
-            ) : (
-              <div className="flex items-center justify-center h-full">
-                <Button asChild>
-                  <a href="/GoogleSheetsBackend">設定 Google Sheets</a>
-                </Button>
-              </div>
-            )}
+            {/* Check if current sheet is booking (default) or custom */}
+            {/* Unified spreadsheet editor for all sheet types */}
+            <SpreadsheetEditor 
+              spreadsheetId={activeSpreadsheet} 
+              spreadsheetName={currentSheet?.name}
+            />
           </div>
         )}
 
         {activeTab === 'ai' && (
-           <div className="flex-1 flex flex-col overflow-hidden">
-             <AIChat bookings={bookings} />
-           </div>
-         )}
+          <div className="flex-1 flex flex-col overflow-hidden">
+            <AIChat bookings={bookings} onMutation={recordUndo} />
+          </div>
+        )}
 
         {activeTab === 'roles' && (
           <div className="flex-1 flex flex-col overflow-hidden">

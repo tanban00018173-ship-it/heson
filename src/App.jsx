@@ -20,7 +20,6 @@ import CleanerApplicationForm from './pages/CleanerApplicationForm'
 import CleanerManagement from './pages/CleanerManagement'
 import CleanerBulkImport from './pages/CleanerBulkImport'
 import GoogleSheetsManager from './pages/GoogleSheetsManager'
-import GoogleSheetsBackend from './pages/GoogleSheetsBackend'
 import SheetSyncLog from './pages/SheetSyncLog'
 import ServiceCaseManager from './pages/ServiceCaseManager'
 import InternalSpreadsheet from './pages/InternalSpreadsheet'
@@ -109,7 +108,6 @@ const AuthenticatedApp = () => {
       <Route path="/CleanerManagement" element={<LayoutWrapper currentPageName="CleanerManagement"><CleanerManagement /></LayoutWrapper>} />
       <Route path="/CleanerBulkImport" element={<LayoutWrapper currentPageName="CleanerBulkImport"><CleanerBulkImport /></LayoutWrapper>} />
       <Route path="/GoogleSheetsManager" element={<LayoutWrapper currentPageName="GoogleSheetsManager"><GoogleSheetsManager /></LayoutWrapper>} />
-      <Route path="/GoogleSheetsBackend" element={<LayoutWrapper currentPageName="GoogleSheetsBackend"><GoogleSheetsBackend /></LayoutWrapper>} />
       <Route path="/SheetSyncLog" element={<LayoutWrapper currentPageName="SheetSyncLog"><SheetSyncLog /></LayoutWrapper>} />
       <Route path="/ServiceCaseManager" element={<LayoutWrapper currentPageName="ServiceCaseManager"><ServiceCaseManager /></LayoutWrapper>} />
       <Route path="/InternalSpreadsheet" element={<InternalSpreadsheet />} />
