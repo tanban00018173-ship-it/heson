@@ -121,9 +121,10 @@ export default function AdminDashboard() {
             ))}
           </div>
 
-          <div className="grid lg:grid-cols-2 gap-6">
+          <div className="grid lg:grid-cols-3 gap-6">
             {/* Recent Bookings */}
             <motion.div
+              className="lg:col-span-2"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: 0.4 }}
@@ -131,7 +132,6 @@ export default function AdminDashboard() {
               <Card className="border-0 shadow-sm">
                 <CardHeader className="flex flex-row items-center justify-between">
                   <CardTitle className="text-lg">最新預約</CardTitle>
-
                 </CardHeader>
                 <CardContent>
                   {bookings?.slice(0, 5).length === 0 ? (
@@ -157,18 +157,20 @@ export default function AdminDashboard() {
               </Card>
             </motion.div>
 
-            {/* Pending Actions */}
+            {/* Right Column */}
             <motion.div
+              className="flex flex-col gap-6"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: 0.5 }}
             >
+              {/* Pending Actions */}
               <Card className="border-0 shadow-sm">
-                <CardHeader className="flex flex-row items-center justify-between">
+                <CardHeader>
                   <CardTitle className="text-lg">待處理事項</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
+                  <div className="space-y-3">
                     <Link to={createPageUrl("AdminDispatch")}>
                       <div className="flex items-center justify-between p-4 bg-yellow-50 rounded-xl hover:bg-yellow-100 transition-colors cursor-pointer">
                         <div className="flex items-center gap-3">
@@ -180,7 +182,6 @@ export default function AdminDashboard() {
                         </Badge>
                       </div>
                     </Link>
-                    
                     <Link to={createPageUrl("AdminCleaners")}>
                       <div className="flex items-center justify-between p-4 bg-blue-50 rounded-xl hover:bg-blue-100 transition-colors cursor-pointer">
                         <div className="flex items-center gap-3">
@@ -192,19 +193,25 @@ export default function AdminDashboard() {
                         </Badge>
                       </div>
                     </Link>
-
-                    <Link to="/InternalSpreadsheet">
-                        <div className="flex items-center justify-between p-4 bg-amber-50 rounded-xl hover:bg-amber-100 transition-colors cursor-pointer">
-                          <div className="flex items-center gap-3">
-                            <Table className="w-5 h-5 text-amber-600" />
-                            <span className="text-stone-700">內部試算表 + AI 助理</span>
-                          </div>
-                          <Badge className="bg-amber-100 text-amber-700">內部工具</Badge>
-                        </div>
-                      </Link>
-
-
                   </div>
+                </CardContent>
+              </Card>
+
+              {/* Internal Tools */}
+              <Card className="border-0 shadow-sm">
+                <CardHeader>
+                  <CardTitle className="text-lg">內部工具</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Link to="/InternalSpreadsheet">
+                    <div className="flex items-center justify-between p-4 bg-amber-50 rounded-xl hover:bg-amber-100 transition-colors cursor-pointer">
+                      <div className="flex items-center gap-3">
+                        <Table className="w-5 h-5 text-amber-600" />
+                        <span className="text-stone-700">內部試算表 + AI 助理</span>
+                      </div>
+                      <Badge className="bg-amber-100 text-amber-700">前往</Badge>
+                    </div>
+                  </Link>
                 </CardContent>
               </Card>
             </motion.div>
