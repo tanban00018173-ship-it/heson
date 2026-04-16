@@ -236,13 +236,34 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
     setPendingEdit({ row, col, newValue: value, oldValue });
   };
 
-  const confirmCellChange = () => {
+  const confirmCellChange = async () => {
     if (!pendingEdit || !sheetData) return;
-    const newData = sheetData.data.map(r => [...r]);
-    newData[pendingEdit.row][pendingEdit.col] = pendingEdit.newValue;
-    updateMutation.mutate({ data: newData });
-    setEditCell(null);
-    setPendingEdit(null);
+    
+    try {
+      if (isBookingSheet && bookings.length > 0) {
+        // For booking sheet, update the Booking entity directly
+        const bookingIdx = pendingEdit.row - 1; // Row 0 is header
+        if (bookingIdx >= 0 && bookingIdx < bookings.length) {
+          const booking = bookings[bookingIdx];
+          const columnKey = BOOKING_COLUMNS[pendingEdit.col]?.key;
+          if (columnKey && columnKey !== 'created_date') {
+            await base44.entities.Booking.update(booking.id, {
+              [columnKey]: pendingEdit.newValue
+            });
+          }
+        }
+      } else {
+        // For custom sheets, update the CustomSheet data
+        const newData = sheetData.data.map(r => [...r]);
+        newData[pendingEdit.row][pendingEdit.col] = pendingEdit.newValue;
+        await updateMutation.mutateAsync({ data: newData });
+      }
+      
+      setEditCell(null);
+      setPendingEdit(null);
+    } catch (err) {
+      console.error('Failed to confirm change:', err);
+    }
   };
 
   const handleCellClick = (row, col, e) => {
