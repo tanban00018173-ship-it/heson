@@ -3,54 +3,45 @@ import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Copy, Trash2, Plus, Type, Undo2 } from "lucide-react";
+import { Undo2, Plus, Trash2, Copy, Type } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+
+const BOOKING_COLUMNS = [
+  { key: 'client_name', label: '客戶姓名' },
+  { key: 'service_type', label: '服務類型' },
+  { key: 'scheduled_date', label: '預約日期' },
+  { key: 'time_slot', label: '時段' },
+  { key: 'status', label: '狀態' },
+  { key: 'address', label: '地址' },
+  { key: 'cleaner_name', label: '指派管理師' },
+  { key: 'notes', label: '備註' },
+  { key: 'created_date', label: '建立時間' },
+];
 
 export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBookingSheet = false, bookings = [] }) {
   const queryClient = useQueryClient();
-  const [editCell, setEditCell] = useState(null); // { row, col }
+  const [editCell, setEditCell] = useState(null);
   const [editValue, setEditValue] = useState('');
-  const [contextMenu, setContextMenu] = useState(null); // { x, y, type, index }
-  const [formatDialog, setFormatDialog] = useState(null); // { row, col }
+  const [contextMenu, setContextMenu] = useState(null);
+  const [formatDialog, setFormatDialog] = useState(null);
   const [formatData, setFormatData] = useState({ bg: '#ffffff', color: '#000000', bold: false });
-  const [renamingCol, setRenamingCol] = useState(null);
-  const [newColName, setNewColName] = useState('');
-  const [renamingRow, setRenamingRow] = useState(null);
-  const [newRowName, setNewRowName] = useState('');
-  const [searchTerm, setSearchTerm] = useState('');
   const [zoom, setZoom] = useState(1);
-  const [rowNames, setRowNames] = useState({});
   const [undoStack, setUndoStack] = useState([]);
   const [undoing, setUndoing] = useState(false);
-  const [selectedRange, setSelectedRange] = useState(null); // { startRow, startCol, endRow, endCol }
-  const [resizingCol, setResizingCol] = useState(null); // { colIdx, startX, startWidth }
-  const [resizingRow, setResizingRow] = useState(null); // { rowIdx, startY, startHeight }
+  const [selectedRange, setSelectedRange] = useState(null);
+  const [resizingCol, setResizingCol] = useState(null);
+  const [resizingRow, setResizingRow] = useState(null);
   const tableRef = useRef(null);
 
-  const BOOKING_COLUMNS = [
-    { key: 'client_name', label: '客戶姓名' },
-    { key: 'service_type', label: '服務類型' },
-    { key: 'scheduled_date', label: '預約日期' },
-    { key: 'time_slot', label: '時段' },
-    { key: 'status', label: '狀態' },
-    { key: 'address', label: '地址' },
-    { key: 'cleaner_name', label: '指派管理師' },
-    { key: 'notes', label: '備註' },
-    { key: 'created_date', label: '建立時間' },
-  ];
-
   const convertBookingsToData = (bookingsList) => {
-    const data = [BOOKING_COLUMNS.map(c => c.label)];
-    bookingsList.forEach(b => {
-      const row = BOOKING_COLUMNS.map(col => {
+    const data = bookingsList.map(b => 
+      BOOKING_COLUMNS.map(col => {
         if (col.key === 'created_date' && b[col.key]) {
           return new Date(b[col.key]).toLocaleDateString('zh-TW');
         }
         return b[col.key] ?? '';
-      });
-      data.push(row);
-    });
+      })
+    );
     return data;
   };
 
@@ -65,7 +56,7 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
           data,
           row_count: data.length,
           col_count: BOOKING_COLUMNS.length,
-          col_widths: Array(BOOKING_COLUMNS.length).fill(120),
+          col_widths: Array(BOOKING_COLUMNS.length).fill(100),
           row_heights: Array(data.length).fill(30),
           cell_formats: {},
           col_names: BOOKING_COLUMNS.map(c => c.label)
@@ -98,7 +89,7 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
   const changeZoom = (delta) => setZoom(z => Math.min(2, Math.max(0.4, +(z + delta).toFixed(1))));
 
   const recordUndo = (item) => {
-    setUndoStack(prev => [...prev.slice(-49), item]); // Keep last 50 items
+    setUndoStack(prev => [...prev.slice(-49), item]);
   };
 
   const handleUndo = async () => {
@@ -106,32 +97,10 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
     setUndoing(true);
     const lastAction = undoStack[undoStack.length - 1];
     try {
-      if (lastAction.type === 'insertCol') {
-        await deleteColData(lastAction.colIdx);
-      } else if (lastAction.type === 'deleteCol') {
-        await restoreColData(lastAction.colIdx, lastAction.data);
-      } else if (lastAction.type === 'insertRow') {
-        await deleteRowData(lastAction.rowIdx);
-      } else if (lastAction.type === 'deleteRow') {
-        await restoreRowData(lastAction.rowIdx, lastAction.data);
-      } else if (lastAction.type === 'copyCol') {
-        await deleteColData(lastAction.colIdx + 1);
-      } else if (lastAction.type === 'copyRow') {
-        await deleteRowData(lastAction.rowIdx + 1);
-      } else if (lastAction.type === 'renameCol') {
-        await updateColName(lastAction.colIdx, lastAction.oldName);
-      } else if (lastAction.type === 'renameRow') {
-        setRowNames(prev => {
-          const newNames = { ...prev };
-          if (lastAction.oldName) {
-            newNames[lastAction.rowIdx] = lastAction.oldName;
-          } else {
-            delete newNames[lastAction.rowIdx];
-          }
-          return newNames;
-        });
-      } else if (lastAction.type === 'formatCell') {
-        await updateCellFormat(lastAction.key, lastAction.oldFormat);
+      if (lastAction.type === 'edit') {
+        const newData = sheetData.data.map(r => [...r]);
+        newData[lastAction.row][lastAction.col] = lastAction.oldValue;
+        updateMutation.mutate({ data: newData });
       }
       setUndoStack(prev => prev.slice(0, -1));
     } catch (err) {
@@ -140,90 +109,20 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
     setUndoing(false);
   };
 
-  const deleteColData = (colIdx) => {
-    if (!sheetData) return;
-    const newData = sheetData.data.map(row => {
-      const newRow = [...row];
-      newRow.splice(colIdx, 1);
-      return newRow;
-    });
-    const newColWidths = [...sheetData.col_widths];
-    newColWidths.splice(colIdx, 1);
-    const newColNames = [...sheetData.col_names];
-    newColNames.splice(colIdx, 1);
-    return updateMutation.mutate({
-      data: newData,
-      col_widths: newColWidths,
-      col_names: newColNames,
-      col_count: sheetData.col_count - 1
-    });
-  };
-
-  const restoreColData = (colIdx, data) => {
-    if (!sheetData) return;
-    const newData = sheetData.data.map((row, rowIdx) => {
-      const newRow = [...row];
-      newRow.splice(colIdx, 0, data[rowIdx] || '');
-      return newRow;
-    });
-    const newColWidths = [...sheetData.col_widths];
-    newColWidths.splice(colIdx, 0, 100);
-    const newColNames = [...sheetData.col_names];
-    newColNames.splice(colIdx, 0, String.fromCharCode(65 + (colIdx % 26)));
-    return updateMutation.mutate({
-      data: newData,
-      col_widths: newColWidths,
-      col_names: newColNames,
-      col_count: sheetData.col_count + 1
-    });
-  };
-
-  const deleteRowData = (rowIdx) => {
-    if (!sheetData) return;
-    const newData = [...sheetData.data];
-    newData.splice(rowIdx, 1);
-    const newRowHeights = [...sheetData.row_heights];
-    newRowHeights.splice(rowIdx, 1);
-    return updateMutation.mutate({
-      data: newData,
-      row_heights: newRowHeights,
-      row_count: sheetData.row_count - 1
-    });
-  };
-
-  const restoreRowData = (rowIdx, data) => {
-    if (!sheetData) return;
-    const newData = [...sheetData.data];
-    newData.splice(rowIdx, 0, data);
-    const newRowHeights = [...sheetData.row_heights];
-    newRowHeights.splice(rowIdx, 0, 30);
-    return updateMutation.mutate({
-      data: newData,
-      row_heights: newRowHeights,
-      row_count: sheetData.row_count + 1
-    });
-  };
-
-  const updateColName = (colIdx, newName) => {
-    if (!sheetData) return;
-    const newColNames = [...sheetData.col_names];
-    newColNames[colIdx] = newName;
-    return updateMutation.mutate({ col_names: newColNames });
-  };
-
-  const updateCellFormat = (key, format) => {
-    if (!sheetData) return;
-    const newFormats = { ...sheetData.cell_formats };
-    if (format) {
-      newFormats[key] = format;
-    } else {
-      delete newFormats[key];
-    }
-    return updateMutation.mutate({ cell_formats: newFormats });
-  };
-
   const handleCellChange = (row, col, value) => {
     if (!sheetData) return;
+    const oldValue = sheetData.data[row][col];
+    if (oldValue === value) {
+      setEditCell(null);
+      return;
+    }
+    recordUndo({
+      type: 'edit',
+      row,
+      col,
+      oldValue,
+      newValue: value
+    });
     const newData = sheetData.data.map(r => [...r]);
     newData[row][col] = value;
     updateMutation.mutate({ data: newData });
@@ -232,17 +131,13 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
 
   const handleCellClick = (row, col, e) => {
     if (e.shiftKey && selectedRange) {
-      // Extend selection
       setSelectedRange({
         startRow: Math.min(selectedRange.startRow, row),
         startCol: Math.min(selectedRange.startCol, col),
         endRow: Math.max(selectedRange.endRow, row),
         endCol: Math.max(selectedRange.endCol, col),
       });
-    } else if (e.ctrlKey || e.metaKey) {
-      // Keep current selection
-    } else {
-      // Single cell selection
+    } else if (!(e.ctrlKey || e.metaKey)) {
       setSelectedRange({ startRow: row, startCol: col, endRow: row, endCol: col });
     }
   };
@@ -296,216 +191,69 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
     }
   }, [resizingCol, resizingRow, sheetData]);
 
-  const insertCol = (beforeCol) => {
-    if (!sheetData) return;
-    const newData = sheetData.data.map(row => {
-      const newRow = [...row];
-      newRow.splice(beforeCol, 0, '');
-      return newRow;
-    });
-    const newColWidths = [...sheetData.col_widths];
-    newColWidths.splice(beforeCol, 0, 100);
-    const newColNames = [...sheetData.col_names];
-    newColNames.splice(beforeCol, 0, String.fromCharCode(65 + (beforeCol % 26)));
-    recordUndo({ type: 'insertCol', colIdx: beforeCol, description: `新增欄位於第 ${beforeCol + 1} 欄` });
-    updateMutation.mutate({
-      data: newData,
-      col_widths: newColWidths,
-      col_names: newColNames,
-      col_count: sheetData.col_count + 1
-    });
-    setContextMenu(null);
-  };
-
-  const deleteCol = (colIdx) => {
-    if (!sheetData || sheetData.col_count <= 1) return;
-    const deletedData = sheetData.data.map(row => row[colIdx]);
-    const newData = sheetData.data.map(row => {
-      const newRow = [...row];
-      newRow.splice(colIdx, 1);
-      return newRow;
-    });
-    const newColWidths = [...sheetData.col_widths];
-    newColWidths.splice(colIdx, 1);
-    const newColNames = [...sheetData.col_names];
-    newColNames.splice(colIdx, 1);
-    recordUndo({ type: 'deleteCol', colIdx, data: deletedData, description: `刪除第 ${colIdx + 1} 欄` });
-    updateMutation.mutate({
-      data: newData,
-      col_widths: newColWidths,
-      col_names: newColNames,
-      col_count: sheetData.col_count - 1
-    });
-    setContextMenu(null);
-  };
-
-  const copyCol = (colIdx) => {
-    if (!sheetData) return;
-    const newData = sheetData.data.map(row => {
-      const newRow = [...row];
-      newRow.splice(colIdx + 1, 0, row[colIdx]);
-      return newRow;
-    });
-    const newColWidths = [...sheetData.col_widths];
-    newColWidths.splice(colIdx + 1, 0, sheetData.col_widths[colIdx]);
-    const newColNames = [...sheetData.col_names];
-    newColNames.splice(colIdx + 1, 0, sheetData.col_names[colIdx] + '\'');
-    recordUndo({ type: 'copyCol', colIdx, description: `複製第 ${colIdx + 1} 欄` });
-    updateMutation.mutate({
-      data: newData,
-      col_widths: newColWidths,
-      col_names: newColNames,
-      col_count: sheetData.col_count + 1
-    });
-    setContextMenu(null);
-  };
-
-  const insertRow = (beforeRow) => {
-    if (!sheetData) return;
-    const newData = [...sheetData.data];
-    newData.splice(beforeRow, 0, Array(sheetData.col_count).fill(''));
-    const newRowHeights = [...sheetData.row_heights];
-    newRowHeights.splice(beforeRow, 0, 30);
-    recordUndo({ type: 'insertRow', rowIdx: beforeRow, description: `新增列於第 ${beforeRow + 1} 列` });
-    updateMutation.mutate({
-      data: newData,
-      row_heights: newRowHeights,
-      row_count: sheetData.row_count + 1
-    });
-    setContextMenu(null);
-  };
-
-  const deleteRow = (rowIdx) => {
-    if (!sheetData || sheetData.row_count <= 1) return;
-    const deletedData = [...sheetData.data[rowIdx]];
-    const newData = [...sheetData.data];
-    newData.splice(rowIdx, 1);
-    const newRowHeights = [...sheetData.row_heights];
-    newRowHeights.splice(rowIdx, 1);
-    recordUndo({ type: 'deleteRow', rowIdx, data: deletedData, description: `刪除第 ${rowIdx + 1} 列` });
-    updateMutation.mutate({
-      data: newData,
-      row_heights: newRowHeights,
-      row_count: sheetData.row_count - 1
-    });
-    setContextMenu(null);
-  };
-
-  const copyRow = (rowIdx) => {
-    if (!sheetData) return;
-    const newData = [...sheetData.data];
-    newData.splice(rowIdx + 1, 0, [...newData[rowIdx]]);
-    const newRowHeights = [...sheetData.row_heights];
-    newRowHeights.splice(rowIdx + 1, 0, sheetData.row_heights[rowIdx]);
-    recordUndo({ type: 'copyRow', rowIdx, description: `複製第 ${rowIdx + 1} 列` });
-    updateMutation.mutate({
-      data: newData,
-      row_heights: newRowHeights,
-      row_count: sheetData.row_count + 1
-    });
-    setContextMenu(null);
-  };
-
-  const applyFormat = (row, col) => {
-    if (!sheetData || !formatDialog) return;
-    const key = `${row}_${col}`;
-    const oldFormat = sheetData.cell_formats?.[key];
-    const newFormats = { ...sheetData.cell_formats, [key]: formatData };
-    recordUndo({ type: 'formatCell', key, oldFormat, description: `變更 ${key} 單元格格式` });
-    updateMutation.mutate({ cell_formats: newFormats });
-    setFormatDialog(null);
-  };
-
-  const renameCol = (colIdx) => {
-    if (!sheetData || !newColName.trim()) return;
-    const newColNames = [...sheetData.col_names];
-    const oldName = newColNames[colIdx];
-    newColNames[colIdx] = newColName;
-    recordUndo({ type: 'renameCol', colIdx, oldName, description: `重新命名第 ${colIdx + 1} 欄` });
-    updateMutation.mutate({ col_names: newColNames });
-    setRenamingCol(null);
-    setNewColName('');
-    setContextMenu(null);
-  };
-
-  const renameRow = (rowIdx) => {
-    if (!sheetData || !newRowName.trim()) return;
-    const oldName = rowNames[rowIdx];
-    recordUndo({ type: 'renameRow', rowIdx, oldName, description: `重新命名第 ${rowIdx + 1} 列` });
-    setRowNames({ ...rowNames, [rowIdx]: newRowName });
-    setRenamingRow(null);
-    setNewRowName('');
-    setContextMenu(null);
-  };
-
   if (isLoading || !sheetData) {
     return <div className="flex items-center justify-center h-40">載入中...</div>;
   }
 
-  const filteredData = isBookingSheet ? sheetData.data.filter((row, idx) => {
-    if (idx === 0 || !searchTerm) return true;
-    const q = searchTerm.toLowerCase();
-    return row.some(cell => String(cell).toLowerCase().includes(q));
-  }) : sheetData.data;
+  const getColLabel = (idx) => {
+    let label = '';
+    let n = idx;
+    while (n >= 0) {
+      label = String.fromCharCode(65 + (n % 26)) + label;
+      n = Math.floor(n / 26) - 1;
+    }
+    return label;
+  };
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden">
-      {/* Info bar with search, undo, and zoom */}
-      <div className="px-4 py-2 bg-stone-50 border-b border-stone-200 flex items-center justify-between text-xs text-stone-600 gap-3">
-        <span>{spreadsheetName} · {sheetData.row_count} 行 × {sheetData.col_count} 列</span>
-        {isBookingSheet && (
-          <>
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="搜尋..."
-              className="px-2 py-1 text-xs border border-stone-300 rounded"
-            />
-            {searchTerm && <span className="text-stone-500">找到 {filteredData.length - 1} 筆</span>}
-          </>
-        )}
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleUndo}
-          disabled={undoStack.length === 0 || undoing}
-          className="gap-1 text-xs px-2 h-6"
-          title={undoStack.length > 0 ? `復原: ${undoStack[undoStack.length - 1]?.description}` : '沒有可復原的操作'}
-        >
-          <Undo2 className="w-3 h-3" />
-          復原
-          {undoStack.length > 0 && (
-            <Badge className="ml-1 h-4 px-1 text-[10px] bg-amber-100 text-amber-700">{undoStack.length}</Badge>
-          )}
-        </Button>
-        <div className="flex items-center gap-1 ml-auto">
-          <button onClick={() => changeZoom(-0.1)} className="p-1 hover:bg-stone-200 text-stone-600">−</button>
-          <span className="w-10 text-center text-xs text-stone-600">{Math.round(zoom * 100)}%</span>
-          <button onClick={() => changeZoom(0.1)} className="p-1 hover:bg-stone-200 text-stone-600">+</button>
+    <div className="flex-1 flex flex-col overflow-hidden bg-white">
+      {/* Top toolbar */}
+      <div className="px-4 py-2.5 bg-white border-b border-stone-200 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <span className="text-sm font-medium text-stone-700">{spreadsheetName} · {sheetData.row_count} 行 × {sheetData.col_count} 列</span>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={handleUndo} 
+            disabled={undoStack.length === 0 || undoing} 
+            className="gap-1 text-xs h-7 px-2 text-stone-600"
+          >
+            <Undo2 className="w-3 h-3" />
+            復原
+          </Button>
+        </div>
+        <div className="flex items-center gap-2 text-stone-600">
+          <button onClick={() => changeZoom(-0.1)} className="px-2 py-0.5 text-sm hover:bg-stone-100 rounded">−</button>
+          <span className="w-12 text-center text-sm">{Math.round(zoom * 100)}%</span>
+          <button onClick={() => changeZoom(0.1)} className="px-2 py-0.5 text-sm hover:bg-stone-100 rounded">+</button>
         </div>
       </div>
 
-      {/* Table */}
-      <div ref={tableRef} className="flex-1 overflow-auto">
-        <table className="border-collapse border border-stone-300 bg-white" style={{ transformOrigin: 'top left', transform: `scale(${zoom})`, width: `${100 / zoom}%` }}>
+      {/* Spreadsheet */}
+      <div className="flex-1 overflow-auto" ref={tableRef}>
+        <table 
+          className="border-collapse bg-white"
+          style={{ 
+            transformOrigin: 'top left', 
+            transform: `scale(${zoom})`,
+            minWidth: `${100 / zoom}%`
+          }}
+        >
           <thead>
             <tr>
-              <th className="w-8 h-7 bg-stone-100 border border-stone-300 text-xs text-stone-500 text-center"></th>
-              {sheetData.col_names.map((name, colIdx) => (
+              <th className="w-10 h-8 bg-stone-100 border border-stone-300 text-xs font-medium text-stone-600"></th>
+              {sheetData.col_names.map((_, colIdx) => (
                 <th
                   key={colIdx}
                   style={{ width: sheetData.col_widths[colIdx] }}
-                  className="h-7 bg-stone-100 border border-stone-300 px-2 text-xs font-medium text-stone-700 cursor-pointer hover:bg-stone-200 relative group select-none"
-                  onClick={(e) => {
-                    const rect = e.currentTarget.getBoundingClientRect();
-                    setContextMenu({ x: rect.left, y: rect.bottom + 4, type: 'col', index: colIdx });
-                  }}
+                  className="h-8 bg-stone-100 border border-stone-300 px-2 text-xs font-medium text-stone-700 select-none relative"
                 >
-                  <div className="truncate">{name || `Col ${colIdx + 1}`}</div>
-                  <div className="text-[8px] text-stone-500 absolute top-1 right-1">▼</div>
+                  <div className="flex items-center justify-between h-full">
+                    <span>{getColLabel(colIdx)}</span>
+                    <span className="text-[10px] text-stone-400 opacity-50">▼</span>
+                  </div>
                   <div
-                    className="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-amber-400 opacity-0 hover:opacity-100 transition-opacity"
+                    className="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-blue-400 opacity-0 hover:opacity-100 transition-opacity"
                     onMouseDown={(e) => handleColResizeStart(e, colIdx)}
                     style={{ right: '-2px' }}
                   />
@@ -514,29 +262,27 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
             </tr>
           </thead>
           <tbody>
-            {filteredData.map((row, rowIdx) => (
+            {sheetData.data.map((row, rowIdx) => (
               <tr key={rowIdx}>
                 <td
-                  className="w-8 bg-stone-100 border border-stone-300 text-xs text-stone-500 text-center cursor-pointer hover:bg-stone-200 font-medium relative select-none"
-                  onClick={(e) => {
-                    const rect = e.currentTarget.getBoundingClientRect();
-                    setContextMenu({ x: rect.left, y: rect.bottom + 4, type: 'row', index: rowIdx });
-                  }}
-                  title={rowNames[rowIdx] ? `${rowIdx + 1} - ${rowNames[rowIdx]}` : `第 ${rowIdx + 1} 列`}
+                  className="w-10 bg-stone-100 border border-stone-300 text-xs font-medium text-stone-600 text-center select-none relative"
                   style={{ height: sheetData.row_heights[rowIdx] }}
                 >
-                  <div className="truncate">{rowNames[rowIdx] ? `${rowIdx + 1}*` : rowIdx + 1}</div>
-                  <div className="text-[8px] absolute top-0.5 right-0.5 text-stone-500">▼</div>
+                  <div className="flex items-center justify-between h-full px-2">
+                    <span>{rowIdx + 1}</span>
+                    <span className="text-[10px] text-stone-400 opacity-50">▼</span>
+                  </div>
                   <div
-                    className="absolute bottom-0 left-0 w-full h-1 cursor-row-resize hover:bg-amber-400 opacity-0 hover:opacity-100 transition-opacity"
+                    className="absolute bottom-0 left-0 w-full h-1 cursor-row-resize hover:bg-blue-400 opacity-0 hover:opacity-100 transition-opacity"
                     onMouseDown={(e) => handleRowResizeStart(e, rowIdx)}
                     style={{ bottom: '-2px' }}
                   />
                 </td>
                 {row.map((cell, colIdx) => {
                   const format = sheetData.cell_formats?.[`${rowIdx}_${colIdx}`] || {};
-                  const isEditing = !isBookingSheet && editCell?.row === rowIdx && editCell?.col === colIdx;
+                  const isEditing = editCell?.row === rowIdx && editCell?.col === colIdx;
                   const selected = isSelected(rowIdx, colIdx);
+                  
                   return (
                     <td
                       key={`${rowIdx}_${colIdx}`}
@@ -551,11 +297,10 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
                       className="px-2 py-1 text-xs cursor-cell select-none"
                       onClick={(e) => {
                         handleCellClick(rowIdx, colIdx, e);
-                        setEditCell({ row: rowIdx, col: colIdx });
-                      }}
-                      onContextMenu={(e) => {
-                        e.preventDefault();
-                        setContextMenu({ x: e.clientX, y: e.clientY, type: 'cell', row: rowIdx, col: colIdx });
+                        if (!isEditing) {
+                          setEditCell({ row: rowIdx, col: colIdx });
+                          setEditValue(cell);
+                        }
                       }}
                     >
                       {isEditing ? (
@@ -568,7 +313,7 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
                             if (e.key === 'Enter') handleCellChange(rowIdx, colIdx, editValue);
                             if (e.key === 'Escape') setEditCell(null);
                           }}
-                          className="h-6 p-1 text-xs"
+                          className="h-6 p-1 text-xs border-0 shadow-none"
                           onClick={(e) => e.stopPropagation()}
                         />
                       ) : (
@@ -582,194 +327,6 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
           </tbody>
         </table>
       </div>
-
-      {/* Context menus - only for non-booking sheets */}
-      {contextMenu && !isBookingSheet && (
-        <>
-          <div className="fixed inset-0 z-40" onClick={() => setContextMenu(null)} />
-          <div
-            className="fixed z-50 bg-white border border-stone-200 rounded-lg shadow-lg py-0.5 min-w-[140px]"
-            style={{ left: contextMenu.x, top: contextMenu.y }}
-          >
-            {contextMenu.type === 'col' && (
-              <>
-                <button
-                  onClick={() => insertCol(contextMenu.index)}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-stone-600 hover:bg-stone-100 transition-colors"
-                >
-                  <Plus className="w-3 h-3" /> 新增左欄
-                </button>
-                <button
-                  onClick={() => insertCol(contextMenu.index + 1)}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-stone-600 hover:bg-stone-100 transition-colors"
-                >
-                  <Plus className="w-3 h-3" /> 新增右欄
-                </button>
-                <button
-                  onClick={() => copyCol(contextMenu.index)}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-stone-600 hover:bg-stone-100 transition-colors"
-                >
-                  <Copy className="w-3 h-3" /> 複製
-                </button>
-                <button
-                  onClick={() => {
-                    setRenamingCol(contextMenu.index);
-                    setNewColName(sheetData.col_names[contextMenu.index] || '');
-                    setContextMenu(null);
-                  }}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-stone-600 hover:bg-stone-100 transition-colors"
-                >
-                  <Type className="w-3 h-3" /> 重新命名
-                </button>
-                {sheetData.col_count > 1 && (
-                  <button
-                    onClick={() => deleteCol(contextMenu.index)}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-xs text-stone-600 hover:bg-red-50 transition-colors border-t border-stone-100"
-                  >
-                    <Trash2 className="w-3 h-3" /> 刪除
-                  </button>
-                )}
-              </>
-            )}
-            {contextMenu.type === 'row' && (
-              <>
-                <button
-                  onClick={() => insertRow(contextMenu.index)}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-stone-600 hover:bg-stone-100 transition-colors"
-                >
-                  <Plus className="w-3 h-3" /> 新增上方
-                </button>
-                <button
-                  onClick={() => insertRow(contextMenu.index + 1)}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-stone-600 hover:bg-stone-100 transition-colors"
-                >
-                  <Plus className="w-3 h-3" /> 新增下方
-                </button>
-                <button
-                  onClick={() => copyRow(contextMenu.index)}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-stone-600 hover:bg-stone-100 transition-colors"
-                >
-                  <Copy className="w-3 h-3" /> 複製
-                </button>
-                <button
-                  onClick={() => {
-                    setRenamingRow(contextMenu.index);
-                    setNewRowName(rowNames[contextMenu.index] || '');
-                    setContextMenu(null);
-                  }}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-stone-600 hover:bg-stone-100 transition-colors"
-                >
-                  <Type className="w-3 h-3" /> 重新命名
-                </button>
-                {sheetData.row_count > 1 && (
-                  <button
-                    onClick={() => deleteRow(contextMenu.index)}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-xs text-stone-600 hover:bg-red-50 transition-colors border-t border-stone-100"
-                  >
-                    <Trash2 className="w-3 h-3" /> 刪除
-                  </button>
-                )}
-              </>
-            )}
-            {contextMenu.type === 'cell' && (
-              <button
-                onClick={() => {
-                  setFormatDialog({ row: contextMenu.row, col: contextMenu.col });
-                  setContextMenu(null);
-                }}
-                className="w-full flex items-center gap-2 px-3 py-2 text-xs text-stone-600 hover:bg-stone-100 transition-colors"
-              >
-                <Type className="w-3 h-3" /> 設定格式
-              </button>
-            )}
-          </div>
-        </>
-      )}
-
-      {/* Rename column dialog */}
-      <Dialog open={renamingCol !== null} onOpenChange={() => setRenamingCol(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>重新命名欄位</DialogTitle>
-          </DialogHeader>
-          <Input
-            value={newColName}
-            onChange={(e) => setNewColName(e.target.value)}
-            placeholder="輸入新名稱..."
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') renameCol(renamingCol);
-            }}
-            autoFocus
-          />
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setRenamingCol(null)}>取消</Button>
-            <Button onClick={() => renameCol(renamingCol)}>保存</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Rename row dialog */}
-      <Dialog open={renamingRow !== null} onOpenChange={() => setRenamingRow(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>重新命名列</DialogTitle>
-          </DialogHeader>
-          <Input
-            value={newRowName}
-            onChange={(e) => setNewRowName(e.target.value)}
-            placeholder="輸入新名稱..."
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') renameRow(renamingRow);
-            }}
-            autoFocus
-          />
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setRenamingRow(null)}>取消</Button>
-            <Button onClick={() => renameRow(renamingRow)}>保存</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Cell format dialog */}
-      <Dialog open={!!formatDialog} onOpenChange={() => setFormatDialog(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>設定單元格格式</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3">
-            <div>
-              <label className="text-xs font-medium">背景色</label>
-              <input
-                type="color"
-                value={formatData.bg}
-                onChange={(e) => setFormatData({ ...formatData, bg: e.target.value })}
-                className="w-full h-8 cursor-pointer"
-              />
-            </div>
-            <div>
-              <label className="text-xs font-medium">文字色</label>
-              <input
-                type="color"
-                value={formatData.color}
-                onChange={(e) => setFormatData({ ...formatData, color: e.target.value })}
-                className="w-full h-8 cursor-pointer"
-              />
-            </div>
-            <label className="flex items-center gap-2 text-xs">
-              <input
-                type="checkbox"
-                checked={formatData.bold}
-                onChange={(e) => setFormatData({ ...formatData, bold: e.target.checked })}
-              />
-              粗體
-            </label>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setFormatDialog(null)}>取消</Button>
-            <Button onClick={() => applyFormat(formatDialog.row, formatDialog.col)}>套用</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
