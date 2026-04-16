@@ -503,7 +503,7 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
                   }}
                 >
                   <div className="flex items-center justify-between h-full">
-                    <span className="truncate">{name || `${String.fromCharCode(65 + colIdx)}`}</span>
+                    <span className="truncate">{String.fromCharCode(65 + colIdx)}</span>
                     <ChevronDown className="w-3 h-3 text-stone-400 opacity-0 group-hover:opacity-100 flex-shrink-0" />
                   </div>
                   <div
@@ -519,7 +519,7 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
             {filteredData.map((row, rowIdx) => (
               <tr key={rowIdx} className="hover:bg-blue-50">
                 <td
-                  className="w-9 bg-stone-50 border border-stone-200 text-xs text-stone-600 text-center font-medium cursor-pointer hover:bg-stone-100 relative select-none"
+                  className="w-9 bg-stone-50 border border-stone-200 text-xs text-stone-600 text-center font-medium cursor-pointer hover:bg-stone-100 relative group select-none"
                   onClick={(e) => {
                     const rect = e.currentTarget.getBoundingClientRect();
                     setContextMenu({ x: rect.left, y: rect.bottom + 4, type: 'row', index: rowIdx });
@@ -527,9 +527,8 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
                   title={rowNames[rowIdx] ? `${rowIdx + 1} - ${rowNames[rowIdx]}` : `第 ${rowIdx + 1} 列`}
                   style={{ height: sheetData.row_heights[rowIdx] }}
                 >
-                  <div className="flex items-center justify-center h-full gap-1">
+                  <div className="flex items-center justify-center h-full">
                     <span>{rowIdx + 1}</span>
-                    <ChevronDown className="w-3 h-3 text-stone-400 opacity-0 group-hover:opacity-100" />
                   </div>
                   <div
                     className="absolute bottom-0 left-0 w-full h-0.5 cursor-row-resize hover:bg-blue-400 opacity-0 hover:opacity-100 transition-opacity"
