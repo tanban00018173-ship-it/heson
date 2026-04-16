@@ -15,8 +15,11 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
   const [formatData, setFormatData] = useState({ bg: '#ffffff', color: '#000000', bold: false });
   const [renamingCol, setRenamingCol] = useState(null);
   const [newColName, setNewColName] = useState('');
+  const [renamingRow, setRenamingRow] = useState(null);
+  const [newRowName, setNewRowName] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [zoom, setZoom] = useState(1);
+  const [rowNames, setRowNames] = useState({});
   const tableRef = useRef(null);
 
   const BOOKING_COLUMNS = [
@@ -216,6 +219,14 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
     setContextMenu(null);
   };
 
+  const renameRow = (rowIdx) => {
+    if (!sheetData || isBookingSheet || !newRowName.trim()) return;
+    setRowNames({ ...rowNames, [rowIdx]: newRowName });
+    setRenamingRow(null);
+    setNewRowName('');
+    setContextMenu(null);
+  };
+
   if (isLoading || !sheetData) {
     return <div className="flex items-center justify-center h-40">載入中...</div>;
   }
@@ -261,13 +272,13 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
                   key={colIdx}
                   style={{ width: sheetData.col_widths[colIdx] }}
                   className="h-7 bg-stone-100 border border-stone-300 px-2 text-xs font-medium text-stone-700 cursor-pointer hover:bg-stone-200 relative group"
-                  onContextMenu={(e) => {
-                    e.preventDefault();
-                    setContextMenu({ x: e.clientX, y: e.clientY, type: 'col', index: colIdx });
+                  onClick={(e) => {
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    setContextMenu({ x: rect.left, y: rect.bottom + 4, type: 'col', index: colIdx });
                   }}
                 >
                   <div className="truncate">{name || `Col ${colIdx + 1}`}</div>
-                  <div className="hidden group-hover:block absolute top-0 right-0 text-[8px] text-stone-500">⋮</div>
+                  <div className="text-[8px] text-stone-500 absolute top-1 right-1">▼</div>
                 </th>
               ))}
             </tr>
@@ -276,13 +287,15 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
             {filteredData.map((row, rowIdx) => (
               <tr key={rowIdx}>
                 <td
-                  className="w-8 bg-stone-100 border border-stone-300 text-xs text-stone-500 text-center cursor-pointer hover:bg-stone-200 font-medium"
-                  onContextMenu={(e) => {
-                    e.preventDefault();
-                    setContextMenu({ x: e.clientX, y: e.clientY, type: 'row', index: rowIdx });
+                  className="w-8 bg-stone-100 border border-stone-300 text-xs text-stone-500 text-center cursor-pointer hover:bg-stone-200 font-medium relative"
+                  onClick={(e) => {
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    setContextMenu({ x: rect.left, y: rect.bottom + 4, type: 'row', index: rowIdx });
                   }}
+                  title={rowNames[rowIdx] ? `${rowIdx + 1} - ${rowNames[rowIdx]}` : `第 ${rowIdx + 1} 列`}
                 >
-                  {rowIdx + 1}
+                  <div className="truncate">{rowNames[rowIdx] ? `${rowIdx + 1}*` : rowIdx + 1}</div>
+                  <div className="text-[8px] absolute top-0.5 right-0.5 text-stone-500">▼</div>
                 </td>
                 {row.map((cell, colIdx) => {
                   const format = sheetData.cell_formats?.[`${rowIdx}_${colIdx}`] || {};
@@ -399,6 +412,16 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
                 >
                   <Copy className="w-3 h-3" /> 複製
                 </button>
+                <button
+                  onClick={() => {
+                    setRenamingRow(contextMenu.index);
+                    setNewRowName(rowNames[contextMenu.index] || '');
+                    setContextMenu(null);
+                  }}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-stone-100"
+                >
+                  <Type className="w-3 h-3" /> 重新命名
+                </button>
                 {sheetData.row_count > 1 && (
                   <button
                     onClick={() => deleteRow(contextMenu.index)}
@@ -443,6 +466,30 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
           <DialogFooter>
             <Button variant="outline" onClick={() => setRenamingCol(null)}>取消</Button>
             <Button onClick={() => renameCol(renamingCol)}>保存</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      )}
+
+      {/* Rename row dialog - only for non-booking sheets */}
+      {!isBookingSheet && (
+      <Dialog open={renamingRow !== null} onOpenChange={() => setRenamingRow(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>重新命名列</DialogTitle>
+          </DialogHeader>
+          <Input
+            value={newRowName}
+            onChange={(e) => setNewRowName(e.target.value)}
+            placeholder="輸入新名稱..."
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') renameRow(renamingRow);
+            }}
+            autoFocus
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRenamingRow(null)}>取消</Button>
+            <Button onClick={() => renameRow(renamingRow)}>保存</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
