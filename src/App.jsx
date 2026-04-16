@@ -110,7 +110,8 @@ const AuthenticatedApp = () => {
       <Route path="/GoogleSheetsManager" element={<LayoutWrapper currentPageName="GoogleSheetsManager"><GoogleSheetsManager /></LayoutWrapper>} />
       <Route path="/SheetSyncLog" element={<LayoutWrapper currentPageName="SheetSyncLog"><SheetSyncLog /></LayoutWrapper>} />
       <Route path="/ServiceCaseManager" element={<LayoutWrapper currentPageName="ServiceCaseManager"><ServiceCaseManager /></LayoutWrapper>} />
-      <Route path="/InternalSpreadsheet" element={<InternalSpreadsheet />} />
+      <Route path="/InternalSpreadsheet" element={<GoogleSheetViewer />} />
+      <Route path="/GoogleSheetViewer" element={<GoogleSheetViewer />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );
