@@ -40,6 +40,11 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName }) {
   const [newColName, setNewColName] = useState('');
   const [lastClickedRow, setLastClickedRow] = useState(null);
   const [lastClickedCol, setLastClickedCol] = useState(null);
+  const [draggingRow, setDraggingRow] = useState(null);
+  const [draggingCol, setDraggingCol] = useState(null);
+  const [dragStartRow, setDragStartRow] = useState(null);
+  const [dragStartCol, setDragStartCol] = useState(null);
+  const longPressTimerRef = useRef(null);
   const tableRef = useRef(null);
 
   const { data: sheetData, isLoading, refetch: refetchSheet } = useQuery({
@@ -250,14 +255,24 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName }) {
         newRowHeights[resizingRow.rowIdx] = newHeight;
         updateMutation.mutate({ row_heights: newRowHeights });
       }
+      if (draggingRow !== null) {
+        setSelectedRange({ startRow: draggingRow, startCol: 0, endRow: draggingRow, endCol: sheetData.col_count - 1 });
+      }
+      if (draggingCol !== null) {
+        setSelectedRange({ startRow: 0, startCol: draggingCol, endRow: sheetData.row_count - 1, endCol: draggingCol });
+      }
     };
 
     const handleMouseUp = () => {
       setResizingCol(null);
       setResizingRow(null);
+      setDraggingRow(null);
+      setDraggingCol(null);
+      setDragStartRow(null);
+      setDragStartCol(null);
     };
 
-    if (resizingCol || resizingRow) {
+    if (resizingCol || resizingRow || draggingRow !== null || draggingCol !== null) {
       document.addEventListener('mousemove', handleMouseMove);
       document.addEventListener('mouseup', handleMouseUp);
       return () => {
@@ -265,7 +280,7 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName }) {
         document.removeEventListener('mouseup', handleMouseUp);
       };
     }
-  }, [resizingCol, resizingRow, sheetData]);
+  }, [resizingCol, resizingRow, draggingRow, draggingCol, sheetData]);
 
   if (isLoading || !sheetData) {
     return <div className="flex items-center justify-center h-40">載入中...</div>;
@@ -393,12 +408,15 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName }) {
                <th
                   key={colIdx}
                   style={{ width: sheetData.col_widths[colIdx] }}
-                  className={`h-8 border border-stone-300 px-2 text-xs font-medium select-none relative cursor-pointer ${
+                  className={`h-8 border border-stone-300 px-2 text-xs font-medium select-none relative ${
+                    draggingCol === colIdx ? 'cursor-grabbing bg-blue-200' : 'cursor-pointer'
+                  } ${
                     selectedRange?.startCol === colIdx && selectedRange?.endCol === colIdx && selectedRange?.startRow === 0 && selectedRange?.endRow === sheetData.row_count - 1
                       ? 'bg-blue-100 text-blue-700'
                       : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
                   }`}
                   onClick={(e) => {
+                    if (e.button !== 0 || draggingCol !== null) return;
                     if (lastClickedCol === colIdx) {
                       const rect = e.currentTarget.getBoundingClientRect();
                       setContextMenu({ x: rect.left, y: rect.bottom + 4, type: 'col', index: colIdx });
@@ -408,6 +426,35 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName }) {
                       setLastClickedCol(colIdx);
                       setLastClickedRow(null);
                     }
+                  }}
+                  onMouseDown={(e) => {
+                    if (e.button !== 0) return;
+                    longPressTimerRef.current = setTimeout(() => {
+                      setDraggingCol(colIdx);
+                      setDragStartCol(colIdx);
+                      setSelectedRange({ startRow: 0, startCol: colIdx, endRow: sheetData.row_count - 1, endCol: colIdx });
+                    }, 500);
+                  }}
+                  onMouseUp={() => {
+                    if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
+                    if (draggingCol === colIdx && dragStartCol !== null && dragStartCol !== colIdx) {
+                      const newData = sheetData.data.map(row => {
+                        const newRow = [...row];
+                        const [movedCell] = newRow.splice(dragStartCol, 1);
+                        newRow.splice(colIdx, 0, movedCell);
+                        return newRow;
+                      });
+                      const newColWidths = [...sheetData.col_widths];
+                      const [movedWidth] = newColWidths.splice(dragStartCol, 1);
+                      newColWidths.splice(colIdx, 0, movedWidth);
+                      const newColNames = [...sheetData.col_names];
+                      const [movedName] = newColNames.splice(dragStartCol, 1);
+                      newColNames.splice(colIdx, 0, movedName);
+                      updateMutation.mutate({ data: newData, col_widths: newColWidths, col_names: newColNames });
+                    }
+                  }}
+                  onMouseLeave={() => {
+                    if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
                   }}
                 >
                   <div className="flex items-center justify-between h-full">
@@ -427,13 +474,16 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName }) {
             {sheetData.data.map((row, rowIdx) => (
               <tr key={rowIdx}>
                 <td
-                   className={`w-10 border border-stone-300 text-xs font-medium text-center select-none relative cursor-pointer ${
+                   className={`w-10 border border-stone-300 text-xs font-medium text-center select-none relative ${
+                     draggingRow === rowIdx ? 'cursor-grabbing bg-blue-200' : 'cursor-pointer'
+                   } ${
                      selectedRange?.startRow === rowIdx && selectedRange?.endRow === rowIdx && selectedRange?.startCol === 0 && selectedRange?.endCol === sheetData.col_count - 1
                        ? 'bg-blue-100 text-blue-700'
                        : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
                    }`}
                    style={{ height: sheetData.row_heights[rowIdx] }}
                    onClick={(e) => {
+                     if (e.button !== 0 || draggingRow !== null) return;
                      if (lastClickedRow === rowIdx) {
                        const rect = e.currentTarget.getBoundingClientRect();
                        setContextMenu({ x: rect.left, y: rect.bottom + 4, type: 'row', index: rowIdx });
@@ -443,6 +493,29 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName }) {
                        setLastClickedRow(rowIdx);
                        setLastClickedCol(null);
                      }
+                   }}
+                   onMouseDown={(e) => {
+                     if (e.button !== 0) return;
+                     longPressTimerRef.current = setTimeout(() => {
+                       setDraggingRow(rowIdx);
+                       setDragStartRow(rowIdx);
+                       setSelectedRange({ startRow: rowIdx, startCol: 0, endRow: rowIdx, endCol: sheetData.col_count - 1 });
+                     }, 500);
+                   }}
+                   onMouseUp={() => {
+                     if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
+                     if (draggingRow === rowIdx && dragStartRow !== null && dragStartRow !== rowIdx) {
+                       const newData = [...sheetData.data];
+                       const [movedRow] = newData.splice(dragStartRow, 1);
+                       newData.splice(rowIdx, 0, movedRow);
+                       const newRowHeights = [...sheetData.row_heights];
+                       const [movedHeight] = newRowHeights.splice(dragStartRow, 1);
+                       newRowHeights.splice(rowIdx, 0, movedHeight);
+                       updateMutation.mutate({ data: newData, row_heights: newRowHeights });
+                     }
+                   }}
+                   onMouseLeave={() => {
+                     if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
                    }}
                  >
                    <div className="flex items-center justify-between h-full px-2">
