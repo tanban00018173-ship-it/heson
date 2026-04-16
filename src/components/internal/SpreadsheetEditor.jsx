@@ -609,6 +609,7 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
                       onClick={(e) => {
                         handleCellClick(rowIdx, colIdx, e);
                         setEditCell({ row: rowIdx, col: colIdx });
+                        setEditValue(cell);
                       }}
                       onContextMenu={(e) => {
                         e.preventDefault();
