@@ -2,6 +2,8 @@ import React, { createContext, useState, useContext, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { appParams } from '@/lib/app-params';
 import { createAxiosClient } from '@base44/sdk/dist/utils/axios-client';
+import { getDeviceFingerprint } from '@/lib/deviceFingerprint';
+import DeviceBannedScreen from '@/components/DeviceBannedScreen';
 
 const AuthContext = createContext();
 
@@ -12,6 +14,7 @@ export const AuthProvider = ({ children }) => {
   const [isLoadingPublicSettings, setIsLoadingPublicSettings] = useState(true);
   const [authError, setAuthError] = useState(null);
   const [appPublicSettings, setAppPublicSettings] = useState(null); // Contains only { id, public_settings }
+  const [deviceBanned, setDeviceBanned] = useState(null); // null = not checked, false = ok, { reason } = banned
 
   useEffect(() => {
     checkAppState();
@@ -87,6 +90,22 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const checkDeviceBan = async (userEmail) => {
+    try {
+      const fingerprint = await getDeviceFingerprint();
+      const res = await base44.functions.invoke('checkDevice', {
+        fingerprint,
+        userEmail: userEmail || '',
+        userAgent: navigator.userAgent,
+      });
+      if (res.data?.banned) {
+        setDeviceBanned({ reason: res.data.reason });
+      }
+    } catch {
+      // silently ignore device check errors
+    }
+  };
+
   const checkUserAuth = async () => {
     try {
       // Now check if the user is authenticated
@@ -95,6 +114,8 @@ export const AuthProvider = ({ children }) => {
       setUser(currentUser);
       setIsAuthenticated(true);
       setIsLoadingAuth(false);
+      // Check device ban after auth
+      await checkDeviceBan(currentUser?.email);
     } catch (error) {
       console.error('User auth check failed:', error);
       setIsLoadingAuth(false);
@@ -127,6 +148,10 @@ export const AuthProvider = ({ children }) => {
     // Use the SDK's redirectToLogin method
     base44.auth.redirectToLogin(window.location.href);
   };
+
+  if (deviceBanned) {
+    return <DeviceBannedScreen reason={deviceBanned.reason} />;
+  }
 
   return (
     <AuthContext.Provider value={{ 

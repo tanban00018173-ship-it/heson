@@ -6,9 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { zhTW } from "date-fns/locale";
-import { Bot, Send, Edit2, Check, X, Download, RefreshCw, Table, Search, Loader2, ShieldCheck, ZoomIn, ZoomOut } from "lucide-react";
+import { Bot, Send, Edit2, Check, X, Download, RefreshCw, Table, Search, Loader2, ShieldCheck, ZoomIn, ZoomOut, Monitor } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import RoleManager from "@/components/internal/RoleManager";
+import DeviceManager from "@/components/internal/DeviceManager";
 
 // Editable cell component
 function EditableCell({ value, onSave, type = 'text' }) {
@@ -273,6 +274,7 @@ export default function InternalSpreadsheet() {
           { id: 'sheet', icon: Table, label: '試算表' },
           { id: 'ai', icon: Bot, label: 'AI 助理' },
           { id: 'roles', icon: ShieldCheck, label: '權限管理' },
+          { id: 'devices', icon: Monitor, label: '裝置封禁' },
         ].map(({ id, icon: Icon, label }) => (
           <button
             key={id}
@@ -378,6 +380,12 @@ export default function InternalSpreadsheet() {
         {activeTab === 'roles' && (
           <div className="flex-1 flex flex-col overflow-hidden">
             <RoleManager />
+          </div>
+        )}
+
+        {activeTab === 'devices' && (
+          <div className="flex-1 flex flex-col overflow-hidden">
+            <DeviceManager />
           </div>
         )}
       </div>
