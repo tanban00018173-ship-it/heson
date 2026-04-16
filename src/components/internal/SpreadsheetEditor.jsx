@@ -3,7 +3,8 @@ import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Copy, Trash2, Plus, Type } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Copy, Trash2, Plus, Type, Undo2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 
 export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBookingSheet = false, bookings = [] }) {
@@ -20,6 +21,8 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
   const [searchTerm, setSearchTerm] = useState('');
   const [zoom, setZoom] = useState(1);
   const [rowNames, setRowNames] = useState({});
+  const [undoStack, setUndoStack] = useState([]);
+  const [undoing, setUndoing] = useState(false);
   const tableRef = useRef(null);
 
   const BOOKING_COLUMNS = [
@@ -91,6 +94,131 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
 
   const changeZoom = (delta) => setZoom(z => Math.min(2, Math.max(0.4, +(z + delta).toFixed(1))));
 
+  const recordUndo = (item) => {
+    setUndoStack(prev => [...prev.slice(-49), item]); // Keep last 50 items
+  };
+
+  const handleUndo = async () => {
+    if (undoStack.length === 0 || undoing) return;
+    setUndoing(true);
+    const lastAction = undoStack[undoStack.length - 1];
+    try {
+      if (lastAction.type === 'insertCol') {
+        await deleteColData(lastAction.colIdx);
+      } else if (lastAction.type === 'deleteCol') {
+        await restoreColData(lastAction.colIdx, lastAction.data);
+      } else if (lastAction.type === 'insertRow') {
+        await deleteRowData(lastAction.rowIdx);
+      } else if (lastAction.type === 'deleteRow') {
+        await restoreRowData(lastAction.rowIdx, lastAction.data);
+      } else if (lastAction.type === 'copyCol') {
+        await deleteColData(lastAction.colIdx + 1);
+      } else if (lastAction.type === 'copyRow') {
+        await deleteRowData(lastAction.rowIdx + 1);
+      } else if (lastAction.type === 'renameCol') {
+        await updateColName(lastAction.colIdx, lastAction.oldName);
+      } else if (lastAction.type === 'renameRow') {
+        setRowNames(prev => {
+          const newNames = { ...prev };
+          if (lastAction.oldName) {
+            newNames[lastAction.rowIdx] = lastAction.oldName;
+          } else {
+            delete newNames[lastAction.rowIdx];
+          }
+          return newNames;
+        });
+      } else if (lastAction.type === 'formatCell') {
+        await updateCellFormat(lastAction.key, lastAction.oldFormat);
+      }
+      setUndoStack(prev => prev.slice(0, -1));
+    } catch (err) {
+      console.error('Undo failed:', err);
+    }
+    setUndoing(false);
+  };
+
+  const deleteColData = (colIdx) => {
+    if (!sheetData) return;
+    const newData = sheetData.data.map(row => {
+      const newRow = [...row];
+      newRow.splice(colIdx, 1);
+      return newRow;
+    });
+    const newColWidths = [...sheetData.col_widths];
+    newColWidths.splice(colIdx, 1);
+    const newColNames = [...sheetData.col_names];
+    newColNames.splice(colIdx, 1);
+    return updateMutation.mutate({
+      data: newData,
+      col_widths: newColWidths,
+      col_names: newColNames,
+      col_count: sheetData.col_count - 1
+    });
+  };
+
+  const restoreColData = (colIdx, data) => {
+    if (!sheetData) return;
+    const newData = sheetData.data.map((row, rowIdx) => {
+      const newRow = [...row];
+      newRow.splice(colIdx, 0, data[rowIdx] || '');
+      return newRow;
+    });
+    const newColWidths = [...sheetData.col_widths];
+    newColWidths.splice(colIdx, 0, 100);
+    const newColNames = [...sheetData.col_names];
+    newColNames.splice(colIdx, 0, String.fromCharCode(65 + (colIdx % 26)));
+    return updateMutation.mutate({
+      data: newData,
+      col_widths: newColWidths,
+      col_names: newColNames,
+      col_count: sheetData.col_count + 1
+    });
+  };
+
+  const deleteRowData = (rowIdx) => {
+    if (!sheetData) return;
+    const newData = [...sheetData.data];
+    newData.splice(rowIdx, 1);
+    const newRowHeights = [...sheetData.row_heights];
+    newRowHeights.splice(rowIdx, 1);
+    return updateMutation.mutate({
+      data: newData,
+      row_heights: newRowHeights,
+      row_count: sheetData.row_count - 1
+    });
+  };
+
+  const restoreRowData = (rowIdx, data) => {
+    if (!sheetData) return;
+    const newData = [...sheetData.data];
+    newData.splice(rowIdx, 0, data);
+    const newRowHeights = [...sheetData.row_heights];
+    newRowHeights.splice(rowIdx, 0, 30);
+    return updateMutation.mutate({
+      data: newData,
+      row_heights: newRowHeights,
+      row_count: sheetData.row_count + 1
+    });
+  };
+
+  const updateColName = (colIdx, newName) => {
+    if (!sheetData) return;
+    const newColNames = [...sheetData.col_names];
+    newColNames[colIdx] = newName;
+    return updateMutation.mutate({ col_names: newColNames });
+  };
+
+  const updateCellFormat = (key, format) => {
+    if (!sheetData) return;
+    const newFormats = { ...sheetData.cell_formats };
+    if (format) {
+      newFormats[key] = format;
+    } else {
+      delete newFormats[key];
+    }
+    return updateMutation.mutate({ cell_formats: newFormats });
+  };
+
   const handleCellChange = (row, col, value) => {
     if (!sheetData || isBookingSheet) return; // 預約表只讀
     const newData = sheetData.data.map(r => [...r]);
@@ -110,6 +238,7 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
     newColWidths.splice(beforeCol, 0, 100);
     const newColNames = [...sheetData.col_names];
     newColNames.splice(beforeCol, 0, String.fromCharCode(65 + (beforeCol % 26)));
+    recordUndo({ type: 'insertCol', colIdx: beforeCol, description: `新增欄位於第 ${beforeCol + 1} 欄` });
     updateMutation.mutate({
       data: newData,
       col_widths: newColWidths,
@@ -121,6 +250,7 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
 
   const deleteCol = (colIdx) => {
     if (!sheetData || isBookingSheet || sheetData.col_count <= 1) return;
+    const deletedData = sheetData.data.map(row => row[colIdx]);
     const newData = sheetData.data.map(row => {
       const newRow = [...row];
       newRow.splice(colIdx, 1);
@@ -130,6 +260,7 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
     newColWidths.splice(colIdx, 1);
     const newColNames = [...sheetData.col_names];
     newColNames.splice(colIdx, 1);
+    recordUndo({ type: 'deleteCol', colIdx, data: deletedData, description: `刪除第 ${colIdx + 1} 欄` });
     updateMutation.mutate({
       data: newData,
       col_widths: newColWidths,
@@ -150,6 +281,7 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
     newColWidths.splice(colIdx + 1, 0, sheetData.col_widths[colIdx]);
     const newColNames = [...sheetData.col_names];
     newColNames.splice(colIdx + 1, 0, sheetData.col_names[colIdx] + '\'');
+    recordUndo({ type: 'copyCol', colIdx, description: `複製第 ${colIdx + 1} 欄` });
     updateMutation.mutate({
       data: newData,
       col_widths: newColWidths,
@@ -165,6 +297,7 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
     newData.splice(beforeRow, 0, Array(sheetData.col_count).fill(''));
     const newRowHeights = [...sheetData.row_heights];
     newRowHeights.splice(beforeRow, 0, 30);
+    recordUndo({ type: 'insertRow', rowIdx: beforeRow, description: `新增列於第 ${beforeRow + 1} 列` });
     updateMutation.mutate({
       data: newData,
       row_heights: newRowHeights,
@@ -175,10 +308,12 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
 
   const deleteRow = (rowIdx) => {
     if (!sheetData || isBookingSheet || sheetData.row_count <= 1) return;
+    const deletedData = [...sheetData.data[rowIdx]];
     const newData = [...sheetData.data];
     newData.splice(rowIdx, 1);
     const newRowHeights = [...sheetData.row_heights];
     newRowHeights.splice(rowIdx, 1);
+    recordUndo({ type: 'deleteRow', rowIdx, data: deletedData, description: `刪除第 ${rowIdx + 1} 列` });
     updateMutation.mutate({
       data: newData,
       row_heights: newRowHeights,
@@ -193,6 +328,7 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
     newData.splice(rowIdx + 1, 0, [...newData[rowIdx]]);
     const newRowHeights = [...sheetData.row_heights];
     newRowHeights.splice(rowIdx + 1, 0, sheetData.row_heights[rowIdx]);
+    recordUndo({ type: 'copyRow', rowIdx, description: `複製第 ${rowIdx + 1} 列` });
     updateMutation.mutate({
       data: newData,
       row_heights: newRowHeights,
@@ -204,7 +340,9 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
   const applyFormat = (row, col) => {
     if (!sheetData || !formatDialog) return;
     const key = `${row}_${col}`;
+    const oldFormat = sheetData.cell_formats?.[key];
     const newFormats = { ...sheetData.cell_formats, [key]: formatData };
+    recordUndo({ type: 'formatCell', key, oldFormat, description: `變更 ${key} 單元格格式` });
     updateMutation.mutate({ cell_formats: newFormats });
     setFormatDialog(null);
   };
@@ -212,7 +350,9 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
   const renameCol = (colIdx) => {
     if (!sheetData || isBookingSheet || !newColName.trim()) return;
     const newColNames = [...sheetData.col_names];
+    const oldName = newColNames[colIdx];
     newColNames[colIdx] = newColName;
+    recordUndo({ type: 'renameCol', colIdx, oldName, description: `重新命名第 ${colIdx + 1} 欄` });
     updateMutation.mutate({ col_names: newColNames });
     setRenamingCol(null);
     setNewColName('');
@@ -221,6 +361,8 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
 
   const renameRow = (rowIdx) => {
     if (!sheetData || isBookingSheet || !newRowName.trim()) return;
+    const oldName = rowNames[rowIdx];
+    recordUndo({ type: 'renameRow', rowIdx, oldName, description: `重新命名第 ${rowIdx + 1} 列` });
     setRowNames({ ...rowNames, [rowIdx]: newRowName });
     setRenamingRow(null);
     setNewRowName('');
@@ -239,7 +381,7 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
-      {/* Info bar with search and zoom */}
+      {/* Info bar with search, undo, and zoom */}
       <div className="px-4 py-2 bg-stone-50 border-b border-stone-200 flex items-center justify-between text-xs text-stone-600 gap-3">
         <span>{spreadsheetName} · {sheetData.row_count} 行 × {sheetData.col_count} 列</span>
         {isBookingSheet && (
@@ -253,6 +395,22 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
             />
             {searchTerm && <span className="text-stone-500">找到 {filteredData.length - 1} 筆</span>}
           </>
+        )}
+        {!isBookingSheet && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleUndo}
+            disabled={undoStack.length === 0 || undoing}
+            className="gap-1 text-xs px-2 h-6"
+            title={undoStack.length > 0 ? `復原: ${undoStack[undoStack.length - 1]?.description}` : '沒有可復原的操作'}
+          >
+            <Undo2 className="w-3 h-3" />
+            復原
+            {undoStack.length > 0 && (
+              <Badge className="ml-1 h-4 px-1 text-[10px] bg-amber-100 text-amber-700">{undoStack.length}</Badge>
+            )}
+          </Button>
         )}
         <div className="flex items-center gap-1 ml-auto">
           <button onClick={() => changeZoom(-0.1)} className="p-1 hover:bg-stone-200 text-stone-600">−</button>
