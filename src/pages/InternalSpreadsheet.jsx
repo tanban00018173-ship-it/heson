@@ -589,14 +589,7 @@ export default function InternalSpreadsheet() {
                     >
                       {sheet.name}
                     </button>
-                    {sheet.id !== 'booking' && (
-                      <button
-                        onClick={() => removeSpreadsheet(sheet.id)}
-                        className="text-stone-400 hover:text-red-500 transition-colors p-1"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    )}
+
                   </>
                 )}
               </div>
@@ -692,13 +685,22 @@ export default function InternalSpreadsheet() {
                   重新命名
                 </button>
                 {sheetContextMenu.id !== 'booking' && (
-                  <button
-                    onClick={() => hideSheet(sheetContextMenu.id)}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-xs text-stone-600 hover:bg-stone-50 transition-colors border-t border-stone-100"
-                  >
-                    <EyeOff className="w-3.5 h-3.5" />
-                    隱藏試算表
-                  </button>
+                  <>
+                    <button
+                      onClick={() => { hideSheet(sheetContextMenu.id); setSheetContextMenu(null); }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-xs text-stone-600 hover:bg-stone-50 transition-colors border-t border-stone-100"
+                    >
+                      <EyeOff className="w-3.5 h-3.5" />
+                      隱藏試算表
+                    </button>
+                    <button
+                      onClick={() => { removeSpreadsheet(sheetContextMenu.id); setSheetContextMenu(null); }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-xs text-red-600 hover:bg-red-50 transition-colors"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      刪除試算表
+                    </button>
+                  </>
                 )}
               </div>
             </>
