@@ -55,6 +55,16 @@ const AuthenticatedApp = () => {
   if (authError) {
     if (authError.type === 'user_not_registered') {
       return <UserNotRegisteredError />;
+    } else if (authError.type === 'user_banned') {
+      return (
+        <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
+          <div className="bg-white rounded-lg shadow-lg p-8 text-center max-w-sm">
+            <h1 className="text-2xl font-bold text-red-600 mb-4">帳號已被封禁</h1>
+            <p className="text-stone-600 mb-6">您的帳號因違反平台規定已被停用，無法訪問此平台。</p>
+            <p className="text-xs text-stone-400">如有疑問，請聯繫客服支援。</p>
+          </div>
+        </div>
+      );
     } else if (authError.type === 'auth_required') {
       navigateToLogin();
       return null;

@@ -111,6 +111,18 @@ export const AuthProvider = ({ children }) => {
       // Now check if the user is authenticated
       setIsLoadingAuth(true);
       const currentUser = await base44.auth.me();
+
+      // Check if user is banned
+      if (currentUser?.role === 'banned') {
+        setAuthError({
+          type: 'user_banned',
+          message: 'Your account has been banned'
+        });
+        setIsLoadingAuth(false);
+        setIsAuthenticated(false);
+        return;
+      }
+
       setUser(currentUser);
       setIsAuthenticated(true);
       setIsLoadingAuth(false);
@@ -120,7 +132,7 @@ export const AuthProvider = ({ children }) => {
       console.error('User auth check failed:', error);
       setIsLoadingAuth(false);
       setIsAuthenticated(false);
-      
+
       // If user auth fails, it might be an expired token
       if (error.status === 401 || error.status === 403) {
         setAuthError({
