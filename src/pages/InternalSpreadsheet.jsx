@@ -167,6 +167,7 @@ export default function InternalSpreadsheet() {
    ]);
    const [zoom, setZoom] = useState(1);
    const [newSheetName, setNewSheetName] = useState('');
+   const [showNewSheetInput, setShowNewSheetInput] = useState(false);
    const tableWrapperRef = useRef(null);
    const queryClient = useQueryClient();
 
@@ -249,6 +250,7 @@ export default function InternalSpreadsheet() {
     setSpreadsheets([...spreadsheets, { id: newId, name: newSheetName }]);
     setActiveSpreadsheet(newId);
     setNewSheetName('');
+    setShowNewSheetInput(false);
   };
 
   const removeSpreadsheet = (id) => {
@@ -345,24 +347,52 @@ export default function InternalSpreadsheet() {
             </div>
           ))}
           <div className="flex items-center gap-1 ml-2 pl-2 border-l border-stone-200">
-            <Input
-              value={newSheetName}
-              onChange={e => setNewSheetName(e.target.value)}
-              placeholder="新試算表..."
-              className="h-7 text-xs px-2 py-0 w-32"
-              onKeyDown={e => { if (e.key === 'Enter') addSpreadsheet(); }}
-            />
-            <Button
-              onClick={addSpreadsheet}
-              disabled={!newSheetName.trim()}
-              size="icon"
-              className="h-7 w-7 bg-amber-500 hover:bg-amber-600 flex-shrink-0"
-            >
-              <Plus className="w-3 h-3" />
-            </Button>
+            {showNewSheetInput && (
+              <>
+                <Input
+                  value={newSheetName}
+                  onChange={e => setNewSheetName(e.target.value)}
+                  placeholder="新試算表..."
+                  className="h-7 text-xs px-2 py-0 w-32"
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') addSpreadsheet();
+                    if (e.key === 'Escape') setShowNewSheetInput(false);
+                  }}
+                  autoFocus
+                />
+                <Button
+                  onClick={addSpreadsheet}
+                  disabled={!newSheetName.trim()}
+                  size="icon"
+                  className="h-7 w-7 bg-amber-500 hover:bg-amber-600 flex-shrink-0"
+                >
+                  <Check className="w-3 h-3" />
+                </Button>
+                <Button
+                  onClick={() => {
+                    setShowNewSheetInput(false);
+                    setNewSheetName('');
+                  }}
+                  size="icon"
+                  variant="outline"
+                  className="h-7 w-7 flex-shrink-0"
+                >
+                  <X className="w-3 h-3" />
+                </Button>
+              </>
+            )}
+            {!showNewSheetInput && (
+              <Button
+                onClick={() => setShowNewSheetInput(true)}
+                size="icon"
+                className="h-7 w-7 bg-amber-500 hover:bg-amber-600 flex-shrink-0"
+              >
+                <Plus className="w-3 h-3" />
+              </Button>
+            )}
           </div>
-        </div>
-      )}
+          </div>
+          )}
 
       {/* Content */}
       <div className="flex-1 overflow-hidden flex min-h-0">
