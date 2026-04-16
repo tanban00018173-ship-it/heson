@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Copy, Trash2, Plus, Type, Undo2, ChevronDown } from "lucide-react";
+import { Copy, Trash2, Plus, Type, Undo2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 
 export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBookingSheet = false, bookings = [] }) {
@@ -26,9 +26,6 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
   const [selectedRange, setSelectedRange] = useState(null); // { startRow, startCol, endRow, endCol }
   const [resizingCol, setResizingCol] = useState(null); // { colIdx, startX, startWidth }
   const [resizingRow, setResizingRow] = useState(null); // { rowIdx, startY, startHeight }
-  const [selectedCol, setSelectedCol] = useState(null); // Currently selected column index
-  const [selectedRow, setSelectedRow] = useState(null); // Currently selected row index
-  const [pendingEdit, setPendingEdit] = useState(null); // { row, col, newValue }
   const tableRef = useRef(null);
 
   const BOOKING_COLUMNS = [
@@ -227,37 +224,10 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
 
   const handleCellChange = (row, col, value) => {
     if (!sheetData) return;
-    const oldValue = sheetData.data[row][col];
-    if (oldValue === value) {
-      setEditCell(null);
-      return;
-    }
-    // Show confirmation dialog for data changes
-    setPendingEdit({ row, col, newValue: value, oldValue });
-  };
-
-  const confirmCellChange = () => {
-    if (!pendingEdit || !sheetData) return;
-    
-    // For booking sheet: update Booking entity directly
-    if (isBookingSheet) {
-      const bookingIndex = pendingEdit.row - 1; // row 0 is header
-      const booking = bookings[bookingIndex];
-      if (!booking) return;
-      
-      const columnKey = BOOKING_COLUMNS[pendingEdit.col]?.key;
-      if (!columnKey) return;
-      
-      updateMutation.mutate({ id: booking.id, fields: { [columnKey]: pendingEdit.newValue } });
-    } else {
-      // For custom sheet: update CustomSheet data
-      const newData = sheetData.data.map(r => [...r]);
-      newData[pendingEdit.row][pendingEdit.col] = pendingEdit.newValue;
-      updateMutation.mutate({ data: newData });
-    }
-    
+    const newData = sheetData.data.map(r => [...r]);
+    newData[row][col] = value;
+    updateMutation.mutate({ data: newData });
     setEditCell(null);
-    setPendingEdit(null);
   };
 
   const handleCellClick = (row, col, e) => {
@@ -517,38 +487,27 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
       </div>
 
       {/* Table */}
-      <div ref={tableRef} className="flex-1 overflow-auto bg-white">
-        <table className="border-collapse bg-white" style={{ transformOrigin: 'top left', transform: `scale(${zoom})`, width: `${100 / zoom}%` }}>
+      <div ref={tableRef} className="flex-1 overflow-auto">
+        <table className="border-collapse border border-stone-300 bg-white" style={{ transformOrigin: 'top left', transform: `scale(${zoom})`, width: `${100 / zoom}%` }}>
           <thead>
-            <tr className="bg-stone-50">
-              <th className="w-9 h-8 bg-stone-100 border border-stone-200 text-xs text-stone-600 text-center font-medium"></th>
+            <tr>
+              <th className="w-8 h-7 bg-stone-100 border border-stone-300 text-xs text-stone-500 text-center"></th>
               {sheetData.col_names.map((name, colIdx) => (
-               <th
-                 key={colIdx}
-                 style={{ width: sheetData.col_widths[colIdx] }}
-                 className={`h-8 bg-stone-50 border border-stone-200 px-2 text-xs font-semibold cursor-pointer hover:bg-stone-100 relative group select-none ${selectedCol === colIdx ? 'bg-yellow-100 border-yellow-400' : 'text-stone-700'}`}
-                 onClick={(e) => {
-                   e.stopPropagation();
-                   if (selectedCol === colIdx) {
-                     // Second click: show context menu
-                     const rect = e.currentTarget.getBoundingClientRect();
-                     setContextMenu({ x: rect.left, y: rect.bottom + 4, type: 'col', index: colIdx });
-                   } else {
-                     // First click: select column
-                     setSelectedCol(colIdx);
-                     setSelectedRow(null);
-                     setContextMenu(null);
-                   }
-                 }}
-               >
-                  <div className="flex items-center justify-between h-full">
-                    <span className="truncate">{String.fromCharCode(65 + colIdx)}</span>
-                    <ChevronDown className="w-3 h-3 text-stone-400 opacity-0 group-hover:opacity-100 flex-shrink-0" />
-                  </div>
+                <th
+                  key={colIdx}
+                  style={{ width: sheetData.col_widths[colIdx] }}
+                  className="h-7 bg-stone-100 border border-stone-300 px-2 text-xs font-medium text-stone-700 cursor-pointer hover:bg-stone-200 relative group select-none"
+                  onClick={(e) => {
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    setContextMenu({ x: rect.left, y: rect.bottom + 4, type: 'col', index: colIdx });
+                  }}
+                >
+                  <div className="truncate">{name || `Col ${colIdx + 1}`}</div>
+                  <div className="text-[8px] text-stone-500 absolute top-1 right-1">▼</div>
                   <div
-                    className="absolute top-0 right-0 w-0.5 h-full cursor-col-resize hover:bg-blue-400 opacity-0 hover:opacity-100 transition-opacity"
+                    className="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-amber-400 opacity-0 hover:opacity-100 transition-opacity"
                     onMouseDown={(e) => handleColResizeStart(e, colIdx)}
-                    style={{ right: '-1px' }}
+                    style={{ right: '-2px' }}
                   />
                 </th>
               ))}
@@ -556,37 +515,27 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
           </thead>
           <tbody>
             {filteredData.map((row, rowIdx) => (
-              <tr key={rowIdx} className="hover:bg-blue-50">
+              <tr key={rowIdx}>
                 <td
-                  className={`w-9 bg-stone-50 border border-stone-200 text-xs text-stone-600 text-center font-medium cursor-pointer hover:bg-stone-100 relative group select-none ${selectedRow === rowIdx ? 'bg-yellow-100 border-yellow-400' : ''}`}
+                  className="w-8 bg-stone-100 border border-stone-300 text-xs text-stone-500 text-center cursor-pointer hover:bg-stone-200 font-medium relative select-none"
                   onClick={(e) => {
-                    e.stopPropagation();
-                    if (selectedRow === rowIdx) {
-                      // Second click: show context menu
-                      const rect = e.currentTarget.getBoundingClientRect();
-                      setContextMenu({ x: rect.left, y: rect.bottom + 4, type: 'row', index: rowIdx });
-                    } else {
-                      // First click: select row
-                      setSelectedRow(rowIdx);
-                      setSelectedCol(null);
-                      setContextMenu(null);
-                    }
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    setContextMenu({ x: rect.left, y: rect.bottom + 4, type: 'row', index: rowIdx });
                   }}
                   title={rowNames[rowIdx] ? `${rowIdx + 1} - ${rowNames[rowIdx]}` : `第 ${rowIdx + 1} 列`}
                   style={{ height: sheetData.row_heights[rowIdx] }}
                 >
-                  <div className="flex items-center justify-center h-full">
-                    <span>{rowIdx + 1}</span>
-                  </div>
+                  <div className="truncate">{rowNames[rowIdx] ? `${rowIdx + 1}*` : rowIdx + 1}</div>
+                  <div className="text-[8px] absolute top-0.5 right-0.5 text-stone-500">▼</div>
                   <div
-                    className="absolute bottom-0 left-0 w-full h-0.5 cursor-row-resize hover:bg-blue-400 opacity-0 hover:opacity-100 transition-opacity"
+                    className="absolute bottom-0 left-0 w-full h-1 cursor-row-resize hover:bg-amber-400 opacity-0 hover:opacity-100 transition-opacity"
                     onMouseDown={(e) => handleRowResizeStart(e, rowIdx)}
-                    style={{ bottom: '-1px' }}
+                    style={{ bottom: '-2px' }}
                   />
                 </td>
                 {row.map((cell, colIdx) => {
                   const format = sheetData.cell_formats?.[`${rowIdx}_${colIdx}`] || {};
-                  const isEditing = editCell?.row === rowIdx && editCell?.col === colIdx;
+                  const isEditing = !isBookingSheet && editCell?.row === rowIdx && editCell?.col === colIdx;
                   const selected = isSelected(rowIdx, colIdx);
                   return (
                     <td
@@ -594,10 +543,10 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
                       style={{
                         width: sheetData.col_widths[colIdx],
                         height: sheetData.row_heights[rowIdx],
-                        backgroundColor: selected ? '#fef08a' : (format.bg || 'white'),
+                        backgroundColor: selected ? '#fef3c7' : (format.bg || 'white'),
                         color: format.color || 'black',
                         fontWeight: format.bold ? 'bold' : 'normal',
-                        border: selected ? '2px solid #eab308' : '1px solid #e5e7eb'
+                        border: selected ? '2px solid #f59e0b' : '1px solid #d6d3d1'
                       }}
                       className="px-2 py-1 text-xs cursor-cell select-none"
                       onClick={(e) => {
@@ -634,14 +583,10 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
         </table>
       </div>
 
-      {/* Context menus */}
-      {contextMenu && (
+      {/* Context menus - only for non-booking sheets */}
+      {contextMenu && !isBookingSheet && (
         <>
-          <div className="fixed inset-0 z-40" onClick={() => {
-            setContextMenu(null);
-            setSelectedCol(null);
-            setSelectedRow(null);
-          }} />
+          <div className="fixed inset-0 z-40" onClick={() => setContextMenu(null)} />
           <div
             className="fixed z-50 bg-white border border-stone-200 rounded-lg shadow-lg py-0.5 min-w-[140px]"
             style={{ left: contextMenu.x, top: contextMenu.y }}
@@ -781,37 +726,6 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
           <DialogFooter>
             <Button variant="outline" onClick={() => setRenamingRow(null)}>取消</Button>
             <Button onClick={() => renameRow(renamingRow)}>保存</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Confirm cell change dialog */}
-      <Dialog open={!!pendingEdit} onOpenChange={() => setPendingEdit(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>確認修改客戶資料</DialogTitle>
-          </DialogHeader>
-          {pendingEdit && (
-            <div className="space-y-3 text-sm">
-              <div>
-                <p className="text-xs text-stone-500 mb-1">位置：第 {pendingEdit.row + 1} 列、第 {String.fromCharCode(65 + pendingEdit.col)} 欄</p>
-              </div>
-              <div className="bg-stone-50 p-3 rounded-lg space-y-2">
-                <div>
-                  <p className="text-xs text-stone-500">原值</p>
-                  <p className="text-sm font-medium text-stone-700">{pendingEdit.oldValue || '（空）'}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-stone-500">新值</p>
-                  <p className="text-sm font-medium text-amber-700">{pendingEdit.newValue || '（空）'}</p>
-                </div>
-              </div>
-              <p className="text-xs text-red-600">⚠️ 此修改將覆蓋客戶原始資料，請確認無誤。</p>
-            </div>
-          )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setPendingEdit(null)}>取消</Button>
-            <Button onClick={confirmCellChange} className="bg-amber-600 hover:bg-amber-700">確認修改</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
