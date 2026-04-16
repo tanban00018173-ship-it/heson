@@ -168,6 +168,8 @@ export default function InternalSpreadsheet() {
    const [zoom, setZoom] = useState(1);
    const [newSheetName, setNewSheetName] = useState('');
    const [showNewSheetInput, setShowNewSheetInput] = useState(false);
+   const [editingSheetId, setEditingSheetId] = useState(null);
+   const [editingSheetName, setEditingSheetName] = useState('');
    const tableWrapperRef = useRef(null);
    const queryClient = useQueryClient();
 
@@ -262,6 +264,20 @@ export default function InternalSpreadsheet() {
     }
   };
 
+  const startEditingSheet = (id, name) => {
+    setEditingSheetId(id);
+    setEditingSheetName(name);
+  };
+
+  const saveEditingSheet = () => {
+    if (!editingSheetName.trim()) return;
+    setSpreadsheets(spreadsheets.map(s => 
+      s.id === editingSheetId ? { ...s, name: editingSheetName } : s
+    ));
+    setEditingSheetId(null);
+    setEditingSheetName('');
+  };
+
   const currentSheet = spreadsheets.find(s => s.id === activeSpreadsheet);
 
   if (!authChecked || !user) {
@@ -326,23 +342,62 @@ export default function InternalSpreadsheet() {
         <div className="bg-stone-50 border-b border-stone-200 px-4 py-2 flex items-center gap-2 flex-shrink-0 overflow-x-auto">
           {spreadsheets.map((sheet) => (
             <div key={sheet.id} className="flex items-center gap-1">
-              <button
-                onClick={() => setActiveSpreadsheet(sheet.id)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                  activeSpreadsheet === sheet.id
-                    ? 'bg-white border border-amber-500 text-amber-600'
-                    : 'bg-white border border-stone-200 text-stone-600 hover:border-stone-300'
-                }`}
-              >
-                {sheet.name}
-              </button>
-              {sheet.id !== 'booking' && (
-                <button
-                  onClick={() => removeSpreadsheet(sheet.id)}
-                  className="text-stone-400 hover:text-red-500 transition-colors p-1"
-                >
-                  <X className="w-3 h-3" />
-                </button>
+              {editingSheetId === sheet.id ? (
+                <>
+                  <Input
+                    value={editingSheetName}
+                    onChange={e => setEditingSheetName(e.target.value)}
+                    className="h-7 text-xs px-2 py-0 w-32"
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') saveEditingSheet();
+                      if (e.key === 'Escape') setEditingSheetId(null);
+                    }}
+                    autoFocus
+                  />
+                  <Button
+                    onClick={saveEditingSheet}
+                    disabled={!editingSheetName.trim()}
+                    size="icon"
+                    className="h-7 w-7 bg-green-500 hover:bg-green-600 flex-shrink-0"
+                  >
+                    <Check className="w-3 h-3" />
+                  </Button>
+                  <Button
+                    onClick={() => setEditingSheetId(null)}
+                    size="icon"
+                    variant="outline"
+                    className="h-7 w-7 flex-shrink-0"
+                  >
+                    <X className="w-3 h-3" />
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <button
+                    onClick={() => {
+                      if (activeSpreadsheet === sheet.id) {
+                        startEditingSheet(sheet.id, sheet.name);
+                      } else {
+                        setActiveSpreadsheet(sheet.id);
+                      }
+                    }}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                      activeSpreadsheet === sheet.id
+                        ? 'bg-white border border-amber-500 text-amber-600'
+                        : 'bg-white border border-stone-200 text-stone-600 hover:border-stone-300'
+                    }`}
+                  >
+                    {sheet.name}
+                  </button>
+                  {sheet.id !== 'booking' && (
+                    <button
+                      onClick={() => removeSpreadsheet(sheet.id)}
+                      className="text-stone-400 hover:text-red-500 transition-colors p-1"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  )}
+                </>
               )}
             </div>
           ))}
