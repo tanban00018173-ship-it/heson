@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { zhTW } from "date-fns/locale";
-import { Bot, Send, Edit2, Check, X, Download, RefreshCw, Table, Search, Loader2, ShieldCheck } from "lucide-react";
+import { Bot, Send, Edit2, Check, X, Download, RefreshCw, Table, Search, Loader2, ShieldCheck, ZoomIn, ZoomOut } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import RoleManager from "@/components/internal/RoleManager";
 
@@ -158,7 +158,24 @@ export default function InternalSpreadsheet() {
   const [authChecked, setAuthChecked] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('sheet'); // 'sheet' | 'ai'
+  const [zoom, setZoom] = useState(1);
+  const tableWrapperRef = useRef(null);
   const queryClient = useQueryClient();
+
+  const changeZoom = (delta) => setZoom(z => Math.min(2, Math.max(0.4, +(z + delta).toFixed(1))));
+
+  useEffect(() => {
+    const el = tableWrapperRef.current;
+    if (!el) return;
+    const onWheel = (e) => {
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+        changeZoom(e.deltaY < 0 ? 0.1 : -0.1);
+      }
+    };
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => el.removeEventListener('wheel', onWheel);
+  }, [authChecked]);
 
   useEffect(() => {
     const check = async () => {
@@ -288,16 +305,21 @@ export default function InternalSpreadsheet() {
               {searchTerm && (
                 <span className="text-xs text-stone-400">找到 {filtered.length} 筆</span>
               )}
+              <div className="flex items-center gap-1 ml-auto">
+                <button onClick={() => changeZoom(-0.1)} className="p-1 rounded hover:bg-stone-100 text-stone-500"><ZoomOut className="w-4 h-4" /></button>
+                <span className="text-xs text-stone-500 w-10 text-center">{Math.round(zoom * 100)}%</span>
+                <button onClick={() => changeZoom(0.1)} className="p-1 rounded hover:bg-stone-100 text-stone-500"><ZoomIn className="w-4 h-4" /></button>
+              </div>
             </div>
 
             {/* Table */}
-            <div className="flex-1 overflow-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
+            <div ref={tableWrapperRef} className="flex-1 overflow-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
               {isLoading ? (
                 <div className="flex items-center justify-center h-40">
                   <Loader2 className="w-6 h-6 animate-spin text-amber-500" />
                 </div>
               ) : (
-                <table className="w-full text-xs border-collapse min-w-[1000px]">
+                <table className="w-full text-xs border-collapse min-w-[1000px]" style={{ transformOrigin: 'top left', transform: `scale(${zoom})`, width: `${100 / zoom}%` }}>
                   <thead className="sticky top-0 z-10">
                     <tr className="bg-stone-100">
                       <th className="text-left px-3 py-2 font-medium text-stone-500 border-b border-r border-stone-200 w-8">#</th>
