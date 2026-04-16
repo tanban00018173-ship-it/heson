@@ -245,6 +245,17 @@ export default function InternalSpreadsheet() {
     enabled: authChecked,
   });
 
+  const handleSyncToGoogleSheet = async () => {
+    try {
+      const response = await base44.functions.invoke('syncBookingToGoogleSheet', {});
+      if (response.data.success) {
+        alert(`✓ ${response.data.message}`);
+      }
+    } catch (err) {
+      alert(`✗ 同步失敗: ${err.message}`);
+    }
+  };
+
   // Auto-sync bookings to CustomSheet when they change
   useEffect(() => {
     if (!authChecked || bookings.length === 0) return;
@@ -541,24 +552,35 @@ export default function InternalSpreadsheet() {
            </div>
          </div>
          <div className="flex items-center gap-1 flex-shrink-0">
-           <Button
-             variant="outline"
-             size="sm"
-             onClick={handleUndo}
-             disabled={undoStack.length === 0 || undoing}
-             className="gap-1 text-xs px-2"
-             title={undoStack.length > 0 ? `復原: ${undoStack[undoStack.length - 1]?.description || '上一步'}` : '沒有可復原的操作'}
-           >
-             <Undo2 className="w-3 h-3" />
-             <span className="hidden sm:inline">復原</span>
-             {undoStack.length > 0 && (
-               <Badge className="ml-1 h-4 px-1 text-[10px] bg-amber-100 text-amber-700">{undoStack.length}</Badge>
-             )}
-           </Button>
-           <Button variant="outline" size="sm" onClick={() => refetch()} className="gap-1 text-xs px-2">
-             <RefreshCw className="w-3 h-3" />
-             <span className="hidden sm:inline">重整</span>
-           </Button>
+         <Button
+           variant="outline"
+           size="sm"
+           onClick={handleUndo}
+           disabled={undoStack.length === 0 || undoing}
+           className="gap-1 text-xs px-2"
+           title={undoStack.length > 0 ? `復原: ${undoStack[undoStack.length - 1]?.description || '上一步'}` : '沒有可復原的操作'}
+         >
+           <Undo2 className="w-3 h-3" />
+           <span className="hidden sm:inline">復原</span>
+           {undoStack.length > 0 && (
+             <Badge className="ml-1 h-4 px-1 text-[10px] bg-amber-100 text-amber-700">{undoStack.length}</Badge>
+           )}
+         </Button>
+         <Button 
+           variant="outline" 
+           size="sm" 
+           onClick={handleSyncToGoogleSheet} 
+           disabled={isLoading}
+           className="gap-1 text-xs px-2"
+           title="同步 Booking 資料到 Google Sheet"
+         >
+           <RefreshCw className="w-3 h-3" />
+           <span className="hidden sm:inline">同步到 Google Sheet</span>
+         </Button>
+         <Button variant="outline" size="sm" onClick={() => refetch()} className="gap-1 text-xs px-2">
+           <RefreshCw className="w-3 h-3" />
+           <span className="hidden sm:inline">重整</span>
+         </Button>
 
          </div>
        </div>
