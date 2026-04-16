@@ -393,7 +393,11 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName }) {
                <th
                   key={colIdx}
                   style={{ width: sheetData.col_widths[colIdx] }}
-                  className="h-8 bg-stone-100 border border-stone-300 px-2 text-xs font-medium text-stone-700 select-none relative cursor-pointer hover:bg-stone-200"
+                  className={`h-8 border border-stone-300 px-2 text-xs font-medium select-none relative cursor-pointer ${
+                    selectedRange?.startCol === colIdx && selectedRange?.endCol === colIdx && selectedRange?.startRow === 0 && selectedRange?.endRow === sheetData.row_count - 1
+                      ? 'bg-blue-100 text-blue-700'
+                      : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
+                  }`}
                   onClick={(e) => {
                     if (lastClickedCol === colIdx) {
                       const rect = e.currentTarget.getBoundingClientRect();
@@ -406,16 +410,16 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName }) {
                     }
                   }}
                 >
-                 <div className="flex items-center justify-between h-full">
-                   <span>{getColLabel(colIdx)}</span>
-                   <span className="text-[10px] text-stone-400 opacity-50">▼</span>
-                 </div>
-                  <div
-                    className="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-blue-400 opacity-0 hover:opacity-100 transition-opacity"
-                    onMouseDown={(e) => handleColResizeStart(e, colIdx)}
-                    style={{ right: '-2px' }}
-                  />
-                </th>
+                  <div className="flex items-center justify-between h-full">
+                    <span>{getColLabel(colIdx)}</span>
+                    <span className="text-[10px] text-stone-400 opacity-50">▼</span>
+                  </div>
+                   <div
+                     className="absolute top-0 right-0 w-2 h-full cursor-col-resize hover:bg-blue-500 transition-colors"
+                     onMouseDown={(e) => { e.stopPropagation(); handleColResizeStart(e, colIdx); }}
+                     style={{ right: '-3px', opacity: selectedRange?.startCol === colIdx && selectedRange?.endCol === colIdx ? 1 : 0.3 }}
+                   />
+                 </th>
               ))}
             </tr>
           </thead>
@@ -423,7 +427,11 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName }) {
             {sheetData.data.map((row, rowIdx) => (
               <tr key={rowIdx}>
                 <td
-                   className="w-10 bg-stone-100 border border-stone-300 text-xs font-medium text-stone-600 text-center select-none relative cursor-pointer hover:bg-stone-200"
+                   className={`w-10 border border-stone-300 text-xs font-medium text-center select-none relative cursor-pointer ${
+                     selectedRange?.startRow === rowIdx && selectedRange?.endRow === rowIdx && selectedRange?.startCol === 0 && selectedRange?.endCol === sheetData.col_count - 1
+                       ? 'bg-blue-100 text-blue-700'
+                       : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+                   }`}
                    style={{ height: sheetData.row_heights[rowIdx] }}
                    onClick={(e) => {
                      if (lastClickedRow === rowIdx) {
@@ -437,16 +445,16 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName }) {
                      }
                    }}
                  >
-                  <div className="flex items-center justify-between h-full px-2">
-                    <span>{rowIdx + 1}</span>
-                    <span className="text-[10px] text-stone-400 opacity-50">▼</span>
-                  </div>
-                  <div
-                    className="absolute bottom-0 left-0 w-full h-1 cursor-row-resize hover:bg-blue-400 opacity-0 hover:opacity-100 transition-opacity"
-                    onMouseDown={(e) => handleRowResizeStart(e, rowIdx)}
-                    style={{ bottom: '-2px' }}
-                  />
-                </td>
+                   <div className="flex items-center justify-between h-full px-2">
+                     <span>{rowIdx + 1}</span>
+                     <span className="text-[10px] text-stone-400 opacity-50">▼</span>
+                   </div>
+                   <div
+                     className="absolute bottom-0 left-0 w-full h-2 cursor-row-resize hover:bg-blue-500 transition-colors"
+                     onMouseDown={(e) => { e.stopPropagation(); handleRowResizeStart(e, rowIdx); }}
+                     style={{ bottom: '-3px', opacity: selectedRange?.startRow === rowIdx && selectedRange?.endRow === rowIdx ? 1 : 0.3 }}
+                   />
+                 </td>
                 {row.map((cell, colIdx) => {
                   const format = sheetData.cell_formats?.[`${rowIdx}_${colIdx}`] || {};
                   const isEditing = editCell?.row === rowIdx && editCell?.col === colIdx;
