@@ -323,10 +323,17 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
       {/* Context menu */}
       {contextMenu && (
         <>
-          <div className="fixed inset-0 z-40" onClick={() => setContextMenu(null)} />
+          <div 
+            className="fixed inset-0 z-40" 
+            onClick={(e) => {
+              e.stopPropagation();
+              setContextMenu(null);
+            }} 
+          />
           <div
             className="fixed z-50 bg-white border border-stone-200 rounded-lg shadow-lg py-0.5 min-w-[140px]"
             style={{ left: contextMenu.x, top: contextMenu.y }}
+            onClick={(e) => e.stopPropagation()}
           >
             {contextMenu.type === 'row' && (
               <>
