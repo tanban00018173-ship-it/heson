@@ -12,7 +12,35 @@ Deno.serve(async (req) => {
     const { fingerprint, reason, notes, userAgent, action, recordId, email } = await req.json();
 
     if (action === 'unban') {
+      // Get the device record to find associated emails
+      const device = await base44.asServiceRole.entities.BannedDevice.filter({ id: recordId });
+      const deviceRecord = device && device.length > 0 ? device[0] : null;
+      
+      // Deactivate the device
       await base44.asServiceRole.entities.BannedDevice.update(recordId, { is_active: false });
+      
+      // Check if any associated emails should be unbanned
+      // Only unban if NO other active banned devices contain this email
+      if (deviceRecord && deviceRecord.associated_emails) {
+        for (const email of deviceRecord.associated_emails) {
+          const allDevices = await base44.asServiceRole.entities.BannedDevice.list();
+          const hasOtherActiveBan = (allDevices || []).some(d => 
+            d.id !== recordId && 
+            d.is_active && 
+            (d.associated_emails || []).includes(email)
+          );
+          
+          // If no other active ban, unban the email
+          if (!hasOtherActiveBan) {
+            try {
+              await base44.asServiceRole.entities.User.update(email, { role: 'user' });
+            } catch {
+              // User might not exist
+            }
+          }
+        }
+      }
+      
       return Response.json({ success: true });
     }
 
