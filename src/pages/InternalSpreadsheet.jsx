@@ -253,6 +253,26 @@ export default function InternalSpreadsheet() {
         for (const item of lastAction.items) {
           await base44.entities.Booking.update(item.id, item.oldFields);
         }
+      } else if (lastAction.type === 'sheet_add') {
+        setSpreadsheets(prev => prev.filter(s => s.id !== lastAction.id));
+        if (activeSpreadsheet === lastAction.id) {
+          const first = spreadsheets.find(s => s.id !== lastAction.id);
+          setActiveSpreadsheet(first?.id);
+        }
+      } else if (lastAction.type === 'sheet_delete') {
+        const updated = [...spreadsheets, lastAction.sheet];
+        setSpreadsheets(updated);
+        if (lastAction.wasHidden) {
+          setHiddenSheets(prev => [...prev, lastAction.id]);
+        }
+      } else if (lastAction.type === 'sheet_rename') {
+        setSpreadsheets(prev => prev.map(s => 
+          s.id === lastAction.id ? { ...s, name: lastAction.oldName } : s
+        ));
+      } else if (lastAction.type === 'sheet_hide') {
+        setHiddenSheets(prev => prev.filter(h => h !== lastAction.id));
+      } else if (lastAction.type === 'sheet_unhide') {
+        setHiddenSheets(prev => [...prev, lastAction.id]);
       }
       queryClient.invalidateQueries({ queryKey: ['spreadsheetBookings'] });
       setUndoStack(prev => prev.slice(0, -1));
@@ -313,17 +333,36 @@ export default function InternalSpreadsheet() {
     const newId = 'sheet_' + Date.now();
     setSpreadsheets([...spreadsheets, { id: newId, name: newSheetName }]);
     setActiveSpreadsheet(newId);
+    recordUndo({
+      type: 'sheet_add',
+      id: newId,
+      description: `新增試算表「${newSheetName}」`
+    });
     setNewSheetName('');
     setShowNewSheetInput(false);
   };
 
   const removeSpreadsheet = (id) => {
-    if (spreadsheets.length <= 1) return; // 至少保留一個試算表
+    if (spreadsheets.length <= 1) return;
+    const sheet = spreadsheets.find(s => s.id === id);
+    if (!sheet) return;
     const updated = spreadsheets.filter(s => s.id !== id);
+    const wasHidden = hiddenSheets.includes(id);
     setSpreadsheets(updated);
-    if (activeSpreadsheet === id) {
-      setActiveSpreadsheet(updated[0]?.id);
+    if (wasHidden) {
+      setHiddenSheets(prev => prev.filter(h => h !== id));
     }
+    const newActive = activeSpreadsheet === id ? updated[0]?.id : activeSpreadsheet;
+    if (activeSpreadsheet === id) {
+      setActiveSpreadsheet(newActive);
+    }
+    recordUndo({
+      type: 'sheet_delete',
+      id,
+      sheet,
+      wasHidden,
+      description: `刪除試算表「${sheet.name}」`
+    });
   };
 
   const startEditingSheet = (id, name) => {
@@ -333,9 +372,17 @@ export default function InternalSpreadsheet() {
 
   const saveEditingSheet = () => {
     if (!editingSheetName.trim()) return;
+    const oldName = spreadsheets.find(s => s.id === editingSheetId)?.name;
     setSpreadsheets(spreadsheets.map(s => 
       s.id === editingSheetId ? { ...s, name: editingSheetName } : s
     ));
+    recordUndo({
+      type: 'sheet_rename',
+      id: editingSheetId,
+      oldName,
+      newName: editingSheetName,
+      description: `重新命名試算表為「${editingSheetName}」`
+    });
     setEditingSheetId(null);
     setEditingSheetName('');
   };
@@ -347,11 +394,21 @@ export default function InternalSpreadsheet() {
       const firstVisible = spreadsheets.find(s => s.id !== id && !hiddenSheets.includes(s.id));
       if (firstVisible) setActiveSpreadsheet(firstVisible.id);
     }
+    recordUndo({
+      type: 'sheet_hide',
+      id,
+      description: `隱藏試算表「${spreadsheets.find(s => s.id === id)?.name}」`
+    });
   };
 
   const unhideSheet = (id) => {
     setHiddenSheets(prev => prev.filter(h => h !== id));
     setActiveSpreadsheet(id);
+    recordUndo({
+      type: 'sheet_unhide',
+      id,
+      description: `恢復試算表「${spreadsheets.find(s => s.id === id)?.name}」`
+    });
   };
 
   const handleLongPressStart = (e, sheetId) => {
@@ -380,6 +437,11 @@ export default function InternalSpreadsheet() {
     const newId = 'sheet_' + Date.now();
     const newName = sheet.name + ' (複製)';
     setSpreadsheets([...spreadsheets, { id: newId, name: newName }]);
+    recordUndo({
+      type: 'sheet_add',
+      id: newId,
+      description: `複製試算表為「${newName}」`
+    });
     setSheetContextMenu(null);
   };
 
