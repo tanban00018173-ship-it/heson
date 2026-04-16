@@ -238,9 +238,24 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
 
   const confirmCellChange = () => {
     if (!pendingEdit || !sheetData) return;
-    const newData = sheetData.data.map(r => [...r]);
-    newData[pendingEdit.row][pendingEdit.col] = pendingEdit.newValue;
-    updateMutation.mutate({ data: newData });
+    
+    // For booking sheet: update Booking entity directly
+    if (isBookingSheet) {
+      const bookingIndex = pendingEdit.row - 1; // row 0 is header
+      const booking = bookings[bookingIndex];
+      if (!booking) return;
+      
+      const columnKey = BOOKING_COLUMNS[pendingEdit.col]?.key;
+      if (!columnKey) return;
+      
+      updateMutation.mutate({ id: booking.id, fields: { [columnKey]: pendingEdit.newValue } });
+    } else {
+      // For custom sheet: update CustomSheet data
+      const newData = sheetData.data.map(r => [...r]);
+      newData[pendingEdit.row][pendingEdit.col] = pendingEdit.newValue;
+      updateMutation.mutate({ data: newData });
+    }
+    
     setEditCell(null);
     setPendingEdit(null);
   };
