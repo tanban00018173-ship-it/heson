@@ -6,8 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { zhTW } from "date-fns/locale";
-import { Bot, Send, Edit2, Check, X, Download, RefreshCw, Table, MessageCircle, Search, Loader2 } from "lucide-react";
+import { Bot, Send, Edit2, Check, X, Download, RefreshCw, Table, Search, Loader2, ShieldCheck } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import RoleManager from "@/components/internal/RoleManager";
 
 const AUTHORIZED_EMAIL = 'mingus445606@gmail.com';
 
@@ -271,6 +272,15 @@ export default function InternalSpreadsheet() {
           <Bot className="w-4 h-4" />
           AI 助理
         </button>
+        <button
+          onClick={() => setActiveTab('roles')}
+          className={`flex items-center gap-1.5 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+            activeTab === 'roles' ? 'border-amber-500 text-amber-600' : 'border-transparent text-stone-500 hover:text-stone-700'
+          }`}
+        >
+          <ShieldCheck className="w-4 h-4" />
+          權限管理
+        </button>
       </div>
 
       {/* Content */}
@@ -353,6 +363,12 @@ export default function InternalSpreadsheet() {
         {activeTab === 'ai' && (
           <div className="flex-1 flex flex-col overflow-hidden">
             <AIChat bookings={bookings} />
+          </div>
+        )}
+
+        {activeTab === 'roles' && (
+          <div className="flex-1 flex flex-col overflow-hidden">
+            <RoleManager />
           </div>
         )}
       </div>
