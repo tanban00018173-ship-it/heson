@@ -27,6 +27,19 @@ Deno.serve(async (req) => {
       return Response.json({ banned: true, reason: record.reason || '此裝置已被封禁' });
     }
 
+    // Also check if the email is associated with any active banned device (私密瀏覽/不同設備繞過防檢)
+    if (userEmail) {
+      const emailBanned = await base44.asServiceRole.entities.BannedDevice.filter({
+        is_active: true,
+      });
+      
+      for (const device of emailBanned) {
+        if ((device.associated_emails || []).includes(userEmail)) {
+          return Response.json({ banned: true, reason: device.reason || '此帳號已被封禁' });
+        }
+      }
+    }
+
     // Device not banned — register/update the device fingerprint log if user is logged in
     if (userEmail) {
       // Find any existing record for this fingerprint (even inactive) to track emails
