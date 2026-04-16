@@ -82,8 +82,23 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
   });
 
   const updateMutation = useMutation({
-    mutationFn: (updates) => base44.entities.CustomSheet.update(sheetData.id, updates),
+    mutationFn: async (updates) => {
+      if (isBookingSheet) {
+        // For booking sheet, directly update Booking entities
+        return Promise.resolve();
+      }
+      return base44.entities.CustomSheet.update(sheetData.id, updates);
+    },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['customSheet', spreadsheetId] }),
+  });
+
+  const updateBookingMutation = useMutation({
+    mutationFn: async ({ bookingId, field, value }) => {
+      return base44.entities.Booking.update(bookingId, { [field]: value });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['spreadsheetBookings'] });
+    },
   });
 
   const changeZoom = (delta) => setZoom(z => Math.min(2, Math.max(0.4, +(z + delta).toFixed(1))));
@@ -116,16 +131,28 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
       setEditCell(null);
       return;
     }
-    recordUndo({
-      type: 'edit',
-      row,
-      col,
-      oldValue,
-      newValue: value
-    });
-    const newData = sheetData.data.map(r => [...r]);
-    newData[row][col] = value;
-    updateMutation.mutate({ data: newData });
+    
+    if (isBookingSheet && bookings[row]) {
+      // Update the booking directly
+      const field = BOOKING_COLUMNS[col].key;
+      updateBookingMutation.mutate({
+        bookingId: bookings[row].id,
+        field,
+        value
+      });
+    } else {
+      // Update custom sheet data
+      recordUndo({
+        type: 'edit',
+        row,
+        col,
+        oldValue,
+        newValue: value
+      });
+      const newData = sheetData.data.map(r => [...r]);
+      newData[row][col] = value;
+      updateMutation.mutate({ data: newData });
+    }
     setEditCell(null);
   };
 
