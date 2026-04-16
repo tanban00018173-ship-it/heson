@@ -38,6 +38,8 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName }) {
   const [resizingRow, setResizingRow] = useState(null);
   const [renamingCol, setRenamingCol] = useState(null);
   const [newColName, setNewColName] = useState('');
+  const [lastClickedRow, setLastClickedRow] = useState(null);
+  const [lastClickedCol, setLastClickedCol] = useState(null);
   const tableRef = useRef(null);
 
   const { data: sheetData, isLoading, refetch: refetchSheet } = useQuery({
@@ -389,14 +391,21 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName }) {
               <th className="w-10 h-8 bg-stone-100 border border-stone-300 text-xs font-medium text-stone-600"></th>
               {sheetData.col_names.map((_, colIdx) => (
                <th
-                 key={colIdx}
-                 style={{ width: sheetData.col_widths[colIdx] }}
-                 className="h-8 bg-stone-100 border border-stone-300 px-2 text-xs font-medium text-stone-700 select-none relative cursor-pointer hover:bg-stone-200"
-                 onClick={(e) => {
-                   const rect = e.currentTarget.getBoundingClientRect();
-                   setContextMenu({ x: rect.left, y: rect.bottom + 4, type: 'col', index: colIdx });
-                 }}
-               >
+                  key={colIdx}
+                  style={{ width: sheetData.col_widths[colIdx] }}
+                  className="h-8 bg-stone-100 border border-stone-300 px-2 text-xs font-medium text-stone-700 select-none relative cursor-pointer hover:bg-stone-200"
+                  onClick={(e) => {
+                    if (lastClickedCol === colIdx) {
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      setContextMenu({ x: rect.left, y: rect.bottom + 4, type: 'col', index: colIdx });
+                      setLastClickedCol(null);
+                    } else {
+                      setSelectedRange({ startRow: 0, startCol: colIdx, endRow: sheetData.row_count - 1, endCol: colIdx });
+                      setLastClickedCol(colIdx);
+                      setLastClickedRow(null);
+                    }
+                  }}
+                >
                  <div className="flex items-center justify-between h-full">
                    <span>{getColLabel(colIdx)}</span>
                    <span className="text-[10px] text-stone-400 opacity-50">▼</span>
@@ -414,13 +423,20 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName }) {
             {sheetData.data.map((row, rowIdx) => (
               <tr key={rowIdx}>
                 <td
-                  className="w-10 bg-stone-100 border border-stone-300 text-xs font-medium text-stone-600 text-center select-none relative cursor-pointer hover:bg-stone-200"
-                  style={{ height: sheetData.row_heights[rowIdx] }}
-                  onClick={(e) => {
-                    const rect = e.currentTarget.getBoundingClientRect();
-                    setContextMenu({ x: rect.left, y: rect.bottom + 4, type: 'row', index: rowIdx });
-                  }}
-                >
+                   className="w-10 bg-stone-100 border border-stone-300 text-xs font-medium text-stone-600 text-center select-none relative cursor-pointer hover:bg-stone-200"
+                   style={{ height: sheetData.row_heights[rowIdx] }}
+                   onClick={(e) => {
+                     if (lastClickedRow === rowIdx) {
+                       const rect = e.currentTarget.getBoundingClientRect();
+                       setContextMenu({ x: rect.left, y: rect.bottom + 4, type: 'row', index: rowIdx });
+                       setLastClickedRow(null);
+                     } else {
+                       setSelectedRange({ startRow: rowIdx, startCol: 0, endRow: rowIdx, endCol: sheetData.col_count - 1 });
+                       setLastClickedRow(rowIdx);
+                       setLastClickedCol(null);
+                     }
+                   }}
+                 >
                   <div className="flex items-center justify-between h-full px-2">
                     <span>{rowIdx + 1}</span>
                     <span className="text-[10px] text-stone-400 opacity-50">▼</span>
