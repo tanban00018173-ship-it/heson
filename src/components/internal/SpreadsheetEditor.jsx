@@ -255,15 +255,34 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName }) {
         newRowHeights[resizingRow.rowIdx] = newHeight;
         updateMutation.mutate({ row_heights: newRowHeights });
       }
-      if (draggingRow !== null) {
-        setSelectedRange({ startRow: draggingRow, startCol: 0, endRow: draggingRow, endCol: sheetData.col_count - 1 });
-      }
-      if (draggingCol !== null) {
-        setSelectedRange({ startRow: 0, startCol: draggingCol, endRow: sheetData.row_count - 1, endCol: draggingCol });
-      }
+
     };
 
     const handleMouseUp = () => {
+      if (draggingRow !== null && dragStartRow !== null && dragStartRow !== draggingRow) {
+        const newData = [...sheetData.data];
+        const [movedRow] = newData.splice(dragStartRow, 1);
+        newData.splice(draggingRow, 0, movedRow);
+        const newRowHeights = [...sheetData.row_heights];
+        const [movedHeight] = newRowHeights.splice(dragStartRow, 1);
+        newRowHeights.splice(draggingRow, 0, movedHeight);
+        updateMutation.mutate({ data: newData, row_heights: newRowHeights });
+      }
+      if (draggingCol !== null && dragStartCol !== null && dragStartCol !== draggingCol) {
+        const newData = sheetData.data.map(row => {
+          const newRow = [...row];
+          const [movedCell] = newRow.splice(dragStartCol, 1);
+          newRow.splice(draggingCol, 0, movedCell);
+          return newRow;
+        });
+        const newColWidths = [...sheetData.col_widths];
+        const [movedWidth] = newColWidths.splice(dragStartCol, 1);
+        newColWidths.splice(draggingCol, 0, movedWidth);
+        const newColNames = [...sheetData.col_names];
+        const [movedName] = newColNames.splice(dragStartCol, 1);
+        newColNames.splice(draggingCol, 0, movedName);
+        updateMutation.mutate({ data: newData, col_widths: newColWidths, col_names: newColNames });
+      }
       setResizingCol(null);
       setResizingRow(null);
       setDraggingRow(null);
@@ -437,21 +456,6 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName }) {
                   }}
                   onMouseUp={() => {
                     if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
-                    if (draggingCol === colIdx && dragStartCol !== null && dragStartCol !== colIdx) {
-                      const newData = sheetData.data.map(row => {
-                        const newRow = [...row];
-                        const [movedCell] = newRow.splice(dragStartCol, 1);
-                        newRow.splice(colIdx, 0, movedCell);
-                        return newRow;
-                      });
-                      const newColWidths = [...sheetData.col_widths];
-                      const [movedWidth] = newColWidths.splice(dragStartCol, 1);
-                      newColWidths.splice(colIdx, 0, movedWidth);
-                      const newColNames = [...sheetData.col_names];
-                      const [movedName] = newColNames.splice(dragStartCol, 1);
-                      newColNames.splice(colIdx, 0, movedName);
-                      updateMutation.mutate({ data: newData, col_widths: newColWidths, col_names: newColNames });
-                    }
                   }}
                   onMouseLeave={() => {
                     if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
@@ -504,15 +508,6 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName }) {
                    }}
                    onMouseUp={() => {
                      if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
-                     if (draggingRow === rowIdx && dragStartRow !== null && dragStartRow !== rowIdx) {
-                       const newData = [...sheetData.data];
-                       const [movedRow] = newData.splice(dragStartRow, 1);
-                       newData.splice(rowIdx, 0, movedRow);
-                       const newRowHeights = [...sheetData.row_heights];
-                       const [movedHeight] = newRowHeights.splice(dragStartRow, 1);
-                       newRowHeights.splice(rowIdx, 0, movedHeight);
-                       updateMutation.mutate({ data: newData, row_heights: newRowHeights });
-                     }
                    }}
                    onMouseLeave={() => {
                      if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
