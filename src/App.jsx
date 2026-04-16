@@ -22,7 +22,7 @@ import CleanerBulkImport from './pages/CleanerBulkImport'
 import GoogleSheetsManager from './pages/GoogleSheetsManager'
 import SheetSyncLog from './pages/SheetSyncLog'
 import ServiceCaseManager from './pages/ServiceCaseManager'
-import GoogleSheetViewer from './pages/GoogleSheetViewer'
+import InternalSpreadsheet from './pages/InternalSpreadsheet'
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
@@ -110,7 +110,7 @@ const AuthenticatedApp = () => {
       <Route path="/GoogleSheetsManager" element={<LayoutWrapper currentPageName="GoogleSheetsManager"><GoogleSheetsManager /></LayoutWrapper>} />
       <Route path="/SheetSyncLog" element={<LayoutWrapper currentPageName="SheetSyncLog"><SheetSyncLog /></LayoutWrapper>} />
       <Route path="/ServiceCaseManager" element={<LayoutWrapper currentPageName="ServiceCaseManager"><ServiceCaseManager /></LayoutWrapper>} />
-      <Route path="/GoogleSheetViewer" element={<LayoutWrapper currentPageName="GoogleSheetViewer"><GoogleSheetViewer /></LayoutWrapper>} />
+      <Route path="/InternalSpreadsheet" element={<InternalSpreadsheet />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );
