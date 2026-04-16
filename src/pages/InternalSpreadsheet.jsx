@@ -83,14 +83,20 @@ function AIChat({ bookings, onMutation }) {
       if (data.mutations && data.mutations.length > 0) {
         const undoItems = [];
         for (const m of data.mutations) {
-          // Find old data for undo
           const oldBooking = bookings.find(b => b.id === m.id);
           if (oldBooking) {
-            const oldFields = {};
-            Object.keys(m.fields).forEach(k => { oldFields[k] = oldBooking[k]; });
-            undoItems.push({ id: m.id, oldFields, newFields: m.fields });
+            if (m.delete) {
+              // Delete operation
+              await base44.entities.Booking.delete(m.id);
+              undoItems.push({ id: m.id, oldFields: oldBooking, delete: true });
+            } else if (m.fields) {
+              // Update operation
+              const oldFields = {};
+              Object.keys(m.fields).forEach(k => { oldFields[k] = oldBooking[k]; });
+              await base44.entities.Booking.update(m.id, m.fields);
+              undoItems.push({ id: m.id, oldFields, newFields: m.fields });
+            }
           }
-          await base44.entities.Booking.update(m.id, m.fields);
         }
         // Record batch undo
         if (undoItems.length > 0 && onMutation) {
@@ -251,7 +257,13 @@ export default function InternalSpreadsheet() {
         await base44.entities.Booking.update(lastAction.id, lastAction.oldFields);
       } else if (lastAction.type === 'ai') {
         for (const item of lastAction.items) {
-          await base44.entities.Booking.update(item.id, item.oldFields);
+          if (item.delete) {
+            // Restore deleted booking
+            await base44.entities.Booking.create(item.oldFields);
+          } else {
+            // Restore updated fields
+            await base44.entities.Booking.update(item.id, item.oldFields);
+          }
         }
       } else if (lastAction.type === 'sheet_add') {
         setSpreadsheets(prev => prev.filter(s => s.id !== lastAction.id));

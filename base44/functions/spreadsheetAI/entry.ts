@@ -16,6 +16,7 @@ Deno.serve(async (req) => {
   const fullPrompt = `你是一個管理員內部試算表 AI 助理。你的職責：
 1. 回答關於試算表資料的查詢問題
 2. 接受批量或單個修改指令，並產生修改指令
+3. 支援日期篩選與資料刪除操作
 
 【試算表欄位說明】
 - client_name: 客戶姓名
@@ -34,33 +35,35 @@ ${sheetSummary || '（目前無資料）'}
 【回覆規則】
 - 若用戶查詢某資料，你必須從上方試算表中尋找，找不到時必須明說「找不到這份資料」，並列出可能相似的記錄供用戶確認
 - 若問題本身可能有誤（例如日期格式錯誤、欄位名稱不存在），需引導用戶修正
-- 若用戶要求修改，你必須在回覆的 mutations 陣列中提供修改指令
-- mutations 格式：[{ "id": "預約ID", "fields": { "欄位名": "新值" } }]
+- 若用戶要求修改或刪除，你必須在回覆的 mutations 陣列中提供指令
+- mutations 格式：[{ "id": "預約ID", "fields": { "欄位名": "新值" } }] 或 [{ "id": "預約ID", "delete": true }]
+- 日期篩選：若用戶要求「刪除日期範圍外的項目」，找出所有 scheduled_date 不在指定範圍內的記錄，設定 "delete": true
 - 若不需要修改，mutations 為空陣列
 - 回覆語言：繁體中文
 
 用戶指令：${message}`;
 
   const result = await base44.integrations.Core.InvokeLLM({
-    prompt: fullPrompt,
-    response_json_schema: {
-      type: "object",
-      properties: {
-        reply: { type: "string" },
-        mutations: {
-          type: "array",
-          items: {
-            type: "object",
-            properties: {
-              id: { type: "string" },
-              fields: { type: "object" }
-            }
-          }
-        }
-      },
-      required: ["reply", "mutations"]
-    },
-    model: "claude_sonnet_4_6"
+   prompt: fullPrompt,
+   response_json_schema: {
+     type: "object",
+     properties: {
+       reply: { type: "string" },
+       mutations: {
+         type: "array",
+         items: {
+           type: "object",
+           properties: {
+             id: { type: "string" },
+             fields: { type: "object" },
+             delete: { type: "boolean" }
+           }
+         }
+       }
+     },
+     required: ["reply", "mutations"]
+   },
+   model: "claude_sonnet_4_6"
   });
 
   return Response.json(result);
