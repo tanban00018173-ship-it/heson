@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { zhTW } from "date-fns/locale";
-import { Bot, Send, Edit2, Check, X, Download, RefreshCw, Table, Search, Loader2, ShieldCheck, ZoomIn, ZoomOut, Monitor, ArrowLeft, Plus, Trash2 } from "lucide-react";
+import { Bot, Send, Edit2, Check, X, Download, RefreshCw, Table, Search, Loader2, ShieldCheck, ZoomIn, ZoomOut, Monitor, ArrowLeft, Plus, Trash2, Menu, EyeOff, Eye } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { motion, AnimatePresence } from "framer-motion";
 import RoleManager from "@/components/internal/RoleManager";
 import DeviceManager from "@/components/internal/DeviceManager";
@@ -170,6 +171,9 @@ export default function InternalSpreadsheet() {
    const [showNewSheetInput, setShowNewSheetInput] = useState(false);
    const [editingSheetId, setEditingSheetId] = useState(null);
    const [editingSheetName, setEditingSheetName] = useState('');
+   const [hiddenSheets, setHiddenSheets] = useState([]);
+   const [longPressMenu, setLongPressMenu] = useState(null); // { id, x, y }
+   const longPressTimerRef = useRef(null);
    const tableWrapperRef = useRef(null);
    const queryClient = useQueryClient();
 
@@ -278,6 +282,40 @@ export default function InternalSpreadsheet() {
     setEditingSheetName('');
   };
 
+  const hideSheet = (id) => {
+    setHiddenSheets(prev => [...prev, id]);
+    setLongPressMenu(null);
+    if (activeSpreadsheet === id) {
+      const firstVisible = spreadsheets.find(s => s.id !== id && !hiddenSheets.includes(s.id));
+      if (firstVisible) setActiveSpreadsheet(firstVisible.id);
+    }
+  };
+
+  const unhideSheet = (id) => {
+    setHiddenSheets(prev => prev.filter(h => h !== id));
+    setActiveSpreadsheet(id);
+  };
+
+  const handleLongPressStart = (e, sheetId) => {
+    if (activeSpreadsheet !== sheetId) return;
+    const visibleCount = spreadsheets.filter(s => !hiddenSheets.includes(s.id)).length;
+    if (visibleCount <= 1) return;
+    longPressTimerRef.current = setTimeout(() => {
+      const rect = e.currentTarget.getBoundingClientRect();
+      setLongPressMenu({ id: sheetId, x: rect.left, y: rect.bottom + 4 });
+    }, 500);
+  };
+
+  const handleLongPressEnd = () => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  };
+
+  const visibleSheets = spreadsheets.filter(s => !hiddenSheets.includes(s.id));
+  const hiddenSheetsList = spreadsheets.filter(s => hiddenSheets.includes(s.id));
+
   const currentSheet = spreadsheets.find(s => s.id === activeSpreadsheet);
 
   if (!authChecked || !user) {
@@ -339,31 +377,138 @@ export default function InternalSpreadsheet() {
 
       {/* Spreadsheet tabs (only show in sheet tab) */}
       {activeTab === 'sheet' && (
-        <div className="bg-stone-50 border-b border-stone-200 px-4 py-2 flex items-center gap-2 flex-shrink-0 overflow-x-auto">
-          {spreadsheets.map((sheet) => (
-            <div key={sheet.id} className="flex items-center gap-1">
-              {editingSheetId === sheet.id ? (
+        <div className="bg-stone-50 border-b border-stone-200 px-2 py-2 flex items-center gap-0 flex-shrink-0 relative">
+          {/* Hamburger menu — restore hidden sheets */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <button className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-stone-200 text-stone-500 transition-colors relative">
+                <Menu className="w-4 h-4" />
+                {hiddenSheetsList.length > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-amber-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
+                    {hiddenSheetsList.length}
+                  </span>
+                )}
+              </button>
+            </PopoverTrigger>
+            <PopoverContent align="start" className="w-56 p-2">
+              <p className="text-xs font-medium text-stone-500 px-2 py-1.5">隱藏的試算表</p>
+              {hiddenSheetsList.length === 0 ? (
+                <p className="text-xs text-stone-400 px-2 py-3 text-center">沒有隱藏的試算表</p>
+              ) : (
+                <div className="space-y-1">
+                  {hiddenSheetsList.map(sheet => (
+                    <button
+                      key={sheet.id}
+                      onClick={() => unhideSheet(sheet.id)}
+                      className="w-full flex items-center gap-2 px-2 py-2 rounded-lg text-xs text-stone-600 hover:bg-amber-50 hover:text-amber-700 transition-colors"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                      <span>{sheet.name}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </PopoverContent>
+          </Popover>
+
+          {/* Scrollable sheet tabs */}
+          <div className="flex-1 overflow-x-auto flex items-center gap-2 px-2 scrollbar-thin" style={{ scrollbarWidth: 'thin' }}>
+            {visibleSheets.map((sheet) => (
+              <div key={sheet.id} className="flex items-center gap-1 flex-shrink-0">
+                {editingSheetId === sheet.id ? (
+                  <>
+                    <Input
+                      value={editingSheetName}
+                      onChange={e => setEditingSheetName(e.target.value)}
+                      className="h-7 text-xs px-2 py-0 w-32"
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') saveEditingSheet();
+                        if (e.key === 'Escape') setEditingSheetId(null);
+                      }}
+                      autoFocus
+                    />
+                    <Button
+                      onClick={saveEditingSheet}
+                      disabled={!editingSheetName.trim()}
+                      size="icon"
+                      className="h-7 w-7 bg-green-500 hover:bg-green-600 flex-shrink-0"
+                    >
+                      <Check className="w-3 h-3" />
+                    </Button>
+                    <Button
+                      onClick={() => setEditingSheetId(null)}
+                      size="icon"
+                      variant="outline"
+                      className="h-7 w-7 flex-shrink-0"
+                    >
+                      <X className="w-3 h-3" />
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      onClick={() => {
+                        if (activeSpreadsheet === sheet.id) {
+                          startEditingSheet(sheet.id, sheet.name);
+                        } else {
+                          setActiveSpreadsheet(sheet.id);
+                        }
+                      }}
+                      onMouseDown={(e) => handleLongPressStart(e, sheet.id)}
+                      onMouseUp={handleLongPressEnd}
+                      onMouseLeave={handleLongPressEnd}
+                      onTouchStart={(e) => handleLongPressStart(e, sheet.id)}
+                      onTouchEnd={handleLongPressEnd}
+                      onContextMenu={(e) => e.preventDefault()}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors select-none ${
+                        activeSpreadsheet === sheet.id
+                          ? 'bg-white border border-amber-500 text-amber-600'
+                          : 'bg-white border border-stone-200 text-stone-600 hover:border-stone-300'
+                      }`}
+                    >
+                      {sheet.name}
+                    </button>
+                    {sheet.id !== 'booking' && (
+                      <button
+                        onClick={() => removeSpreadsheet(sheet.id)}
+                        className="text-stone-400 hover:text-red-500 transition-colors p-1"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    )}
+                  </>
+                )}
+              </div>
+            ))}
+
+            {/* Add new sheet */}
+            <div className="flex items-center gap-1 ml-1 pl-2 border-l border-stone-200 flex-shrink-0">
+              {showNewSheetInput && (
                 <>
                   <Input
-                    value={editingSheetName}
-                    onChange={e => setEditingSheetName(e.target.value)}
+                    value={newSheetName}
+                    onChange={e => setNewSheetName(e.target.value)}
+                    placeholder="新試算表..."
                     className="h-7 text-xs px-2 py-0 w-32"
                     onKeyDown={e => {
-                      if (e.key === 'Enter') saveEditingSheet();
-                      if (e.key === 'Escape') setEditingSheetId(null);
+                      if (e.key === 'Enter') addSpreadsheet();
+                      if (e.key === 'Escape') setShowNewSheetInput(false);
                     }}
                     autoFocus
                   />
                   <Button
-                    onClick={saveEditingSheet}
-                    disabled={!editingSheetName.trim()}
+                    onClick={addSpreadsheet}
+                    disabled={!newSheetName.trim()}
                     size="icon"
-                    className="h-7 w-7 bg-green-500 hover:bg-green-600 flex-shrink-0"
+                    className="h-7 w-7 bg-amber-500 hover:bg-amber-600 flex-shrink-0"
                   >
                     <Check className="w-3 h-3" />
                   </Button>
                   <Button
-                    onClick={() => setEditingSheetId(null)}
+                    onClick={() => {
+                      setShowNewSheetInput(false);
+                      setNewSheetName('');
+                    }}
                     size="icon"
                     variant="outline"
                     className="h-7 w-7 flex-shrink-0"
@@ -371,83 +516,39 @@ export default function InternalSpreadsheet() {
                     <X className="w-3 h-3" />
                   </Button>
                 </>
-              ) : (
-                <>
-                  <button
-                    onClick={() => {
-                      if (activeSpreadsheet === sheet.id) {
-                        startEditingSheet(sheet.id, sheet.name);
-                      } else {
-                        setActiveSpreadsheet(sheet.id);
-                      }
-                    }}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                      activeSpreadsheet === sheet.id
-                        ? 'bg-white border border-amber-500 text-amber-600'
-                        : 'bg-white border border-stone-200 text-stone-600 hover:border-stone-300'
-                    }`}
-                  >
-                    {sheet.name}
-                  </button>
-                  {sheet.id !== 'booking' && (
-                    <button
-                      onClick={() => removeSpreadsheet(sheet.id)}
-                      className="text-stone-400 hover:text-red-500 transition-colors p-1"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  )}
-                </>
               )}
-            </div>
-          ))}
-          <div className="flex items-center gap-1 ml-2 pl-2 border-l border-stone-200">
-            {showNewSheetInput && (
-              <>
-                <Input
-                  value={newSheetName}
-                  onChange={e => setNewSheetName(e.target.value)}
-                  placeholder="新試算表..."
-                  className="h-7 text-xs px-2 py-0 w-32"
-                  onKeyDown={e => {
-                    if (e.key === 'Enter') addSpreadsheet();
-                    if (e.key === 'Escape') setShowNewSheetInput(false);
-                  }}
-                  autoFocus
-                />
+              {!showNewSheetInput && (
                 <Button
-                  onClick={addSpreadsheet}
-                  disabled={!newSheetName.trim()}
+                  onClick={() => setShowNewSheetInput(true)}
                   size="icon"
                   className="h-7 w-7 bg-amber-500 hover:bg-amber-600 flex-shrink-0"
                 >
-                  <Check className="w-3 h-3" />
+                  <Plus className="w-3 h-3" />
                 </Button>
-                <Button
-                  onClick={() => {
-                    setShowNewSheetInput(false);
-                    setNewSheetName('');
-                  }}
-                  size="icon"
-                  variant="outline"
-                  className="h-7 w-7 flex-shrink-0"
-                >
-                  <X className="w-3 h-3" />
-                </Button>
-              </>
-            )}
-            {!showNewSheetInput && (
-              <Button
-                onClick={() => setShowNewSheetInput(true)}
-                size="icon"
-                className="h-7 w-7 bg-amber-500 hover:bg-amber-600 flex-shrink-0"
+              )}
+            </div>
+          </div>
+
+          {/* Long press context menu */}
+          {longPressMenu && (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setLongPressMenu(null)} />
+              <div
+                className="fixed z-50 bg-white border border-stone-200 rounded-lg shadow-lg py-1 min-w-[140px]"
+                style={{ left: longPressMenu.x, top: longPressMenu.y }}
               >
-                <Plus className="w-3 h-3" />
-              </Button>
-            )}
-          </div>
-          </div>
+                <button
+                  onClick={() => hideSheet(longPressMenu.id)}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-stone-600 hover:bg-stone-50 transition-colors"
+                >
+                  <EyeOff className="w-3.5 h-3.5" />
+                  隱藏此試算表
+                </button>
+              </div>
+            </>
           )}
+        </div>
+      )}
 
       {/* Content */}
       <div className="flex-1 overflow-hidden flex min-h-0">
