@@ -36,10 +36,9 @@ Deno.serve(async (req) => {
       ]);
     });
 
-    // Update Google Sheet
-    const sheetName = '清潔訂單';
+    // Update Google Sheet - use A1 notation with proper encoding
     const response = await fetch(
-      `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/'${sheetName}'!A1?valueInputOption=USER_ENTERED`,
+      `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/A1?valueInputOption=USER_ENTERED`,
       {
         method: 'PUT',
         headers: {
@@ -52,6 +51,7 @@ Deno.serve(async (req) => {
 
     if (!response.ok) {
       const error = await response.json();
+      console.error('Sheet update error:', error);
       return Response.json({ error: error.error?.message || 'Failed to update sheet' }, { status: 400 });
     }
 
