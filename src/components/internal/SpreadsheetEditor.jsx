@@ -499,6 +499,7 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
                   className="h-8 bg-stone-50 border border-stone-200 px-2 text-xs font-semibold text-stone-700 cursor-pointer hover:bg-stone-100 relative group select-none"
                   onClick={(e) => {
                     const rect = e.currentTarget.getBoundingClientRect();
+                    setSelectedRange({ startRow: 0, startCol: colIdx, endRow: filteredData.length - 1, endCol: colIdx });
                     setContextMenu({ x: rect.left, y: rect.bottom + 4, type: 'col', index: colIdx });
                   }}
                 >
@@ -522,6 +523,7 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
                   className="w-9 bg-stone-50 border border-stone-200 text-xs text-stone-600 text-center font-medium cursor-pointer hover:bg-stone-100 relative group select-none"
                   onClick={(e) => {
                     const rect = e.currentTarget.getBoundingClientRect();
+                    setSelectedRange({ startRow: rowIdx, startCol: 0, endRow: rowIdx, endCol: sheetData.col_count - 1 });
                     setContextMenu({ x: rect.left, y: rect.bottom + 4, type: 'row', index: rowIdx });
                   }}
                   title={rowNames[rowIdx] ? `${rowIdx + 1} - ${rowNames[rowIdx]}` : `第 ${rowIdx + 1} 列`}
