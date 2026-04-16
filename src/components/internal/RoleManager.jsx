@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Search, Loader2, Check, Crown, Briefcase, User, Users, ShieldBan } from "lucide-react";
 
