@@ -24,6 +24,8 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
   const [undoStack, setUndoStack] = useState([]);
   const [undoing, setUndoing] = useState(false);
   const [selectedRange, setSelectedRange] = useState(null); // { startRow, startCol, endRow, endCol }
+  const [selectedRowIdx, setSelectedRowIdx] = useState(null);
+  const [selectedColIdx, setSelectedColIdx] = useState(null);
   const [resizingCol, setResizingCol] = useState(null); // { colIdx, startX, startWidth }
   const [resizingRow, setResizingRow] = useState(null); // { rowIdx, startY, startHeight }
   const tableRef = useRef(null);
@@ -496,10 +498,20 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
                 <th
                   key={colIdx}
                   style={{ width: sheetData.col_widths[colIdx] }}
-                  className="h-8 bg-stone-50 border border-stone-200 px-2 text-xs font-semibold text-stone-700 cursor-pointer hover:bg-stone-100 relative group select-none"
-                  onClick={(e) => {
-                    const rect = e.currentTarget.getBoundingClientRect();
-                    setContextMenu({ x: rect.left, y: rect.bottom + 4, type: 'col', index: colIdx });
+                  className={`h-8 border border-stone-200 px-2 text-xs font-semibold cursor-pointer relative group select-none ${
+                    selectedColIdx === colIdx ? 'bg-blue-100 text-stone-900' : 'bg-stone-50 text-stone-700 hover:bg-stone-100'
+                  }`}
+                  onClick={() => {
+                    if (selectedColIdx === colIdx) {
+                      // Second click: show menu
+                      const rect = event.currentTarget.getBoundingClientRect();
+                      setContextMenu({ x: rect.left, y: rect.bottom + 4, type: 'col', index: colIdx });
+                    } else {
+                      // First click: select entire column
+                      setSelectedColIdx(colIdx);
+                      setSelectedRowIdx(null);
+                      setSelectedRange(null);
+                    }
                   }}
                 >
                   <div className="flex items-center justify-between h-full">
@@ -519,10 +531,20 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
             {filteredData.map((row, rowIdx) => (
               <tr key={rowIdx} className="hover:bg-blue-50">
                 <td
-                  className="w-9 bg-stone-50 border border-stone-200 text-xs text-stone-600 text-center font-medium cursor-pointer hover:bg-stone-100 relative group select-none"
-                  onClick={(e) => {
-                    const rect = e.currentTarget.getBoundingClientRect();
-                    setContextMenu({ x: rect.left, y: rect.bottom + 4, type: 'row', index: rowIdx });
+                  className={`w-9 border border-stone-200 text-xs text-center font-medium cursor-pointer relative group select-none ${
+                    selectedRowIdx === rowIdx ? 'bg-blue-100 text-stone-900' : 'bg-stone-50 text-stone-600 hover:bg-stone-100'
+                  }`}
+                  onClick={() => {
+                    if (selectedRowIdx === rowIdx) {
+                      // Second click: show menu
+                      const rect = event.currentTarget.getBoundingClientRect();
+                      setContextMenu({ x: rect.left, y: rect.bottom + 4, type: 'row', index: rowIdx });
+                    } else {
+                      // First click: select entire row
+                      setSelectedRowIdx(rowIdx);
+                      setSelectedColIdx(null);
+                      setSelectedRange(null);
+                    }
                   }}
                   title={rowNames[rowIdx] ? `${rowIdx + 1} - ${rowNames[rowIdx]}` : `第 ${rowIdx + 1} 列`}
                   style={{ height: sheetData.row_heights[rowIdx] }}
@@ -540,13 +562,15 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
                   const format = sheetData.cell_formats?.[`${rowIdx}_${colIdx}`] || {};
                   const isEditing = editCell?.row === rowIdx && editCell?.col === colIdx;
                   const selected = isSelected(rowIdx, colIdx);
+                  const isRowSelected = selectedRowIdx === rowIdx && selectedColIdx === null;
+                  const isColSelected = selectedColIdx === colIdx && selectedRowIdx === null;
                   return (
                     <td
                       key={`${rowIdx}_${colIdx}`}
                       style={{
                         width: sheetData.col_widths[colIdx],
                         height: sheetData.row_heights[rowIdx],
-                        backgroundColor: selected ? '#fef08a' : (format.bg || 'white'),
+                        backgroundColor: selected ? '#fef08a' : (isRowSelected || isColSelected ? '#dbeafe' : (format.bg || 'white')),
                         color: format.color || 'black',
                         fontWeight: format.bold ? 'bold' : 'normal',
                         border: selected ? '2px solid #eab308' : '1px solid #e5e7eb'
