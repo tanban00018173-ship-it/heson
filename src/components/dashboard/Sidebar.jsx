@@ -12,7 +12,8 @@ import {
   FileText,
   BarChart3,
   UserCheck,
-  Sheet
+  Sheet,
+  Table
 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 
@@ -41,6 +42,7 @@ export default function Sidebar({ userRole = 'client', userName = '' }) {
     { name: "管理師管理", path: "AdminCleaners", icon: User },
     { name: "員工出勤", path: "AdminAttendance", icon: UserCheck },
     { name: "Google 表格填寫", path: "GoogleSheetsManager", icon: Sheet },
+    { name: "試算表", path: "InternalSpreadsheet", icon: Table },
   ];
 
   const getLinks = () => {
