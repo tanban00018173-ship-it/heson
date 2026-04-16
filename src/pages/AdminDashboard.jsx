@@ -5,15 +5,28 @@ import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Users, ClipboardList, TrendingUp, Clock, CheckCircle, Table } from "lucide-react";
+import { Calendar, Users, ClipboardList, TrendingUp, Clock, CheckCircle, Table, MoreVertical, Zap } from "lucide-react";
 import { motion } from "framer-motion";
 import { format } from "date-fns";
 import { zhTW } from "date-fns/locale";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 export default function AdminDashboard() {
   const [user, setUser] = useState(null);
+  const [showToolsModal, setShowToolsModal] = useState(false);
 
   useEffect(() => {
     const loadUser = async () => {
@@ -90,9 +103,25 @@ export default function AdminDashboard() {
       <main className="flex-1 pt-16 lg:pt-0">
         <div className="p-6 lg:p-8">
           {/* Header */}
-          <div className="mb-8">
-            <h1 className="text-2xl font-medium text-stone-800">管理後台</h1>
-            <p className="text-stone-500 mt-1">總覽系統狀態與近期活動</p>
+          <div className="mb-8 flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-medium text-stone-800">管理後台</h1>
+              <p className="text-stone-500 mt-1">總覽系統狀態與近期活動</p>
+            </div>
+            {/* Internal Tools Menu */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="p-2 hover:bg-stone-100 rounded-lg transition-colors">
+                  <MoreVertical className="w-5 h-5 text-stone-600" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setShowToolsModal(true)}>
+                  <Zap className="w-4 h-4 mr-2" />
+                  內部工具
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
 
           {/* Stats Grid */}
@@ -218,6 +247,31 @@ export default function AdminDashboard() {
           </div>
         </div>
       </main>
+
+      {/* Internal Tools Modal */}
+      <Dialog open={showToolsModal} onOpenChange={setShowToolsModal}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Zap className="w-5 h-5 text-amber-600" />
+              內部工具
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Link to="/InternalSpreadsheet" onClick={() => setShowToolsModal(false)}>
+              <div className="flex items-center justify-between p-4 bg-amber-50 rounded-xl hover:bg-amber-100 transition-colors cursor-pointer border border-amber-200">
+                <div className="flex items-center gap-3">
+                  <Table className="w-5 h-5 text-amber-600" />
+                  <div>
+                    <p className="font-medium text-stone-800">內部試算表</p>
+                    <p className="text-xs text-stone-500">試算表編輯、AI 助理、權限管理、裝置封禁</p>
+                  </div>
+                </div>
+              </div>
+            </Link>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
