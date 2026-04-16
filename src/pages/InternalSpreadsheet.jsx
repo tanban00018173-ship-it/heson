@@ -182,15 +182,30 @@ export default function InternalSpreadsheet() {
    const [searchTerm, setSearchTerm] = useState('');
    const [activeTab, setActiveTab] = useState('sheet'); // 'sheet' | 'ai' | 'roles' | 'devices'
    const [activeSpreadsheet, setActiveSpreadsheet] = useState('booking'); // 'booking' or custom name
-   const [spreadsheets, setSpreadsheets] = useState([
+   const defaultSpreadsheets = [
      { id: 'booking', name: '清潔訂單' }
-   ]);
+   ];
+   const [spreadsheets, setSpreadsheets] = useState(() => {
+     try {
+       const saved = localStorage.getItem('spreadsheets');
+       return saved ? JSON.parse(saved) : defaultSpreadsheets;
+     } catch {
+       return defaultSpreadsheets;
+     }
+   });
+   const [hiddenSheets, setHiddenSheets] = useState(() => {
+     try {
+       const saved = localStorage.getItem('hiddenSheets');
+       return saved ? JSON.parse(saved) : [];
+     } catch {
+       return [];
+     }
+   });
    const [zoom, setZoom] = useState(1);
    const [newSheetName, setNewSheetName] = useState('');
    const [showNewSheetInput, setShowNewSheetInput] = useState(false);
    const [editingSheetId, setEditingSheetId] = useState(null);
    const [editingSheetName, setEditingSheetName] = useState('');
-   const [hiddenSheets, setHiddenSheets] = useState([]);
    const [longPressMenu, setLongPressMenu] = useState(null); // { id, x, y }
    const [sheetContextMenu, setSheetContextMenu] = useState(null); // { id, x, y }
    const [renameDialogSheet, setRenameDialogSheet] = useState(null);
@@ -202,6 +217,15 @@ export default function InternalSpreadsheet() {
    const [undoing, setUndoing] = useState(false);
 
   const changeZoom = (delta) => setZoom(z => Math.min(2, Math.max(0.4, +(z + delta).toFixed(1))));
+
+  // Persist spreadsheets and hiddenSheets to localStorage
+  useEffect(() => {
+    localStorage.setItem('spreadsheets', JSON.stringify(spreadsheets));
+  }, [spreadsheets]);
+
+  useEffect(() => {
+    localStorage.setItem('hiddenSheets', JSON.stringify(hiddenSheets));
+  }, [hiddenSheets]);
 
   useEffect(() => {
     const el = tableWrapperRef.current;
