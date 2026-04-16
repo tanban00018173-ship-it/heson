@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { motion, AnimatePresence } from "framer-motion";
 import RoleManager from "@/components/internal/RoleManager";
 import DeviceManager from "@/components/internal/DeviceManager";
-import SpreadsheetEditor from "@/components/internal/SpreadsheetEditor";
+
 
 // Editable cell component
 function EditableCell({ value, onSave, type = 'text' }) {
@@ -214,6 +214,7 @@ export default function InternalSpreadsheet() {
    const queryClient = useQueryClient();
    const [undoStack, setUndoStack] = useState([]); // Undo history
    const [undoing, setUndoing] = useState(false);
+   const [sheetId, setSheetId] = useState(null);
 
   // Persist spreadsheets and hiddenSheets to localStorage
   useEffect(() => {
@@ -234,6 +235,15 @@ export default function InternalSpreadsheet() {
         return;
       }
       setUser(me);
+      
+      // Initialize Google Sheet
+      try {
+        const res = await base44.functions.invoke('initGoogleSheet', {});
+        setSheetId(res.data.spreadsheet_id);
+      } catch (err) {
+        console.error('Failed to init sheet:', err);
+      }
+      
       setAuthChecked(true);
     };
     check();
@@ -845,12 +855,21 @@ export default function InternalSpreadsheet() {
       <div className="flex-1 overflow-hidden flex min-h-0">
         {activeTab === 'sheet' && (
           <div className="flex-1 flex flex-col overflow-hidden">
-            {/* Check if current sheet is booking (default) or custom */}
-            {/* Unified spreadsheet editor for all sheet types */}
-            <SpreadsheetEditor 
-              spreadsheetId={activeSpreadsheet} 
-              spreadsheetName={currentSheet?.name}
-            />
+            <div className="flex-1 flex flex-col p-4">
+              {activeSpreadsheet === 'sheet_booking' && sheetId ? (
+                <div className="flex-1 rounded-lg overflow-hidden border border-stone-200">
+                  <iframe
+                    src={`https://docs.google.com/spreadsheets/d/${sheetId}/edit?usp=sharing`}
+                    className="w-full h-full border-0"
+                    allow="fullscreen"
+                  />
+                </div>
+              ) : (
+                <div className="flex items-center justify-center text-stone-500">
+                  初始化試算表中...
+                </div>
+              )}
+            </div>
           </div>
         )}
 
