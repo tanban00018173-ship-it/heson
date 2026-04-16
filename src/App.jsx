@@ -23,6 +23,7 @@ import GoogleSheetsManager from './pages/GoogleSheetsManager'
 import SheetSyncLog from './pages/SheetSyncLog'
 import ServiceCaseManager from './pages/ServiceCaseManager'
 import InternalSpreadsheet from './pages/InternalSpreadsheet'
+import GoogleSheetsView from './pages/GoogleSheetsView'
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
@@ -111,6 +112,7 @@ const AuthenticatedApp = () => {
       <Route path="/SheetSyncLog" element={<LayoutWrapper currentPageName="SheetSyncLog"><SheetSyncLog /></LayoutWrapper>} />
       <Route path="/ServiceCaseManager" element={<LayoutWrapper currentPageName="ServiceCaseManager"><ServiceCaseManager /></LayoutWrapper>} />
       <Route path="/InternalSpreadsheet" element={<InternalSpreadsheet />} />
+      <Route path="/GoogleSheetsView" element={<LayoutWrapper currentPageName="GoogleSheetsView"><GoogleSheetsView /></LayoutWrapper>} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );
