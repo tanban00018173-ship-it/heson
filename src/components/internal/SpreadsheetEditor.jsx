@@ -3,7 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Undo2, Plus, Trash2, Copy, Type } from "lucide-react";
+import { Undo2, Plus, Trash2, Copy, Type, CopyCheck, Delete, ChevronLeft, ChevronRight } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 
 const BOOKING_COLUMNS = [
@@ -239,6 +239,53 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
     setContextMenu(null);
   };
 
+  const copyCol = (colIdx) => {
+    const colData = sheetData.data.map(row => row[colIdx]);
+    navigator.clipboard.writeText(colData.join('\n'));
+    setContextMenu(null);
+  };
+
+  const clearCol = (colIdx) => {
+    if (!isBookingSheet) {
+      const newData = sheetData.data.map(row => {
+        const newRow = [...row];
+        newRow[colIdx] = '';
+        return newRow;
+      });
+      recordUndo({ type: 'clear_col', colIdx, oldData: sheetData.data });
+      updateMutation.mutate({ data: newData });
+    }
+    setContextMenu(null);
+  };
+
+  const insertColLeft = (colIdx) => {
+    if (!isBookingSheet) {
+      const newData = sheetData.data.map(row => {
+        const newRow = [...row];
+        newRow.splice(colIdx, 0, '');
+        return newRow;
+      });
+      const newColWidths = [...sheetData.col_widths];
+      newColWidths.splice(colIdx, 0, 100);
+      const newColNames = [...sheetData.col_names];
+      newColNames.splice(colIdx, 0, '');
+      recordUndo({ type: 'insert_col', colIdx });
+      updateMutation.mutate({ 
+        data: newData, 
+        col_widths: newColWidths, 
+        col_names: newColNames,
+        col_count: sheetData.col_count + 1
+      });
+    }
+    setContextMenu(null);
+  };
+
+  const insertColRight = (colIdx) => {
+    if (!isBookingSheet) {
+      insertColLeft(colIdx + 1);
+    }
+  };
+
   const handleColResizeStart = (e, colIdx) => {
     e.preventDefault();
     setResizingCol({ colIdx, startX: e.clientX, startWidth: sheetData.col_widths[colIdx] });
@@ -359,6 +406,38 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
                 )}
               </>
             )}
+            {contextMenu.type === 'col' && (
+              <>
+                <button
+                  onClick={() => copyCol(contextMenu.index)}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-stone-600 hover:bg-stone-100 transition-colors"
+                >
+                  <CopyCheck className="w-3 h-3" /> 複製整欄
+                </button>
+                {!isBookingSheet && (
+                  <>
+                    <button
+                      onClick={() => clearCol(contextMenu.index)}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-xs text-stone-600 hover:bg-stone-100 transition-colors"
+                    >
+                      <Delete className="w-3 h-3" /> 清除欄
+                    </button>
+                    <button
+                      onClick={() => insertColLeft(contextMenu.index)}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-xs text-stone-600 hover:bg-stone-100 transition-colors border-t border-stone-100"
+                    >
+                      <ChevronLeft className="w-3 h-3" /> 向左插入一欄
+                    </button>
+                    <button
+                      onClick={() => insertColRight(contextMenu.index)}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-xs text-stone-600 hover:bg-stone-100 transition-colors"
+                    >
+                      <ChevronRight className="w-3 h-3" /> 向右插入一欄
+                    </button>
+                  </>
+                )}
+              </>
+            )}
           </div>
         </>
       )}
@@ -377,15 +456,19 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
             <tr>
               <th className="w-10 h-8 bg-stone-100 border border-stone-300 text-xs font-medium text-stone-600"></th>
               {sheetData.col_names.map((_, colIdx) => (
-                <th
-                  key={colIdx}
-                  style={{ width: sheetData.col_widths[colIdx] }}
-                  className="h-8 bg-stone-100 border border-stone-300 px-2 text-xs font-medium text-stone-700 select-none relative"
-                >
-                  <div className="flex items-center justify-between h-full">
-                    <span>{getColLabel(colIdx)}</span>
-                    <span className="text-[10px] text-stone-400 opacity-50">▼</span>
-                  </div>
+               <th
+                 key={colIdx}
+                 style={{ width: sheetData.col_widths[colIdx] }}
+                 className="h-8 bg-stone-100 border border-stone-300 px-2 text-xs font-medium text-stone-700 select-none relative cursor-pointer hover:bg-stone-200"
+                 onClick={(e) => {
+                   const rect = e.currentTarget.getBoundingClientRect();
+                   setContextMenu({ x: rect.left, y: rect.bottom + 4, type: 'col', index: colIdx });
+                 }}
+               >
+                 <div className="flex items-center justify-between h-full">
+                   <span>{getColLabel(colIdx)}</span>
+                   <span className="text-[10px] text-stone-400 opacity-50">▼</span>
+                 </div>
                   <div
                     className="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-blue-400 opacity-0 hover:opacity-100 transition-opacity"
                     onMouseDown={(e) => handleColResizeStart(e, colIdx)}
