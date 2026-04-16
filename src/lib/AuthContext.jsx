@@ -100,9 +100,12 @@ export const AuthProvider = ({ children }) => {
       });
       if (res.data?.banned) {
         setDeviceBanned({ reason: res.data.reason });
+        return true; // Device is banned
       }
+      return false; // Device is not banned
     } catch {
       // silently ignore device check errors
+      return false;
     }
   };
 
@@ -111,6 +114,16 @@ export const AuthProvider = ({ children }) => {
       // Now check if the user is authenticated
       setIsLoadingAuth(true);
       const currentUser = await base44.auth.me();
+
+      // CRITICAL: Always check device first, even for banned accounts
+      // This ensures we record the device fingerprint and detect bypasses
+      const isDeviceBanned = await checkDeviceBan(currentUser?.email);
+      if (isDeviceBanned) {
+        // Device is banned, block access regardless of other factors
+        setIsLoadingAuth(false);
+        setIsAuthenticated(false);
+        return;
+      }
 
       // Check if user is banned
       if (currentUser?.role === 'banned') {
@@ -126,8 +139,6 @@ export const AuthProvider = ({ children }) => {
       setUser(currentUser);
       setIsAuthenticated(true);
       setIsLoadingAuth(false);
-      // Check device ban after auth
-      await checkDeviceBan(currentUser?.email);
     } catch (error) {
       console.error('User auth check failed:', error);
       setIsLoadingAuth(false);

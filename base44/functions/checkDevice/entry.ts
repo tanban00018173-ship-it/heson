@@ -33,14 +33,28 @@ Deno.serve(async (req) => {
       return Response.json({ banned: true, reason: record.reason || '此裝置已被封禁' });
     }
 
-    // Also check if the email is associated with any active banned device (私密瀏覽/不同設備繞過防檢)
+    // CRITICAL: Check if the email is associated with any active banned device
+    // This prevents bypass via private browsing, incognito, or new tabs with same email
     if (userEmail) {
-      const emailBanned = await base44.asServiceRole.entities.BannedDevice.filter({
+      const allBannedDevices = await base44.asServiceRole.entities.BannedDevice.filter({
         is_active: true,
       });
       
-      for (const device of emailBanned) {
+      for (const device of allBannedDevices) {
         if ((device.associated_emails || []).includes(userEmail)) {
+          // Email is linked to a banned device — register this new device fingerprint too
+          const existingRecord = await base44.asServiceRole.entities.BannedDevice.filter({ fingerprint });
+          if (existingRecord && existingRecord.length === 0) {
+            // This is a new device being used with a banned email — record it
+            await base44.asServiceRole.entities.BannedDevice.create({
+              fingerprint,
+              reason: device.reason || '帳號關聯之新設備',
+              banned_by: device.banned_by || 'system',
+              user_agent: userAgent || '',
+              is_active: true,
+              associated_emails: [userEmail],
+            });
+          }
           return Response.json({ banned: true, reason: device.reason || '此帳號已被封禁' });
         }
       }
