@@ -46,22 +46,21 @@ Deno.serve(async (req) => {
 
   const { message, bookings } = await req.json();
   
-  // 獲取 Google Sheets 存取令牌
+  // 獲取 Google Sheets 存取令牌（用於更新 Sheet）
   let accessToken = null;
   try {
     const conn = await base44.asServiceRole.connectors.getConnection('googlesheets');
     accessToken = conn.accessToken;
   } catch (err) {
     console.error('Failed to get Google Sheets connection:', err.message);
-    return Response.json({ 
-      reply: '⚠️ 無法連接 Google Sheets，請確保已授權 Google Sheets 連線。',
-      sheet_updates_applied: 0,
-      success: false
-    }, { status: 500 });
+    accessToken = null;
   }
   
-  // 取得 Google Sheet 當前資料
-  let sheetData = await getGoogleSheetData(accessToken);
+  // 取得 Google Sheet 當前資料（可選，如果失敗就用空）
+  let sheetData = [];
+  if (accessToken) {
+    sheetData = await getGoogleSheetData(accessToken);
+  }
 
   const sheetSummary = bookings.map((b, i) => {
     return `[${i + 1}] ID:${b.id} | 客戶:${b.client_name || '無'} | 服務:${b.service_type || '無'} | 日期:${b.scheduled_date || '無'} | 時段:${b.time_slot || '無'} | 狀態:${b.status || '無'} | 地址:${b.address || '無'} | 管理師:${b.cleaner_name || '無'} | 備註:${b.notes || '無'}`;
