@@ -322,7 +322,7 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
                       )}
                     </td>
                   );
-                }))
+                })}
               </tr>
             ))}
           </tbody>
