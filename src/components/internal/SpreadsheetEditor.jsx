@@ -449,52 +449,63 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
   }) : sheetData.data;
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden bg-white">
-      {/* Info bar with sheet name, undo, and zoom */}
-      <div className="px-4 py-2 bg-white border-b border-stone-300 flex items-center justify-between text-xs text-stone-600 gap-4">
-        <div className="flex items-center gap-4">
-          <span className="font-medium">我 · {sheetData.row_count} 行 × {sheetData.col_count} 列</span>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleUndo}
-            disabled={undoStack.length === 0 || undoing}
-            className="gap-1 text-xs px-2 h-7 text-stone-600 hover:text-stone-800"
-            title={undoStack.length > 0 ? `復原: ${undoStack[undoStack.length - 1]?.description}` : '沒有可復原的操作'}
-          >
-            <Undo2 className="w-3 h-3" />
-            復原
-          </Button>
-        </div>
-        <div className="flex items-center gap-2">
-          <button onClick={() => changeZoom(-0.1)} className="p-1 hover:bg-stone-100 text-stone-600 rounded">−</button>
-          <span className="w-12 text-center text-xs text-stone-600 font-medium">{Math.round(zoom * 100)}%</span>
-          <button onClick={() => changeZoom(0.1)} className="p-1 hover:bg-stone-100 text-stone-600 rounded">+</button>
+    <div className="flex-1 flex flex-col overflow-hidden">
+      {/* Info bar with search, undo, and zoom */}
+      <div className="px-4 py-2 bg-stone-50 border-b border-stone-200 flex items-center justify-between text-xs text-stone-600 gap-3">
+        <span>{spreadsheetName} · {sheetData.row_count} 行 × {sheetData.col_count} 列</span>
+        {isBookingSheet && (
+          <>
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="搜尋..."
+              className="px-2 py-1 text-xs border border-stone-300 rounded"
+            />
+            {searchTerm && <span className="text-stone-500">找到 {filteredData.length - 1} 筆</span>}
+          </>
+        )}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleUndo}
+          disabled={undoStack.length === 0 || undoing}
+          className="gap-1 text-xs px-2 h-6"
+          title={undoStack.length > 0 ? `復原: ${undoStack[undoStack.length - 1]?.description}` : '沒有可復原的操作'}
+        >
+          <Undo2 className="w-3 h-3" />
+          復原
+          {undoStack.length > 0 && (
+            <Badge className="ml-1 h-4 px-1 text-[10px] bg-amber-100 text-amber-700">{undoStack.length}</Badge>
+          )}
+        </Button>
+        <div className="flex items-center gap-1 ml-auto">
+          <button onClick={() => changeZoom(-0.1)} className="p-1 hover:bg-stone-200 text-stone-600">−</button>
+          <span className="w-10 text-center text-xs text-stone-600">{Math.round(zoom * 100)}%</span>
+          <button onClick={() => changeZoom(0.1)} className="p-1 hover:bg-stone-200 text-stone-600">+</button>
         </div>
       </div>
 
       {/* Table */}
-      <div ref={tableRef} className="flex-1 overflow-auto bg-white">
-        <table className="border-collapse bg-white" style={{ transformOrigin: 'top left', transform: `scale(${zoom})`, width: `${100 / zoom}%` }}>
+      <div ref={tableRef} className="flex-1 overflow-auto">
+        <table className="border-collapse border border-stone-300 bg-white" style={{ transformOrigin: 'top left', transform: `scale(${zoom})`, width: `${100 / zoom}%` }}>
           <thead>
             <tr>
-              <th className="w-8 h-8 bg-white border border-stone-300 text-xs text-stone-600 text-center font-normal"></th>
+              <th className="w-8 h-7 bg-stone-100 border border-stone-300 text-xs text-stone-500 text-center"></th>
               {sheetData.col_names.map((name, colIdx) => (
                 <th
                   key={colIdx}
                   style={{ width: sheetData.col_widths[colIdx] }}
-                  className="h-8 bg-white border border-stone-300 px-3 text-xs font-normal text-stone-700 cursor-pointer hover:bg-stone-50 relative group select-none"
+                  className="h-7 bg-stone-100 border border-stone-300 px-2 text-xs font-medium text-stone-700 cursor-pointer hover:bg-stone-200 relative group select-none"
                   onClick={(e) => {
                     const rect = e.currentTarget.getBoundingClientRect();
                     setContextMenu({ x: rect.left, y: rect.bottom + 4, type: 'col', index: colIdx });
                   }}
                 >
-                  <div className="flex items-center justify-between gap-1">
-                    <div className="truncate">{name || String.fromCharCode(65 + (colIdx % 26))}</div>
-                    <div className="text-[10px] text-stone-400 flex-shrink-0">▼</div>
-                  </div>
+                  <div className="truncate">{name || `Col ${colIdx + 1}`}</div>
+                  <div className="text-[8px] text-stone-500 absolute top-1 right-1">▼</div>
                   <div
-                    className="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-blue-400 opacity-0 hover:opacity-100 transition-opacity"
+                    className="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-amber-400 opacity-0 hover:opacity-100 transition-opacity"
                     onMouseDown={(e) => handleColResizeStart(e, colIdx)}
                     style={{ right: '-2px' }}
                   />
@@ -506,7 +517,7 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
             {filteredData.map((row, rowIdx) => (
               <tr key={rowIdx}>
                 <td
-                  className="w-8 bg-white border border-stone-300 text-xs text-stone-600 text-center cursor-pointer hover:bg-stone-50 font-normal relative select-none"
+                  className="w-8 bg-stone-100 border border-stone-300 text-xs text-stone-500 text-center cursor-pointer hover:bg-stone-200 font-medium relative select-none"
                   onClick={(e) => {
                     const rect = e.currentTarget.getBoundingClientRect();
                     setContextMenu({ x: rect.left, y: rect.bottom + 4, type: 'row', index: rowIdx });
@@ -514,19 +525,17 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
                   title={rowNames[rowIdx] ? `${rowIdx + 1} - ${rowNames[rowIdx]}` : `第 ${rowIdx + 1} 列`}
                   style={{ height: sheetData.row_heights[rowIdx] }}
                 >
-                  <div className="flex items-center justify-between px-1">
-                    <span>{rowIdx + 1}</span>
-                    <span className="text-[10px] text-stone-400">▼</span>
-                  </div>
+                  <div className="truncate">{rowNames[rowIdx] ? `${rowIdx + 1}*` : rowIdx + 1}</div>
+                  <div className="text-[8px] absolute top-0.5 right-0.5 text-stone-500">▼</div>
                   <div
-                    className="absolute bottom-0 left-0 w-full h-1 cursor-row-resize hover:bg-blue-400 opacity-0 hover:opacity-100 transition-opacity"
+                    className="absolute bottom-0 left-0 w-full h-1 cursor-row-resize hover:bg-amber-400 opacity-0 hover:opacity-100 transition-opacity"
                     onMouseDown={(e) => handleRowResizeStart(e, rowIdx)}
                     style={{ bottom: '-2px' }}
                   />
                 </td>
                 {row.map((cell, colIdx) => {
                   const format = sheetData.cell_formats?.[`${rowIdx}_${colIdx}`] || {};
-                  const isEditing = editCell?.row === rowIdx && editCell?.col === colIdx;
+                  const isEditing = !isBookingSheet && editCell?.row === rowIdx && editCell?.col === colIdx;
                   const selected = isSelected(rowIdx, colIdx);
                   return (
                     <td
@@ -535,11 +544,11 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
                         width: sheetData.col_widths[colIdx],
                         height: sheetData.row_heights[rowIdx],
                         backgroundColor: selected ? '#fef3c7' : (format.bg || 'white'),
-                        color: format.color || '#000000',
+                        color: format.color || 'black',
                         fontWeight: format.bold ? 'bold' : 'normal',
-                        border: '1px solid #d4d1ca'
+                        border: selected ? '2px solid #f59e0b' : '1px solid #d6d3d1'
                       }}
-                      className="px-3 py-2 text-xs cursor-cell select-none hover:bg-blue-50"
+                      className="px-2 py-1 text-xs cursor-cell select-none"
                       onClick={(e) => {
                         handleCellClick(rowIdx, colIdx, e);
                         setEditCell({ row: rowIdx, col: colIdx });
