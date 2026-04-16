@@ -250,6 +250,8 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
             await base44.entities.Booking.update(booking.id, {
               [columnKey]: pendingEdit.newValue
             });
+            // Refresh the bookings query after update
+            await refetch();
           }
         }
       } else {
