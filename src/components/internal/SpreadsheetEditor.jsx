@@ -23,6 +23,9 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
   const [rowNames, setRowNames] = useState({});
   const [undoStack, setUndoStack] = useState([]);
   const [undoing, setUndoing] = useState(false);
+  const [selectedRange, setSelectedRange] = useState(null); // { startRow, startCol, endRow, endCol }
+  const [resizingCol, setResizingCol] = useState(null); // { colIdx, startX, startWidth }
+  const [resizingRow, setResizingRow] = useState(null); // { rowIdx, startY, startHeight }
   const tableRef = useRef(null);
 
   const BOOKING_COLUMNS = [
@@ -227,6 +230,73 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
     setEditCell(null);
   };
 
+  const handleCellClick = (row, col, e) => {
+    if (isBookingSheet) return;
+    if (e.shiftKey && selectedRange) {
+      // Extend selection
+      setSelectedRange({
+        startRow: Math.min(selectedRange.startRow, row),
+        startCol: Math.min(selectedRange.startCol, col),
+        endRow: Math.max(selectedRange.endRow, row),
+        endCol: Math.max(selectedRange.endCol, col),
+      });
+    } else if (e.ctrlKey || e.metaKey) {
+      // Keep current selection
+    } else {
+      // Single cell selection
+      setSelectedRange({ startRow: row, startCol: col, endRow: row, endCol: col });
+    }
+  };
+
+  const isSelected = (row, col) => {
+    if (!selectedRange) return false;
+    return row >= selectedRange.startRow && row <= selectedRange.endRow &&
+           col >= selectedRange.startCol && col <= selectedRange.endCol;
+  };
+
+  const handleColResizeStart = (e, colIdx) => {
+    e.preventDefault();
+    setResizingCol({ colIdx, startX: e.clientX, startWidth: sheetData.col_widths[colIdx] });
+  };
+
+  const handleRowResizeStart = (e, rowIdx) => {
+    e.preventDefault();
+    setResizingRow({ rowIdx, startY: e.clientY, startHeight: sheetData.row_heights[rowIdx] });
+  };
+
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      if (resizingCol) {
+        const delta = e.clientX - resizingCol.startX;
+        const newWidth = Math.max(30, resizingCol.startWidth + delta);
+        const newColWidths = [...sheetData.col_widths];
+        newColWidths[resizingCol.colIdx] = newWidth;
+        updateMutation.mutate({ col_widths: newColWidths });
+      }
+      if (resizingRow) {
+        const delta = e.clientY - resizingRow.startY;
+        const newHeight = Math.max(20, resizingRow.startHeight + delta);
+        const newRowHeights = [...sheetData.row_heights];
+        newRowHeights[resizingRow.rowIdx] = newHeight;
+        updateMutation.mutate({ row_heights: newRowHeights });
+      }
+    };
+
+    const handleMouseUp = () => {
+      setResizingCol(null);
+      setResizingRow(null);
+    };
+
+    if (resizingCol || resizingRow) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      return () => {
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+      };
+    }
+  }, [resizingCol, resizingRow, sheetData]);
+
   const insertCol = (beforeCol) => {
     if (!sheetData || isBookingSheet) return;
     const newData = sheetData.data.map(row => {
@@ -429,7 +499,7 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
                 <th
                   key={colIdx}
                   style={{ width: sheetData.col_widths[colIdx] }}
-                  className="h-7 bg-stone-100 border border-stone-300 px-2 text-xs font-medium text-stone-700 cursor-pointer hover:bg-stone-200 relative group"
+                  className="h-7 bg-stone-100 border border-stone-300 px-2 text-xs font-medium text-stone-700 cursor-pointer hover:bg-stone-200 relative group select-none"
                   onClick={(e) => {
                     const rect = e.currentTarget.getBoundingClientRect();
                     setContextMenu({ x: rect.left, y: rect.bottom + 4, type: 'col', index: colIdx });
@@ -437,6 +507,11 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
                 >
                   <div className="truncate">{name || `Col ${colIdx + 1}`}</div>
                   <div className="text-[8px] text-stone-500 absolute top-1 right-1">▼</div>
+                  <div
+                    className="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-amber-400 opacity-0 hover:opacity-100 transition-opacity"
+                    onMouseDown={(e) => handleColResizeStart(e, colIdx)}
+                    style={{ right: '-2px' }}
+                  />
                 </th>
               ))}
             </tr>
@@ -445,31 +520,44 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
             {filteredData.map((row, rowIdx) => (
               <tr key={rowIdx}>
                 <td
-                  className="w-8 bg-stone-100 border border-stone-300 text-xs text-stone-500 text-center cursor-pointer hover:bg-stone-200 font-medium relative"
+                  className="w-8 bg-stone-100 border border-stone-300 text-xs text-stone-500 text-center cursor-pointer hover:bg-stone-200 font-medium relative select-none"
                   onClick={(e) => {
                     const rect = e.currentTarget.getBoundingClientRect();
                     setContextMenu({ x: rect.left, y: rect.bottom + 4, type: 'row', index: rowIdx });
                   }}
                   title={rowNames[rowIdx] ? `${rowIdx + 1} - ${rowNames[rowIdx]}` : `第 ${rowIdx + 1} 列`}
+                  style={{ height: sheetData.row_heights[rowIdx] }}
                 >
                   <div className="truncate">{rowNames[rowIdx] ? `${rowIdx + 1}*` : rowIdx + 1}</div>
                   <div className="text-[8px] absolute top-0.5 right-0.5 text-stone-500">▼</div>
+                  <div
+                    className="absolute bottom-0 left-0 w-full h-1 cursor-row-resize hover:bg-amber-400 opacity-0 hover:opacity-100 transition-opacity"
+                    onMouseDown={(e) => handleRowResizeStart(e, rowIdx)}
+                    style={{ bottom: '-2px' }}
+                  />
                 </td>
                 {row.map((cell, colIdx) => {
                   const format = sheetData.cell_formats?.[`${rowIdx}_${colIdx}`] || {};
                   const isEditing = !isBookingSheet && editCell?.row === rowIdx && editCell?.col === colIdx;
+                  const selected = isSelected(rowIdx, colIdx);
                   return (
                     <td
                       key={`${rowIdx}_${colIdx}`}
                       style={{
                         width: sheetData.col_widths[colIdx],
                         height: sheetData.row_heights[rowIdx],
-                        backgroundColor: format.bg || 'white',
+                        backgroundColor: selected ? '#fef3c7' : (format.bg || 'white'),
                         color: format.color || 'black',
-                        fontWeight: format.bold ? 'bold' : 'normal'
+                        fontWeight: format.bold ? 'bold' : 'normal',
+                        border: selected ? '2px solid #f59e0b' : '1px solid #d6d3d1'
                       }}
-                      className={`border border-stone-300 px-2 py-1 text-xs ${isBookingSheet ? 'cursor-default' : 'cursor-cell'}`}
-                      onClick={() => !isBookingSheet && setEditCell({ row: rowIdx, col: colIdx })}
+                      className={`px-2 py-1 text-xs ${isBookingSheet ? 'cursor-default' : 'cursor-cell'} select-none`}
+                      onClick={(e) => {
+                        if (!isBookingSheet) {
+                          handleCellClick(rowIdx, colIdx, e);
+                          setEditCell({ row: rowIdx, col: colIdx });
+                        }
+                      }}
                       onContextMenu={(e) => {
                         e.preventDefault();
                         if (!isBookingSheet) {
