@@ -7,8 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { zhTW } from "date-fns/locale";
-import { Bot, Send, Edit2, Check, X, Download, RefreshCw, Table, Search, Loader2, ShieldCheck, ZoomIn, ZoomOut, Monitor, ArrowLeft, Plus, Trash2, Menu, EyeOff, Eye } from "lucide-react";
+import { Bot, Send, Edit2, Check, X, Download, RefreshCw, Table, Search, Loader2, ShieldCheck, ZoomIn, ZoomOut, Monitor, ArrowLeft, Plus, Trash2, Menu, EyeOff, Eye, Copy } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { motion, AnimatePresence } from "framer-motion";
 import RoleManager from "@/components/internal/RoleManager";
 import DeviceManager from "@/components/internal/DeviceManager";
@@ -173,6 +174,9 @@ export default function InternalSpreadsheet() {
    const [editingSheetName, setEditingSheetName] = useState('');
    const [hiddenSheets, setHiddenSheets] = useState([]);
    const [longPressMenu, setLongPressMenu] = useState(null); // { id, x, y }
+   const [sheetContextMenu, setSheetContextMenu] = useState(null); // { id, x, y }
+   const [renameDialogSheet, setRenameDialogSheet] = useState(null);
+   const [renameValue, setRenameValue] = useState('');
    const longPressTimerRef = useRef(null);
    const tableWrapperRef = useRef(null);
    const queryClient = useQueryClient();
@@ -316,6 +320,32 @@ export default function InternalSpreadsheet() {
   const visibleSheets = spreadsheets.filter(s => !hiddenSheets.includes(s.id));
   const hiddenSheetsList = spreadsheets.filter(s => hiddenSheets.includes(s.id));
 
+  const copySheet = (id) => {
+    const sheet = spreadsheets.find(s => s.id === id);
+    if (!sheet) return;
+    const newId = 'sheet_' + Date.now();
+    const newName = sheet.name + ' (複製)';
+    setSpreadsheets([...spreadsheets, { id: newId, name: newName }]);
+    setSheetContextMenu(null);
+  };
+
+  const openRenameDialog = (id) => {
+    const sheet = spreadsheets.find(s => s.id === id);
+    if (!sheet) return;
+    setRenameDialogSheet(sheet);
+    setRenameValue(sheet.name);
+    setSheetContextMenu(null);
+  };
+
+  const saveRename = () => {
+    if (!renameValue.trim()) return;
+    setSpreadsheets(spreadsheets.map(s =>
+      s.id === renameDialogSheet.id ? { ...s, name: renameValue } : s
+    ));
+    setRenameDialogSheet(null);
+    setRenameValue('');
+  };
+
   const currentSheet = spreadsheets.find(s => s.id === activeSpreadsheet);
 
   if (!authChecked || !user) {
@@ -447,18 +477,14 @@ export default function InternalSpreadsheet() {
                 ) : (
                   <>
                     <button
-                      onClick={() => {
+                      onClick={(e) => {
                         if (activeSpreadsheet === sheet.id) {
-                          startEditingSheet(sheet.id, sheet.name);
+                          const rect = e.currentTarget.getBoundingClientRect();
+                          setSheetContextMenu({ id: sheet.id, x: rect.left, y: rect.bottom + 4 });
                         } else {
                           setActiveSpreadsheet(sheet.id);
                         }
                       }}
-                      onMouseDown={(e) => handleLongPressStart(e, sheet.id)}
-                      onMouseUp={handleLongPressEnd}
-                      onMouseLeave={handleLongPressEnd}
-                      onTouchStart={(e) => handleLongPressStart(e, sheet.id)}
-                      onTouchEnd={handleLongPressEnd}
                       onContextMenu={(e) => e.preventDefault()}
                       className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors select-none ${
                         activeSpreadsheet === sheet.id
@@ -547,6 +573,65 @@ export default function InternalSpreadsheet() {
               </div>
             </>
           )}
+
+          {/* Sheet context menu */}
+          {sheetContextMenu && (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setSheetContextMenu(null)} />
+              <div
+                className="fixed z-50 bg-white border border-stone-200 rounded-lg shadow-lg py-1 min-w-[140px]"
+                style={{ left: sheetContextMenu.x, top: sheetContextMenu.y }}
+              >
+                <button
+                  onClick={() => copySheet(sheetContextMenu.id)}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-stone-600 hover:bg-stone-50 transition-colors"
+                >
+                  <Copy className="w-3.5 h-3.5" />
+                  複製試算表
+                </button>
+                <button
+                  onClick={() => openRenameDialog(sheetContextMenu.id)}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-stone-600 hover:bg-stone-50 transition-colors"
+                >
+                  <Edit2 className="w-3.5 h-3.5" />
+                  重新命名
+                </button>
+                {sheetContextMenu.id !== 'booking' && (
+                  <button
+                    onClick={() => hideSheet(sheetContextMenu.id)}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-xs text-stone-600 hover:bg-stone-50 transition-colors border-t border-stone-100"
+                  >
+                    <EyeOff className="w-3.5 h-3.5" />
+                    隱藏試算表
+                  </button>
+                )}
+              </div>
+            </>
+          )}
+
+          {/* Rename dialog */}
+          <Dialog open={!!renameDialogSheet} onOpenChange={() => setRenameDialogSheet(null)}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>重新命名試算表</DialogTitle>
+              </DialogHeader>
+              <Input
+                value={renameValue}
+                onChange={e => setRenameValue(e.target.value)}
+                placeholder="輸入新名稱..."
+                className="mt-3"
+                onKeyDown={e => {
+                  if (e.key === 'Enter') saveRename();
+                  if (e.key === 'Escape') setRenameDialogSheet(null);
+                }}
+                autoFocus
+              />
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setRenameDialogSheet(null)}>取消</Button>
+                <Button onClick={saveRename} disabled={!renameValue.trim()}>保存</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       )}
 
