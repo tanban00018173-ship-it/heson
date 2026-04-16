@@ -296,6 +296,17 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
     return label;
   };
 
+  useEffect(() => {
+    const handleClickOutside = () => {
+      setContextMenu(null);
+    };
+
+    if (contextMenu) {
+      document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
+    }
+  }, [contextMenu]);
+
   return (
     <div className="flex-1 flex flex-col overflow-hidden bg-white">
       {/* Top toolbar */}
@@ -322,45 +333,36 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
 
       {/* Context menu */}
       {contextMenu && (
-        <>
-          <div 
-            className="fixed inset-0 z-40" 
-            onClick={(e) => {
-              e.stopPropagation();
-              setContextMenu(null);
-            }} 
-          />
-          <div
-            className="fixed z-50 bg-white border border-stone-200 rounded-lg shadow-lg py-0.5 min-w-[140px]"
-            style={{ left: contextMenu.x, top: contextMenu.y }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {contextMenu.type === 'row' && (
-              <>
+        <div
+          className="fixed z-50 bg-white border border-stone-200 rounded-lg shadow-lg py-0.5 min-w-[140px]"
+          style={{ left: contextMenu.x, top: contextMenu.y, pointerEvents: 'auto' }}
+          onMouseLeave={() => setContextMenu(null)}
+        >
+          {contextMenu.type === 'row' && (
+            <>
+              <button
+                onClick={() => insertRowAfter(contextMenu.index)}
+                className="w-full flex items-center gap-2 px-3 py-2 text-xs text-stone-600 hover:bg-stone-100 transition-colors text-left"
+              >
+                <Plus className="w-3 h-3" /> 新增下方
+              </button>
+              <button
+                onClick={() => copyRow(contextMenu.index)}
+                className="w-full flex items-center gap-2 px-3 py-2 text-xs text-stone-600 hover:bg-stone-100 transition-colors text-left"
+              >
+                <Copy className="w-3 h-3" /> 複製
+              </button>
+              {bookings.length > 1 && (
                 <button
-                  onClick={() => insertRowAfter(contextMenu.index)}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-stone-600 hover:bg-stone-100 transition-colors"
+                  onClick={() => deleteRow(contextMenu.index)}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-stone-600 hover:bg-red-50 transition-colors border-t border-stone-100 text-left"
                 >
-                  <Plus className="w-3 h-3" /> 新增下方
+                  <Trash2 className="w-3 h-3" /> 刪除
                 </button>
-                <button
-                  onClick={() => copyRow(contextMenu.index)}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-stone-600 hover:bg-stone-100 transition-colors"
-                >
-                  <Copy className="w-3 h-3" /> 複製
-                </button>
-                {bookings.length > 1 && (
-                  <button
-                    onClick={() => deleteRow(contextMenu.index)}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-xs text-stone-600 hover:bg-red-50 transition-colors border-t border-stone-100"
-                  >
-                    <Trash2 className="w-3 h-3" /> 刪除
-                  </button>
-                )}
-              </>
-            )}
-          </div>
-        </>
+              )}
+            </>
+          )}
+        </div>
       )}
 
       {/* Spreadsheet */}
@@ -401,7 +403,8 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
                 <td
                   className="w-10 bg-stone-100 border border-stone-300 text-xs font-medium text-stone-600 text-center select-none relative cursor-pointer hover:bg-stone-200"
                   style={{ height: sheetData.row_heights[rowIdx] }}
-                  onClick={(e) => {
+                  onContextMenu={(e) => {
+                    e.preventDefault();
                     const rect = e.currentTarget.getBoundingClientRect();
                     setContextMenu({ x: rect.left, y: rect.bottom + 4, type: 'row', index: rowIdx });
                   }}
