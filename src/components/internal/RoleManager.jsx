@@ -47,7 +47,7 @@ function RoleSelector({ currentRole, userId, onSuccess }) {
   const handleChange = async (newRole) => {
     if (newRole === currentRole) return;
     setSaving(newRole);
-    await base44.entities.User.update(userId, { role: newRole });
+    await base44.functions.invoke('updateUserRole', { userId, role: newRole });
     queryClient.invalidateQueries({ queryKey: ['allUsers'] });
     onSuccess && onSuccess();
     setSaving(null);
@@ -90,7 +90,10 @@ export default function RoleManager() {
 
   const { data: users = [], isLoading } = useQuery({
     queryKey: ['allUsers'],
-    queryFn: () => base44.entities.User.list(),
+    queryFn: async () => {
+      const res = await base44.functions.invoke('listAllUsers', {});
+      return res.data.users || [];
+    },
   });
 
   const filtered = users.filter(u => {
