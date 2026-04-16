@@ -154,10 +154,6 @@ export default function RoleManager() {
             <span className="text-sm font-medium text-stone-700">{roleStats[r.value] || 0}</span>
           </div>
         ))}
-        <div className="flex items-center gap-1.5">
-          <Badge className="bg-red-100 text-red-700 text-xs">封禁</Badge>
-          <span className="text-sm font-medium text-stone-700">{roleStats.banned}</span>
-        </div>
       </div>
 
       {/* Search */}
