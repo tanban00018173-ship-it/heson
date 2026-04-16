@@ -14,6 +14,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import RoleManager from "@/components/internal/RoleManager";
 import DeviceManager from "@/components/internal/DeviceManager";
 import SpreadsheetEditor from "@/components/internal/SpreadsheetEditor";
+import GoogleSheetEditor from "@/components/internal/GoogleSheetEditor";
 
 // Editable cell component
 function EditableCell({ value, onSave, type = 'text' }) {
@@ -845,12 +846,18 @@ export default function InternalSpreadsheet() {
       <div className="flex-1 overflow-hidden flex min-h-0">
         {activeTab === 'sheet' && (
           <div className="flex-1 flex flex-col overflow-hidden">
-            {/* Check if current sheet is booking (default) or custom */}
-            {/* Unified spreadsheet editor for all sheet types */}
-            <SpreadsheetEditor 
-              spreadsheetId={activeSpreadsheet} 
-              spreadsheetName={currentSheet?.name}
-            />
+            {/* Use Google Sheets for booking sheet */}
+            {currentSheet?.id === 'sheet_booking' ? (
+              <GoogleSheetEditor 
+                spreadsheetId={currentSheet?.gsheetId || ''} 
+                sheetName={currentSheet?.name}
+              />
+            ) : (
+              <SpreadsheetEditor 
+                spreadsheetId={currentSheet?.id} 
+                spreadsheetName={currentSheet?.name}
+              />
+            )}
           </div>
         )}
 
