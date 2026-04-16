@@ -91,8 +91,8 @@ export default function RoleManager() {
   const { data: users = [], isLoading } = useQuery({
     queryKey: ['allUsers'],
     queryFn: async () => {
-      const res = await base44.functions.invoke('listAllUsers', {});
-      return res.data.users || [];
+      const res = await base44.functions.invoke('listAllUsers', { _: 1 });
+      return res.data?.users || [];
     },
   });
 
