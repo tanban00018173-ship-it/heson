@@ -422,7 +422,7 @@ export default function InternalSpreadsheet() {
             </PopoverTrigger>
             <PopoverContent align="start" className="w-56 p-2">
               {/* Hide current sheet action */}
-              {activeSpreadsheet !== 'booking' && visibleSheets.length > 1 && (
+              {visibleSheets.length > 1 && (
                 <>
                   <button
                     onClick={() => hideSheet(activeSpreadsheet)}
@@ -431,8 +431,22 @@ export default function InternalSpreadsheet() {
                     <EyeOff className="w-3.5 h-3.5" />
                     <span>隱藏目前試算表</span>
                   </button>
-                  <div className="border-t border-stone-100 my-1" />
                 </>
+              )}
+              {/* Delete current sheet action */}
+              {activeSpreadsheet !== 'booking' && (
+                <>
+                  <button
+                    onClick={() => removeSpreadsheet(activeSpreadsheet)}
+                    className="w-full flex items-center gap-2 px-2 py-2 rounded-lg text-xs text-stone-600 hover:bg-red-50 hover:text-red-600 transition-colors"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>刪除試算表</span>
+                  </button>
+                </>
+              )}
+              {(visibleSheets.length > 1 || activeSpreadsheet !== 'booking') && hiddenSheetsList.length > 0 && (
+                <div className="border-t border-stone-100 my-1" />
               )}
               <p className="text-xs font-medium text-stone-500 px-2 py-1.5">隱藏的試算表</p>
               {hiddenSheetsList.length === 0 ? (
