@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { zhTW } from "date-fns/locale";
-import { Bot, Send, Edit2, Check, X, Download, RefreshCw, Table, Search, Loader2, ShieldCheck, ZoomIn, ZoomOut, Monitor, ArrowLeft, Plus, Trash2, Menu, EyeOff, Eye, Copy } from "lucide-react";
+import { Bot, Send, Edit2, Check, X, Download, RefreshCw, Table, Search, Loader2, ShieldCheck, ZoomIn, ZoomOut, Monitor, ArrowLeft, Plus, Trash2, Menu, EyeOff, Eye, Copy, Undo2 } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { motion, AnimatePresence } from "framer-motion";
@@ -52,7 +52,7 @@ function EditableCell({ value, onSave, type = 'text' }) {
 }
 
 // AI Chat
-function AIChat({ bookings }) {
+function AIChat({ bookings, onMutation }) {
   const [messages, setMessages] = useState([
     { role: 'assistant', content: '您好！我是內部 AI 助理。您可以要求我：\n1. **修改試算表資料**（例：「把張三的狀態改成已完成」）\n2. **查詢資料**（例：「列出本週所有待確認的預約」）\n請問有什麼需要協助的？' }
   ]);
@@ -79,10 +79,22 @@ function AIChat({ bookings }) {
       });
       const data = response.data;
 
-      // If AI returned mutations, apply them
+      // If AI returned mutations, apply them and record for undo
       if (data.mutations && data.mutations.length > 0) {
+        const undoItems = [];
         for (const m of data.mutations) {
+          // Find old data for undo
+          const oldBooking = bookings.find(b => b.id === m.id);
+          if (oldBooking) {
+            const oldFields = {};
+            Object.keys(m.fields).forEach(k => { oldFields[k] = oldBooking[k]; });
+            undoItems.push({ id: m.id, oldFields, newFields: m.fields });
+          }
           await base44.entities.Booking.update(m.id, m.fields);
+        }
+        // Record batch undo
+        if (undoItems.length > 0 && onMutation) {
+          onMutation({ type: 'ai', items: undoItems, description: `AI 修改 ${undoItems.length} 筆資料` });
         }
         queryClient.invalidateQueries({ queryKey: ['spreadsheetBookings'] });
       }
@@ -180,6 +192,8 @@ export default function InternalSpreadsheet() {
    const longPressTimerRef = useRef(null);
    const tableWrapperRef = useRef(null);
    const queryClient = useQueryClient();
+   const [undoStack, setUndoStack] = useState([]); // Undo history
+   const [undoing, setUndoing] = useState(false);
 
   const changeZoom = (delta) => setZoom(z => Math.min(2, Math.max(0.4, +(z + delta).toFixed(1))));
 
@@ -221,6 +235,46 @@ export default function InternalSpreadsheet() {
     mutationFn: ({ id, fields }) => base44.entities.Booking.update(id, fields),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['spreadsheetBookings'] }),
   });
+
+  // Record a change for undo
+  const recordUndo = (item) => {
+    setUndoStack(prev => [...prev.slice(-49), item]); // Keep last 50 items
+  };
+
+  // Undo last action
+  const handleUndo = async () => {
+    if (undoStack.length === 0 || undoing) return;
+    setUndoing(true);
+    const lastAction = undoStack[undoStack.length - 1];
+    try {
+      if (lastAction.type === 'single') {
+        await base44.entities.Booking.update(lastAction.id, lastAction.oldFields);
+      } else if (lastAction.type === 'ai') {
+        for (const item of lastAction.items) {
+          await base44.entities.Booking.update(item.id, item.oldFields);
+        }
+      }
+      queryClient.invalidateQueries({ queryKey: ['spreadsheetBookings'] });
+      setUndoStack(prev => prev.slice(0, -1));
+    } catch (err) {
+      console.error('Undo failed:', err);
+    }
+    setUndoing(false);
+  };
+
+  // Update cell with undo support
+  const handleCellUpdate = (booking, field, newValue) => {
+    const oldValue = booking[field];
+    if (oldValue === newValue) return;
+    recordUndo({
+      type: 'single',
+      id: booking.id,
+      oldFields: { [field]: oldValue },
+      newFields: { [field]: newValue },
+      description: `修改 ${booking.client_name || '資料'} 的${COLUMNS.find(c => c.key === field)?.label || field}`
+    });
+    updateMutation.mutate({ id: booking.id, fields: { [field]: newValue } });
+  };
 
   const filtered = bookings.filter(b => {
     if (!searchTerm) return true;
@@ -373,6 +427,20 @@ export default function InternalSpreadsheet() {
            </div>
          </div>
          <div className="flex items-center gap-1 flex-shrink-0">
+           <Button
+             variant="outline"
+             size="sm"
+             onClick={handleUndo}
+             disabled={undoStack.length === 0 || undoing}
+             className="gap-1 text-xs px-2"
+             title={undoStack.length > 0 ? `復原: ${undoStack[undoStack.length - 1]?.description || '上一步'}` : '沒有可復原的操作'}
+           >
+             <Undo2 className="w-3 h-3" />
+             <span className="hidden sm:inline">復原</span>
+             {undoStack.length > 0 && (
+               <Badge className="ml-1 h-4 px-1 text-[10px] bg-amber-100 text-amber-700">{undoStack.length}</Badge>
+             )}
+           </Button>
            <Button variant="outline" size="sm" onClick={() => refetch()} className="gap-1 text-xs px-2">
              <RefreshCw className="w-3 h-3" />
              <span className="hidden sm:inline">重整</span>
@@ -723,7 +791,7 @@ export default function InternalSpreadsheet() {
                                   value={col.key === 'scheduled_date' && booking[col.key]
                                     ? format(new Date(booking[col.key]), 'yyyy/MM/dd')
                                     : booking[col.key]}
-                                  onSave={val => updateMutation.mutate({ id: booking.id, fields: { [col.key]: val } })}
+                                  onSave={val => handleCellUpdate(booking, col.key, val)}
                                 />
                               ) : (
                                 <span className="text-stone-500 px-1">
@@ -746,7 +814,7 @@ export default function InternalSpreadsheet() {
 
         {activeTab === 'ai' && (
           <div className="flex-1 flex flex-col overflow-hidden">
-            <AIChat bookings={bookings} />
+            <AIChat bookings={bookings} onMutation={recordUndo} />
           </div>
         )}
 
