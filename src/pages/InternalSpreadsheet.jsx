@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { motion, AnimatePresence } from "framer-motion";
 import RoleManager from "@/components/internal/RoleManager";
 import DeviceManager from "@/components/internal/DeviceManager";
-import GoogleSheetViewer from "@/components/GoogleSheetViewer";
+import SpreadsheetEditor from "@/components/internal/SpreadsheetEditor";
 
 // Editable cell component
 function EditableCell({ value, onSave, type = 'text' }) {
@@ -566,11 +566,11 @@ export default function InternalSpreadsheet() {
       {/* Tabs */}
       <div className="bg-white border-b border-stone-200 px-2 flex gap-0 flex-shrink-0 overflow-x-auto">
         {[
-          { id: 'sheet', Icon: Table, label: '試算表' },
-          { id: 'ai', Icon: Bot, label: 'AI 助理' },
-          { id: 'roles', Icon: ShieldCheck, label: '權限管理' },
-          { id: 'devices', Icon: Monitor, label: '裝置封禁' },
-        ].map(({ id, Icon, label }) => (
+          { id: 'sheet', icon: Table, label: '試算表' },
+          { id: 'ai', icon: Bot, label: 'AI 助理' },
+          { id: 'roles', icon: ShieldCheck, label: '權限管理' },
+          { id: 'devices', icon: Monitor, label: '裝置封禁' },
+        ].map(({ id, icon: Icon, label }) => (
           <button
             key={id}
             onClick={() => setActiveTab(id)}
@@ -584,7 +584,9 @@ export default function InternalSpreadsheet() {
         ))}
       </div>
 
-      {/* Hide spreadsheet tabs - using Google Sheets directly */}
+      {/* Spreadsheet tabs (only show in sheet tab) */}
+      {activeTab === 'sheet' && (
+        <div className="bg-stone-50 border-b border-stone-200 px-2 py-2 flex items-center gap-0 flex-shrink-0 relative">
           {/* Hamburger menu — restore hidden sheets */}
           <Popover>
             <PopoverTrigger asChild>
@@ -836,11 +838,21 @@ export default function InternalSpreadsheet() {
               </DialogFooter>
             </DialogContent>
           </Dialog>
-        {/* Content */}
-        <div className="flex-1 overflow-hidden flex min-h-0">
-          {activeTab === 'sheet' && (
-            <GoogleSheetViewer showToolbar={true} />
-          )}
+        </div>
+      )}
+
+      {/* Content */}
+      <div className="flex-1 overflow-hidden flex min-h-0">
+        {activeTab === 'sheet' && (
+          <div className="flex-1 flex flex-col overflow-hidden">
+            {/* Check if current sheet is booking (default) or custom */}
+            {/* Unified spreadsheet editor for all sheet types */}
+            <SpreadsheetEditor 
+              spreadsheetId={activeSpreadsheet} 
+              spreadsheetName={currentSheet?.name}
+            />
+          </div>
+        )}
 
         {activeTab === 'ai' && (
           <div className="flex-1 flex flex-col overflow-hidden">
