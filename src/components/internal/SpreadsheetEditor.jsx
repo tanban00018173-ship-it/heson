@@ -35,36 +35,9 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
   const [newColName, setNewColName] = useState('');
   const tableRef = useRef(null);
 
-  const convertBookingsToData = (bookingsList) => {
-    const data = bookingsList.map(b => 
-      BOOKING_COLUMNS.map(col => {
-        if (col.key === 'created_date' && b[col.key]) {
-          return new Date(b[col.key]).toLocaleDateString('zh-TW');
-        }
-        return b[col.key] ?? '';
-      })
-    );
-    return data;
-  };
-
   const { data: sheetData, isLoading, refetch: refetchSheet } = useQuery({
-    queryKey: ['customSheet', spreadsheetId, bookings],
+    queryKey: ['customSheet', spreadsheetId],
     queryFn: async () => {
-      if (isBookingSheet) {
-        const data = convertBookingsToData(bookings);
-        return {
-          id: 'booking',
-          spreadsheet_id: spreadsheetId,
-          data,
-          row_count: data.length,
-          col_count: BOOKING_COLUMNS.length,
-          col_widths: Array(BOOKING_COLUMNS.length).fill(100),
-          row_heights: Array(data.length).fill(30),
-          cell_formats: {},
-          col_names: BOOKING_COLUMNS.map(c => c.label)
-        };
-      }
-
       const sheets = await base44.entities.CustomSheet.filter({ spreadsheet_id: spreadsheetId });
       if (sheets.length === 0) {
         const newSheet = {
@@ -85,43 +58,9 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
 
   const updateMutation = useMutation({
     mutationFn: async (updates) => {
-      if (isBookingSheet) {
-        // For booking sheet, directly update Booking entities
-        return Promise.resolve();
-      }
       return base44.entities.CustomSheet.update(sheetData.id, updates);
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['customSheet', spreadsheetId] }),
-  });
-
-  const updateBookingMutation = useMutation({
-    mutationFn: async ({ bookingId, field, value }) => {
-      await base44.entities.Booking.update(bookingId, { [field]: value });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['spreadsheetBookings'] });
-      refetchSheet();
-    },
-  });
-
-  const deleteBookingMutation = useMutation({
-    mutationFn: async (bookingId) => {
-      await base44.entities.Booking.delete(bookingId);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['spreadsheetBookings'] });
-      refetchSheet();
-    },
-  });
-
-  const createBookingMutation = useMutation({
-    mutationFn: async (newBooking) => {
-      await base44.entities.Booking.create(newBooking);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['spreadsheetBookings'] });
-      refetchSheet();
-    },
   });
 
   const changeZoom = (delta) => setZoom(z => Math.min(2, Math.max(0.4, +(z + delta).toFixed(1))));
@@ -155,27 +94,16 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
       return;
     }
     
-    if (isBookingSheet && bookings[row]) {
-      // Update the booking directly
-      const field = BOOKING_COLUMNS[col].key;
-      updateBookingMutation.mutate({
-        bookingId: bookings[row].id,
-        field,
-        value
-      });
-    } else {
-      // Update custom sheet data
-      recordUndo({
-        type: 'edit',
-        row,
-        col,
-        oldValue,
-        newValue: value
-      });
-      const newData = sheetData.data.map(r => [...r]);
-      newData[row][col] = value;
-      updateMutation.mutate({ data: newData });
-    }
+    recordUndo({
+      type: 'edit',
+      row,
+      col,
+      oldValue,
+      newValue: value
+    });
+    const newData = sheetData.data.map(r => [...r]);
+    newData[row][col] = value;
+    updateMutation.mutate({ data: newData });
     setEditCell(null);
   };
 
@@ -199,43 +127,34 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
   };
 
   const deleteRow = (rowIdx) => {
-    if (isBookingSheet && bookings[rowIdx]) {
-      deleteBookingMutation.mutate(bookings[rowIdx].id);
-    }
+    const newData = sheetData.data.filter((_, idx) => idx !== rowIdx);
+    const newRowHeights = sheetData.row_heights.filter((_, idx) => idx !== rowIdx);
+    recordUndo({ type: 'delete_row', rowIdx, rowData: sheetData.data[rowIdx] });
+    updateMutation.mutate({ 
+      data: newData, 
+      row_heights: newRowHeights,
+      row_count: sheetData.row_count - 1
+    });
     setContextMenu(null);
   };
 
   const insertRowAfter = (rowIdx) => {
-    if (isBookingSheet) {
-      const template = bookings[rowIdx] || {};
-      const newBooking = {
-        client_id: template.client_id || '',
-        service_type: template.service_type || '',
-        scheduled_date: template.scheduled_date || '',
-        time_slot: template.time_slot || '',
-        status: '待確認'
-      };
-      createBookingMutation.mutate(newBooking);
-    }
+    const newData = [...sheetData.data];
+    const newRowHeights = [...sheetData.row_heights];
+    newData.splice(rowIdx + 1, 0, Array(sheetData.col_count).fill(''));
+    newRowHeights.splice(rowIdx + 1, 0, 30);
+    recordUndo({ type: 'insert_row', rowIdx });
+    updateMutation.mutate({ 
+      data: newData, 
+      row_heights: newRowHeights,
+      row_count: sheetData.row_count + 1
+    });
     setContextMenu(null);
   };
 
   const copyRow = (rowIdx) => {
-    if (isBookingSheet && bookings[rowIdx]) {
-      const booking = bookings[rowIdx];
-      const newBooking = {
-        client_id: booking.client_id,
-        client_name: booking.client_name,
-        service_type: booking.service_type,
-        scheduled_date: booking.scheduled_date,
-        time_slot: booking.time_slot,
-        status: booking.status,
-        address: booking.address,
-        cleaner_name: booking.cleaner_name,
-        notes: booking.notes
-      };
-      createBookingMutation.mutate(newBooking);
-    }
+    const rowData = sheetData.data[rowIdx];
+    navigator.clipboard.writeText(rowData.join('\t'));
     setContextMenu(null);
   };
 
@@ -246,44 +165,38 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
   };
 
   const clearCol = (colIdx) => {
-    if (!isBookingSheet) {
-      const newData = sheetData.data.map(row => {
-        const newRow = [...row];
-        newRow[colIdx] = '';
-        return newRow;
-      });
-      recordUndo({ type: 'clear_col', colIdx, oldData: sheetData.data });
-      updateMutation.mutate({ data: newData });
-    }
+    const newData = sheetData.data.map(row => {
+      const newRow = [...row];
+      newRow[colIdx] = '';
+      return newRow;
+    });
+    recordUndo({ type: 'clear_col', colIdx, oldData: sheetData.data });
+    updateMutation.mutate({ data: newData });
     setContextMenu(null);
   };
 
   const insertColLeft = (colIdx) => {
-    if (!isBookingSheet) {
-      const newData = sheetData.data.map(row => {
-        const newRow = [...row];
-        newRow.splice(colIdx, 0, '');
-        return newRow;
-      });
-      const newColWidths = [...sheetData.col_widths];
-      newColWidths.splice(colIdx, 0, 100);
-      const newColNames = [...sheetData.col_names];
-      newColNames.splice(colIdx, 0, '');
-      recordUndo({ type: 'insert_col', colIdx });
-      updateMutation.mutate({ 
-        data: newData, 
-        col_widths: newColWidths, 
-        col_names: newColNames,
-        col_count: sheetData.col_count + 1
-      });
-    }
+    const newData = sheetData.data.map(row => {
+      const newRow = [...row];
+      newRow.splice(colIdx, 0, '');
+      return newRow;
+    });
+    const newColWidths = [...sheetData.col_widths];
+    newColWidths.splice(colIdx, 0, 100);
+    const newColNames = [...sheetData.col_names];
+    newColNames.splice(colIdx, 0, '');
+    recordUndo({ type: 'insert_col', colIdx });
+    updateMutation.mutate({ 
+      data: newData, 
+      col_widths: newColWidths, 
+      col_names: newColNames,
+      col_count: sheetData.col_count + 1
+    });
     setContextMenu(null);
   };
 
   const insertColRight = (colIdx) => {
-    if (!isBookingSheet) {
-      insertColLeft(colIdx + 1);
-    }
+    insertColLeft(colIdx + 1);
   };
 
   const handleColResizeStart = (e, colIdx) => {
@@ -414,28 +327,24 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
                 >
                   <CopyCheck className="w-3 h-3" /> 複製整欄
                 </button>
-                {!isBookingSheet && (
-                  <>
-                    <button
-                      onClick={() => clearCol(contextMenu.index)}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-xs text-stone-600 hover:bg-stone-100 transition-colors"
-                    >
-                      <Delete className="w-3 h-3" /> 清除欄
-                    </button>
-                    <button
-                      onClick={() => insertColLeft(contextMenu.index)}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-xs text-stone-600 hover:bg-stone-100 transition-colors border-t border-stone-100"
-                    >
-                      <ChevronLeft className="w-3 h-3" /> 向左插入一欄
-                    </button>
-                    <button
-                      onClick={() => insertColRight(contextMenu.index)}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-xs text-stone-600 hover:bg-stone-100 transition-colors"
-                    >
-                      <ChevronRight className="w-3 h-3" /> 向右插入一欄
-                    </button>
-                  </>
-                )}
+                <button
+                  onClick={() => clearCol(contextMenu.index)}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-stone-600 hover:bg-stone-100 transition-colors"
+                >
+                  <Delete className="w-3 h-3" /> 清除欄
+                </button>
+                <button
+                  onClick={() => insertColLeft(contextMenu.index)}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-stone-600 hover:bg-stone-100 transition-colors border-t border-stone-100"
+                >
+                  <ChevronLeft className="w-3 h-3" /> 向左插入一欄
+                </button>
+                <button
+                  onClick={() => insertColRight(contextMenu.index)}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-stone-600 hover:bg-stone-100 transition-colors"
+                >
+                  <ChevronRight className="w-3 h-3" /> 向右插入一欄
+                </button>
               </>
             )}
           </div>

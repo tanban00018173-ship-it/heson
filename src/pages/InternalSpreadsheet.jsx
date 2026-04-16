@@ -182,9 +182,9 @@ export default function InternalSpreadsheet() {
    const [authChecked, setAuthChecked] = useState(false);
    const [searchTerm, setSearchTerm] = useState('');
    const [activeTab, setActiveTab] = useState('sheet'); // 'sheet' | 'ai' | 'roles' | 'devices'
-   const [activeSpreadsheet, setActiveSpreadsheet] = useState('booking'); // 'booking' or custom name
+   const [activeSpreadsheet, setActiveSpreadsheet] = useState('sheet_booking'); // Unified sheet ID for bookings
    const defaultSpreadsheets = [
-     { id: 'booking', name: '清潔訂單' }
+     { id: 'sheet_booking', name: '清潔訂單' }
    ];
    const [spreadsheets, setSpreadsheets] = useState(() => {
      try {
@@ -800,8 +800,6 @@ export default function InternalSpreadsheet() {
             <SpreadsheetEditor 
               spreadsheetId={activeSpreadsheet} 
               spreadsheetName={currentSheet?.name}
-              isBookingSheet={activeSpreadsheet === 'booking'}
-              bookings={activeSpreadsheet === 'booking' ? filtered : []}
             />
           </div>
         )}
