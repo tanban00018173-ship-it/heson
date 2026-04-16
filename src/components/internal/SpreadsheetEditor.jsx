@@ -332,7 +332,7 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName }) {
                 >
                   <Copy className="w-3 h-3" /> 複製
                 </button>
-                {bookings.length > 1 && (
+                {sheetData.row_count > 1 && (
                   <button
                     onClick={() => deleteRow(contextMenu.index)}
                     className="w-full flex items-center gap-2 px-3 py-2 text-xs text-stone-600 hover:bg-red-50 transition-colors border-t border-stone-100"
