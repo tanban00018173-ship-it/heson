@@ -10,8 +10,6 @@ import { Bot, Send, Edit2, Check, X, Download, RefreshCw, Table, Search, Loader2
 import { motion, AnimatePresence } from "framer-motion";
 import RoleManager from "@/components/internal/RoleManager";
 
-const AUTHORIZED_EMAIL = 'mingus445606@gmail.com';
-
 // Editable cell component
 function EditableCell({ value, onSave, type = 'text' }) {
   const [editing, setEditing] = useState(false);
