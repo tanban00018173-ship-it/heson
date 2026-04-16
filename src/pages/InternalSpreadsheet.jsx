@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { motion, AnimatePresence } from "framer-motion";
 import RoleManager from "@/components/internal/RoleManager";
 import DeviceManager from "@/components/internal/DeviceManager";
+import SpreadsheetEditor from "@/components/internal/SpreadsheetEditor";
 
 // Editable cell component
 function EditableCell({ value, onSave, type = 'text' }) {
@@ -832,81 +833,89 @@ export default function InternalSpreadsheet() {
       <div className="flex-1 overflow-hidden flex min-h-0">
         {activeTab === 'sheet' && (
           <div className="flex-1 flex flex-col overflow-hidden">
-            {/* Toolbar */}
-            <div className="px-4 py-3 bg-white border-b border-stone-100 flex items-center gap-3">
-              <div className="relative flex-1 max-w-sm">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-stone-400" />
-                <Input
-                  value={searchTerm}
-                  onChange={e => setSearchTerm(e.target.value)}
-                  placeholder="搜尋客戶、服務類型、狀態..."
-                  className="pl-8 h-8 text-xs"
-                />
-              </div>
-              {searchTerm && (
-                <span className="text-xs text-stone-400">找到 {filtered.length} 筆</span>
-              )}
-              <div className="flex items-center gap-1 ml-auto">
-                <button onClick={() => changeZoom(-0.1)} className="p-1 rounded hover:bg-stone-100 text-stone-500"><ZoomOut className="w-4 h-4" /></button>
-                <span className="text-xs text-stone-500 w-10 text-center">{Math.round(zoom * 100)}%</span>
-                <button onClick={() => changeZoom(0.1)} className="p-1 rounded hover:bg-stone-100 text-stone-500"><ZoomIn className="w-4 h-4" /></button>
-              </div>
-            </div>
-
-            {/* Table */}
-            <div ref={tableWrapperRef} className="flex-1 overflow-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
-              {isLoading ? (
-                <div className="flex items-center justify-center h-40">
-                  <Loader2 className="w-6 h-6 animate-spin text-amber-500" />
+            {/* Check if current sheet is booking (default) or custom */}
+            {activeSpreadsheet === 'booking' ? (
+              <>
+                {/* Toolbar for booking sheet */}
+                <div className="px-4 py-3 bg-white border-b border-stone-100 flex items-center gap-3">
+                  <div className="relative flex-1 max-w-sm">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-stone-400" />
+                    <Input
+                      value={searchTerm}
+                      onChange={e => setSearchTerm(e.target.value)}
+                      placeholder="搜尋客戶、服務類型、狀態..."
+                      className="pl-8 h-8 text-xs"
+                    />
+                  </div>
+                  {searchTerm && (
+                    <span className="text-xs text-stone-400">找到 {filtered.length} 筆</span>
+                  )}
+                  <div className="flex items-center gap-1 ml-auto">
+                    <button onClick={() => changeZoom(-0.1)} className="p-1 rounded hover:bg-stone-100 text-stone-500"><ZoomOut className="w-4 h-4" /></button>
+                    <span className="text-xs text-stone-500 w-10 text-center">{Math.round(zoom * 100)}%</span>
+                    <button onClick={() => changeZoom(0.1)} className="p-1 rounded hover:bg-stone-100 text-stone-500"><ZoomIn className="w-4 h-4" /></button>
+                  </div>
                 </div>
-              ) : (
-                <table className="w-full text-xs border-collapse min-w-[1000px]" style={{ transformOrigin: 'top left', transform: `scale(${zoom})`, width: `${100 / zoom}%` }}>
-                  <thead className="sticky top-0 z-10">
-                    <tr className="bg-stone-100">
-                      <th className="text-left px-3 py-2 font-medium text-stone-500 border-b border-r border-stone-200 w-8">#</th>
-                      {COLUMNS.map(col => (
-                        <th key={col.key} className="text-left px-3 py-2 font-medium text-stone-600 border-b border-r border-stone-200 whitespace-nowrap">
-                          {col.label}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filtered.length === 0 ? (
-                      <tr>
-                        <td colSpan={COLUMNS.length + 1} className="text-center py-12 text-stone-400">
-                          {searchTerm ? '找不到符合的資料' : '暫無預約資料'}
-                        </td>
-                      </tr>
-                    ) : (
-                      filtered.map((booking, idx) => (
-                        <tr key={booking.id} className={`border-b border-stone-100 hover:bg-amber-50/30 transition-colors ${idx % 2 === 0 ? 'bg-white' : 'bg-stone-50/50'}`}>
-                          <td className="px-3 py-1.5 text-stone-400 border-r border-stone-100">{idx + 1}</td>
+
+                {/* Booking table */}
+                <div ref={tableWrapperRef} className="flex-1 overflow-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
+                  {isLoading ? (
+                    <div className="flex items-center justify-center h-40">
+                      <Loader2 className="w-6 h-6 animate-spin text-amber-500" />
+                    </div>
+                  ) : (
+                    <table className="w-full text-xs border-collapse min-w-[1000px]" style={{ transformOrigin: 'top left', transform: `scale(${zoom})`, width: `${100 / zoom}%` }}>
+                      <thead className="sticky top-0 z-10">
+                        <tr className="bg-stone-100">
+                          <th className="text-left px-3 py-2 font-medium text-stone-500 border-b border-r border-stone-200 w-8">#</th>
                           {COLUMNS.map(col => (
-                            <td key={col.key} className="px-2 py-1 border-r border-stone-100">
-                              {col.editable ? (
-                                <EditableCell
-                                  value={col.key === 'scheduled_date' && booking[col.key]
-                                    ? format(new Date(booking[col.key]), 'yyyy/MM/dd')
-                                    : booking[col.key]}
-                                  onSave={val => handleCellUpdate(booking, col.key, val)}
-                                />
-                              ) : (
-                                <span className="text-stone-500 px-1">
-                                  {col.key === 'created_date' && booking[col.key]
-                                    ? format(new Date(booking[col.key]), 'yyyy/MM/dd HH:mm')
-                                    : booking[col.key] ?? '-'}
-                                </span>
-                              )}
-                            </td>
+                            <th key={col.key} className="text-left px-3 py-2 font-medium text-stone-600 border-b border-r border-stone-200 whitespace-nowrap">
+                              {col.label}
+                            </th>
                           ))}
                         </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              )}
-            </div>
+                      </thead>
+                      <tbody>
+                        {filtered.length === 0 ? (
+                          <tr>
+                            <td colSpan={COLUMNS.length + 1} className="text-center py-12 text-stone-400">
+                              {searchTerm ? '找不到符合的資料' : '暫無預約資料'}
+                            </td>
+                          </tr>
+                        ) : (
+                          filtered.map((booking, idx) => (
+                            <tr key={booking.id} className={`border-b border-stone-100 hover:bg-amber-50/30 transition-colors ${idx % 2 === 0 ? 'bg-white' : 'bg-stone-50/50'}`}>
+                              <td className="px-3 py-1.5 text-stone-400 border-r border-stone-100">{idx + 1}</td>
+                              {COLUMNS.map(col => (
+                                <td key={col.key} className="px-2 py-1 border-r border-stone-100">
+                                  {col.editable ? (
+                                    <EditableCell
+                                      value={col.key === 'scheduled_date' && booking[col.key]
+                                        ? format(new Date(booking[col.key]), 'yyyy/MM/dd')
+                                        : booking[col.key]}
+                                      onSave={val => handleCellUpdate(booking, col.key, val)}
+                                    />
+                                  ) : (
+                                    <span className="text-stone-500 px-1">
+                                      {col.key === 'created_date' && booking[col.key]
+                                        ? format(new Date(booking[col.key]), 'yyyy/MM/dd HH:mm')
+                                        : booking[col.key] ?? '-'}
+                                    </span>
+                                  )}
+                                </td>
+                              ))}
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+              </>
+            ) : (
+              /* Custom sheet editor */
+              <SpreadsheetEditor spreadsheetId={activeSpreadsheet} spreadsheetName={currentSheet?.name} />
+            )}
           </div>
         )}
 
