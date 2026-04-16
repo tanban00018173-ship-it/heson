@@ -4,13 +4,21 @@ const SPREADSHEET_ID = '1AgmwQLTTtslxU8Fn5GNdF9IjDAf4ih7ea5zmCUbuWWs';
 const SHEET_NAME = '訂單資料';
 
 async function getGoogleSheetData(accessToken) {
-  const response = await fetch(
-    `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(SHEET_NAME)}`,
-    { headers: { 'Authorization': `Bearer ${accessToken}` } }
-  );
-  if (!response.ok) throw new Error('Failed to fetch Google Sheet');
-  const data = await response.json();
-  return data.values || [];
+  try {
+    const response = await fetch(
+      `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(SHEET_NAME)}`,
+      { headers: { 'Authorization': `Bearer ${accessToken}` } }
+    );
+    if (!response.ok) {
+      console.error('Google Sheet API error:', response.status, response.statusText);
+      return [];
+    }
+    const data = await response.json();
+    return data.values || [];
+  } catch (err) {
+    console.error('Error fetching Google Sheet:', err.message);
+    return [];
+  }
 }
 
 async function updateGoogleSheet(accessToken, range, values) {
@@ -39,15 +47,21 @@ Deno.serve(async (req) => {
   const { message, bookings } = await req.json();
   
   // 獲取 Google Sheets 存取令牌
-  const { accessToken } = await base44.asServiceRole.connectors.getConnection('googlesheets');
+  let accessToken = null;
+  try {
+    const conn = await base44.asServiceRole.connectors.getConnection('googlesheets');
+    accessToken = conn.accessToken;
+  } catch (err) {
+    console.error('Failed to get Google Sheets connection:', err.message);
+    return Response.json({ 
+      reply: '⚠️ 無法連接 Google Sheets，請確保已授權 Google Sheets 連線。',
+      sheet_updates_applied: 0,
+      success: false
+    }, { status: 500 });
+  }
   
   // 取得 Google Sheet 當前資料
-  let sheetData = [];
-  try {
-    sheetData = await getGoogleSheetData(accessToken);
-  } catch (err) {
-    console.error('Failed to fetch sheet data:', err.message);
-  }
+  let sheetData = await getGoogleSheetData(accessToken);
 
   const sheetSummary = bookings.map((b, i) => {
     return `[${i + 1}] ID:${b.id} | 客戶:${b.client_name || '無'} | 服務:${b.service_type || '無'} | 日期:${b.scheduled_date || '無'} | 時段:${b.time_slot || '無'} | 狀態:${b.status || '無'} | 地址:${b.address || '無'} | 管理師:${b.cleaner_name || '無'} | 備註:${b.notes || '無'}`;
