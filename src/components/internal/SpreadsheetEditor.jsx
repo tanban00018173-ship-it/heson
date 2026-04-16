@@ -18,7 +18,12 @@ const BOOKING_COLUMNS = [
   { key: 'created_date', label: '建立時間' },
 ];
 
-export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBookingSheet = false, bookings = [] }) {
+export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName }) {
+  // Map sheet columns to Booking fields for syncing
+  const BOOKING_FIELD_MAP = [
+    'client_name', 'service_type', 'scheduled_date', 'time_slot',
+    'status', 'address', 'cleaner_name', 'notes', 'created_date'
+  ];
   const queryClient = useQueryClient();
   const [editCell, setEditCell] = useState(null);
   const [editValue, setEditValue] = useState('');
@@ -86,7 +91,7 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
     setUndoing(false);
   };
 
-  const handleCellChange = (row, col, value) => {
+  const handleCellChange = async (row, col, value) => {
     if (!sheetData) return;
     const oldValue = sheetData.data[row][col];
     if (oldValue === value) {
@@ -101,9 +106,27 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
       oldValue,
       newValue: value
     });
+    
+    // Update sheet data
     const newData = sheetData.data.map(r => [...r]);
     newData[row][col] = value;
     updateMutation.mutate({ data: newData });
+    
+    // If this is a booking sheet, sync back to Booking entity
+    if (spreadsheetId === 'sheet_booking') {
+      try {
+        const bookings = await base44.entities.Booking.list('-created_date', 500);
+        if (bookings[row]) {
+          const field = BOOKING_FIELD_MAP[col];
+          if (field && field !== 'created_date') { // Don't update created_date
+            await base44.entities.Booking.update(bookings[row].id, { [field]: value });
+          }
+        }
+      } catch (err) {
+        console.error('Failed to sync cell change back to Booking:', err);
+      }
+    }
+    
     setEditCell(null);
   };
 

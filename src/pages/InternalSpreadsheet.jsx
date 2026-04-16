@@ -245,6 +245,56 @@ export default function InternalSpreadsheet() {
     enabled: authChecked,
   });
 
+  // Auto-sync bookings to CustomSheet when they change
+  useEffect(() => {
+    if (!authChecked || bookings.length === 0) return;
+    
+    const syncBookingsToSheet = async () => {
+      try {
+        // Convert bookings to sheet data
+        const sheetData = bookings.map(b => [
+          b.client_name || '',
+          b.service_type || '',
+          b.scheduled_date || '',
+          b.time_slot || '',
+          b.status || '',
+          b.address || '',
+          b.cleaner_name || '',
+          b.notes || '',
+          b.created_date || ''
+        ]);
+
+        // Fetch or create the sheet
+        const sheets = await base44.entities.CustomSheet.filter({ spreadsheet_id: 'sheet_booking' });
+        const sheetRecord = sheets[0];
+        
+        if (sheetRecord) {
+          // Update existing sheet
+          await base44.entities.CustomSheet.update(sheetRecord.id, {
+            data: sheetData,
+            row_count: bookings.length
+          });
+        } else {
+          // Create new sheet if it doesn't exist
+          await base44.entities.CustomSheet.create({
+            spreadsheet_id: 'sheet_booking',
+            data: sheetData,
+            row_count: bookings.length,
+            col_count: 9,
+            col_widths: Array(9).fill(100),
+            row_heights: Array(bookings.length).fill(30),
+            cell_formats: {},
+            col_names: ['客戶姓名', '服務類型', '預約日期', '時段', '狀態', '地址', '指派管理師', '備註', '建立時間']
+          });
+        }
+      } catch (err) {
+        console.error('Failed to sync bookings to sheet:', err);
+      }
+    };
+
+    syncBookingsToSheet();
+  }, [bookings, authChecked]);
+
   const updateMutation = useMutation({
     mutationFn: ({ id, fields }) => base44.entities.Booking.update(id, fields),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['spreadsheetBookings'] }),
