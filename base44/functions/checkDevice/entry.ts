@@ -17,12 +17,18 @@ Deno.serve(async (req) => {
 
     if (banned && banned.length > 0) {
       const record = banned[0];
-      // If user email not already in associated_emails, add it
+      // If user email not already in associated_emails, add it and ban the account
       if (userEmail && !(record.associated_emails || []).includes(userEmail)) {
         const updated = [...(record.associated_emails || []), userEmail];
         await base44.asServiceRole.entities.BannedDevice.update(record.id, {
           associated_emails: updated,
         });
+        // Auto-ban the account when detected from banned device
+        try {
+          await base44.asServiceRole.entities.User.update(userEmail, { role: 'banned' });
+        } catch {
+          // Ignore if user doesn't exist
+        }
       }
       return Response.json({ banned: true, reason: record.reason || '此裝置已被封禁' });
     }
