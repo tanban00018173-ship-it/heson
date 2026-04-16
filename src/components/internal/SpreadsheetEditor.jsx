@@ -224,45 +224,31 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName }) {
 
   const handleColResizeStart = (e, colIdx) => {
     e.preventDefault();
-    // If there's a selection that includes this column, resize all selected columns
-    const selectedCols = selectedRange && selectedRange.startCol <= colIdx && colIdx <= selectedRange.endCol
-      ? Array.from({ length: selectedRange.endCol - selectedRange.startCol + 1 }, (_, i) => selectedRange.startCol + i)
-      : [colIdx];
-    
-    const startWidths = selectedCols.map(c => sheetData.col_widths[c]);
-    setResizingCol({ selectedCols, startX: e.clientX, startWidths });
+    setResizingCol({ colIdx, startX: e.clientX, startWidth: sheetData.col_widths[colIdx] });
   };
 
   const handleRowResizeStart = (e, rowIdx) => {
     e.preventDefault();
-    // If there's a selection that includes this row, resize all selected rows
-    const selectedRows = selectedRange && selectedRange.startRow <= rowIdx && rowIdx <= selectedRange.endRow
-      ? Array.from({ length: selectedRange.endRow - selectedRange.startRow + 1 }, (_, i) => selectedRange.startRow + i)
-      : [rowIdx];
-    
-    const startHeights = selectedRows.map(r => sheetData.row_heights[r]);
-    setResizingRow({ selectedRows, startY: e.clientY, startHeights });
+    setResizingRow({ rowIdx, startY: e.clientY, startHeight: sheetData.row_heights[rowIdx] });
   };
 
   useEffect(() => {
-   const handleMouseMove = (e) => {
-     if (resizingCol) {
-       const delta = e.clientX - resizingCol.startX;
-       const newColWidths = [...sheetData.col_widths];
-       resizingCol.selectedCols.forEach((colIdx, i) => {
-         newColWidths[colIdx] = Math.max(30, resizingCol.startWidths[i] + delta);
-       });
-       updateMutation.mutate({ col_widths: newColWidths });
-     }
-     if (resizingRow) {
-       const delta = e.clientY - resizingRow.startY;
-       const newRowHeights = [...sheetData.row_heights];
-       resizingRow.selectedRows.forEach((rowIdx, i) => {
-         newRowHeights[rowIdx] = Math.max(20, resizingRow.startHeights[i] + delta);
-       });
-       updateMutation.mutate({ row_heights: newRowHeights });
-     }
-   };
+    const handleMouseMove = (e) => {
+      if (resizingCol) {
+        const delta = e.clientX - resizingCol.startX;
+        const newWidth = Math.max(30, resizingCol.startWidth + delta);
+        const newColWidths = [...sheetData.col_widths];
+        newColWidths[resizingCol.colIdx] = newWidth;
+        updateMutation.mutate({ col_widths: newColWidths });
+      }
+      if (resizingRow) {
+        const delta = e.clientY - resizingRow.startY;
+        const newHeight = Math.max(20, resizingRow.startHeight + delta);
+        const newRowHeights = [...sheetData.row_heights];
+        newRowHeights[resizingRow.rowIdx] = newHeight;
+        updateMutation.mutate({ row_heights: newRowHeights });
+      }
+    };
 
     const handleMouseUp = () => {
       setResizingCol(null);
