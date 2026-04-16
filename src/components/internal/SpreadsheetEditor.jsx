@@ -28,6 +28,7 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
   const [resizingRow, setResizingRow] = useState(null); // { rowIdx, startY, startHeight }
   const [selectedCol, setSelectedCol] = useState(null); // Currently selected column index
   const [selectedRow, setSelectedRow] = useState(null); // Currently selected row index
+  const [pendingEdit, setPendingEdit] = useState(null); // { row, col, newValue }
   const tableRef = useRef(null);
 
   const BOOKING_COLUMNS = [
@@ -226,10 +227,22 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
 
   const handleCellChange = (row, col, value) => {
     if (!sheetData) return;
+    const oldValue = sheetData.data[row][col];
+    if (oldValue === value) {
+      setEditCell(null);
+      return;
+    }
+    // Show confirmation dialog for data changes
+    setPendingEdit({ row, col, newValue: value, oldValue });
+  };
+
+  const confirmCellChange = () => {
+    if (!pendingEdit || !sheetData) return;
     const newData = sheetData.data.map(r => [...r]);
-    newData[row][col] = value;
+    newData[pendingEdit.row][pendingEdit.col] = pendingEdit.newValue;
     updateMutation.mutate({ data: newData });
     setEditCell(null);
+    setPendingEdit(null);
   };
 
   const handleCellClick = (row, col, e) => {
@@ -753,6 +766,37 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
           <DialogFooter>
             <Button variant="outline" onClick={() => setRenamingRow(null)}>取消</Button>
             <Button onClick={() => renameRow(renamingRow)}>保存</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Confirm cell change dialog */}
+      <Dialog open={!!pendingEdit} onOpenChange={() => setPendingEdit(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>確認修改客戶資料</DialogTitle>
+          </DialogHeader>
+          {pendingEdit && (
+            <div className="space-y-3 text-sm">
+              <div>
+                <p className="text-xs text-stone-500 mb-1">位置：第 {pendingEdit.row + 1} 列、第 {String.fromCharCode(65 + pendingEdit.col)} 欄</p>
+              </div>
+              <div className="bg-stone-50 p-3 rounded-lg space-y-2">
+                <div>
+                  <p className="text-xs text-stone-500">原值</p>
+                  <p className="text-sm font-medium text-stone-700">{pendingEdit.oldValue || '（空）'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-stone-500">新值</p>
+                  <p className="text-sm font-medium text-amber-700">{pendingEdit.newValue || '（空）'}</p>
+                </div>
+              </div>
+              <p className="text-xs text-red-600">⚠️ 此修改將覆蓋客戶原始資料，請確認無誤。</p>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPendingEdit(null)}>取消</Button>
+            <Button onClick={confirmCellChange} className="bg-amber-600 hover:bg-amber-700">確認修改</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
