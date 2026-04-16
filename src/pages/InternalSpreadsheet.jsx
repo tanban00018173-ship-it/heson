@@ -226,63 +226,52 @@ export default function InternalSpreadsheet() {
   }
 
   return (
-    <div className="min-h-screen bg-stone-50 flex flex-col">
+    <div className="h-screen bg-stone-50 flex flex-col overflow-hidden">
       {/* Header */}
-      <div className="bg-white border-b border-stone-200 px-6 py-4 flex items-center justify-between flex-shrink-0">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center">
+      <div className="bg-white border-b border-stone-200 px-4 py-3 flex items-center justify-between flex-shrink-0 gap-2">
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center flex-shrink-0">
             <Table className="w-4 h-4 text-amber-600" />
           </div>
-          <div>
-            <h1 className="font-semibold text-stone-800">內部試算表</h1>
-            <p className="text-xs text-stone-400">共 {bookings.length} 筆預約資料</p>
+          <div className="min-w-0">
+            <h1 className="font-semibold text-stone-800 text-sm">內部試算表</h1>
+            <p className="text-xs text-stone-400">共 {bookings.length} 筆</p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => refetch()} className="gap-1.5 text-xs">
+        <div className="flex items-center gap-1 flex-shrink-0">
+          <Button variant="outline" size="sm" onClick={() => refetch()} className="gap-1 text-xs px-2">
             <RefreshCw className="w-3 h-3" />
-            重整
+            <span className="hidden sm:inline">重整</span>
           </Button>
-          <Button variant="outline" size="sm" onClick={exportCSV} className="gap-1.5 text-xs">
+          <Button variant="outline" size="sm" onClick={exportCSV} className="gap-1 text-xs px-2">
             <Download className="w-3 h-3" />
-            匯出 CSV
+            <span className="hidden sm:inline">匯出 CSV</span>
           </Button>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="bg-white border-b border-stone-200 px-6 flex gap-1 flex-shrink-0">
-        <button
-          onClick={() => setActiveTab('sheet')}
-          className={`flex items-center gap-1.5 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-            activeTab === 'sheet' ? 'border-amber-500 text-amber-600' : 'border-transparent text-stone-500 hover:text-stone-700'
-          }`}
-        >
-          <Table className="w-4 h-4" />
-          試算表
-        </button>
-        <button
-          onClick={() => setActiveTab('ai')}
-          className={`flex items-center gap-1.5 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-            activeTab === 'ai' ? 'border-amber-500 text-amber-600' : 'border-transparent text-stone-500 hover:text-stone-700'
-          }`}
-        >
-          <Bot className="w-4 h-4" />
-          AI 助理
-        </button>
-        <button
-          onClick={() => setActiveTab('roles')}
-          className={`flex items-center gap-1.5 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-            activeTab === 'roles' ? 'border-amber-500 text-amber-600' : 'border-transparent text-stone-500 hover:text-stone-700'
-          }`}
-        >
-          <ShieldCheck className="w-4 h-4" />
-          權限管理
-        </button>
+      <div className="bg-white border-b border-stone-200 px-2 flex gap-0 flex-shrink-0 overflow-x-auto">
+        {[
+          { id: 'sheet', icon: Table, label: '試算表' },
+          { id: 'ai', icon: Bot, label: 'AI 助理' },
+          { id: 'roles', icon: ShieldCheck, label: '權限管理' },
+        ].map(({ id, icon: Icon, label }) => (
+          <button
+            key={id}
+            onClick={() => setActiveTab(id)}
+            className={`flex items-center gap-1.5 px-3 py-3 text-xs sm:text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+              activeTab === id ? 'border-amber-500 text-amber-600' : 'border-transparent text-stone-500 hover:text-stone-700'
+            }`}
+          >
+            <Icon className="w-4 h-4 flex-shrink-0" />
+            {label}
+          </button>
+        ))}
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-hidden flex">
+      <div className="flex-1 overflow-hidden flex min-h-0">
         {activeTab === 'sheet' && (
           <div className="flex-1 flex flex-col overflow-hidden">
             {/* Toolbar */}
@@ -302,7 +291,7 @@ export default function InternalSpreadsheet() {
             </div>
 
             {/* Table */}
-            <div className="flex-1 overflow-auto">
+            <div className="flex-1 overflow-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
               {isLoading ? (
                 <div className="flex items-center justify-center h-40">
                   <Loader2 className="w-6 h-6 animate-spin text-amber-500" />
