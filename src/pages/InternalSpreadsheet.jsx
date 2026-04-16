@@ -13,7 +13,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { motion, AnimatePresence } from "framer-motion";
 import RoleManager from "@/components/internal/RoleManager";
 import DeviceManager from "@/components/internal/DeviceManager";
-import SpreadsheetEditor from "@/components/internal/SpreadsheetEditor";
 
 // Editable cell component
 function EditableCell({ value, onSave, type = 'text' }) {
@@ -867,11 +866,10 @@ export default function InternalSpreadsheet() {
       <div className="flex-1 overflow-hidden flex min-h-0">
         {activeTab === 'sheet' && (
           <div className="flex-1 flex flex-col overflow-hidden">
-            {/* Check if current sheet is booking (default) or custom */}
-            {/* Unified spreadsheet editor for all sheet types */}
-            <SpreadsheetEditor 
-              spreadsheetId={activeSpreadsheet} 
-              spreadsheetName={currentSheet?.name}
+            <iframe
+              src="https://docs.google.com/spreadsheets/d/1AgmwQLTTtslxU8Fn5GNdF9IjDAf4ih7ea5zmCUbuWWs/edit?usp=sharing"
+              style={{ width: '100%', height: '100%', border: 'none' }}
+              allow="fullscreen"
             />
           </div>
         )}
