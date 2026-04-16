@@ -31,6 +31,8 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
   const [selectedRange, setSelectedRange] = useState(null);
   const [resizingCol, setResizingCol] = useState(null);
   const [resizingRow, setResizingRow] = useState(null);
+  const [renamingCol, setRenamingCol] = useState(null);
+  const [newColName, setNewColName] = useState('');
   const tableRef = useRef(null);
 
   const convertBookingsToData = (bookingsList) => {
@@ -95,6 +97,26 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
   const updateBookingMutation = useMutation({
     mutationFn: async ({ bookingId, field, value }) => {
       await base44.entities.Booking.update(bookingId, { [field]: value });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['spreadsheetBookings'] });
+      refetchSheet();
+    },
+  });
+
+  const deleteBookingMutation = useMutation({
+    mutationFn: async (bookingId) => {
+      await base44.entities.Booking.delete(bookingId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['spreadsheetBookings'] });
+      refetchSheet();
+    },
+  });
+
+  const createBookingMutation = useMutation({
+    mutationFn: async (newBooking) => {
+      await base44.entities.Booking.create(newBooking);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['spreadsheetBookings'] });
@@ -174,6 +196,47 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
     if (!selectedRange) return false;
     return row >= selectedRange.startRow && row <= selectedRange.endRow &&
            col >= selectedRange.startCol && col <= selectedRange.endCol;
+  };
+
+  const deleteRow = (rowIdx) => {
+    if (isBookingSheet && bookings[rowIdx]) {
+      deleteBookingMutation.mutate(bookings[rowIdx].id);
+    }
+    setContextMenu(null);
+  };
+
+  const insertRowAfter = (rowIdx) => {
+    if (isBookingSheet) {
+      const template = bookings[rowIdx] || {};
+      const newBooking = {
+        client_id: template.client_id || '',
+        service_type: template.service_type || '',
+        scheduled_date: template.scheduled_date || '',
+        time_slot: template.time_slot || '',
+        status: '待確認'
+      };
+      createBookingMutation.mutate(newBooking);
+    }
+    setContextMenu(null);
+  };
+
+  const copyRow = (rowIdx) => {
+    if (isBookingSheet && bookings[rowIdx]) {
+      const booking = bookings[rowIdx];
+      const newBooking = {
+        client_id: booking.client_id,
+        client_name: booking.client_name,
+        service_type: booking.service_type,
+        scheduled_date: booking.scheduled_date,
+        time_slot: booking.time_slot,
+        status: booking.status,
+        address: booking.address,
+        cleaner_name: booking.cleaner_name,
+        notes: booking.notes
+      };
+      createBookingMutation.mutate(newBooking);
+    }
+    setContextMenu(null);
   };
 
   const handleColResizeStart = (e, colIdx) => {
@@ -257,6 +320,42 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
         </div>
       </div>
 
+      {/* Context menu */}
+      {contextMenu && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setContextMenu(null)} />
+          <div
+            className="fixed z-50 bg-white border border-stone-200 rounded-lg shadow-lg py-0.5 min-w-[140px]"
+            style={{ left: contextMenu.x, top: contextMenu.y }}
+          >
+            {contextMenu.type === 'row' && (
+              <>
+                <button
+                  onClick={() => insertRowAfter(contextMenu.index)}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-stone-600 hover:bg-stone-100 transition-colors"
+                >
+                  <Plus className="w-3 h-3" /> 新增下方
+                </button>
+                <button
+                  onClick={() => copyRow(contextMenu.index)}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-stone-600 hover:bg-stone-100 transition-colors"
+                >
+                  <Copy className="w-3 h-3" /> 複製
+                </button>
+                {bookings.length > 1 && (
+                  <button
+                    onClick={() => deleteRow(contextMenu.index)}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-xs text-stone-600 hover:bg-red-50 transition-colors border-t border-stone-100"
+                  >
+                    <Trash2 className="w-3 h-3" /> 刪除
+                  </button>
+                )}
+              </>
+            )}
+          </div>
+        </>
+      )}
+
       {/* Spreadsheet */}
       <div className="flex-1 overflow-auto" ref={tableRef}>
         <table 
@@ -293,8 +392,12 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
             {sheetData.data.map((row, rowIdx) => (
               <tr key={rowIdx}>
                 <td
-                  className="w-10 bg-stone-100 border border-stone-300 text-xs font-medium text-stone-600 text-center select-none relative"
+                  className="w-10 bg-stone-100 border border-stone-300 text-xs font-medium text-stone-600 text-center select-none relative cursor-pointer hover:bg-stone-200"
                   style={{ height: sheetData.row_heights[rowIdx] }}
+                  onClick={(e) => {
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    setContextMenu({ x: rect.left, y: rect.bottom + 4, type: 'row', index: rowIdx });
+                  }}
                 >
                   <div className="flex items-center justify-between h-full px-2">
                     <span>{rowIdx + 1}</span>
@@ -355,6 +458,38 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
           </tbody>
         </table>
       </div>
+
+      {/* Rename column dialog */}
+      <Dialog open={renamingCol !== null} onOpenChange={() => setRenamingCol(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>重新命名欄位</DialogTitle>
+          </DialogHeader>
+          <Input
+            value={newColName}
+            onChange={(e) => setNewColName(e.target.value)}
+            placeholder="輸入新名稱..."
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                const newColNames = [...sheetData.col_names];
+                newColNames[renamingCol] = newColName;
+                updateMutation.mutate({ col_names: newColNames });
+                setRenamingCol(null);
+              }
+            }}
+            autoFocus
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRenamingCol(null)}>取消</Button>
+            <Button onClick={() => {
+              const newColNames = [...sheetData.col_names];
+              newColNames[renamingCol] = newColName;
+              updateMutation.mutate({ col_names: newColNames });
+              setRenamingCol(null);
+            }}>保存</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
