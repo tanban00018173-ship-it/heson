@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Copy, Trash2, Plus, Type, Undo2 } from "lucide-react";
+import { Copy, Trash2, Plus, Type, Undo2, ChevronDown } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 
 export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBookingSheet = false, bookings = [] }) {
@@ -487,27 +487,29 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
       </div>
 
       {/* Table */}
-      <div ref={tableRef} className="flex-1 overflow-auto">
-        <table className="border-collapse border border-stone-300 bg-white" style={{ transformOrigin: 'top left', transform: `scale(${zoom})`, width: `${100 / zoom}%` }}>
+      <div ref={tableRef} className="flex-1 overflow-auto bg-white">
+        <table className="border-collapse bg-white" style={{ transformOrigin: 'top left', transform: `scale(${zoom})`, width: `${100 / zoom}%` }}>
           <thead>
-            <tr>
-              <th className="w-8 h-7 bg-stone-100 border border-stone-300 text-xs text-stone-500 text-center"></th>
+            <tr className="bg-stone-50">
+              <th className="w-9 h-8 bg-stone-100 border border-stone-200 text-xs text-stone-600 text-center font-medium"></th>
               {sheetData.col_names.map((name, colIdx) => (
                 <th
                   key={colIdx}
                   style={{ width: sheetData.col_widths[colIdx] }}
-                  className="h-7 bg-stone-100 border border-stone-300 px-2 text-xs font-medium text-stone-700 cursor-pointer hover:bg-stone-200 relative group select-none"
+                  className="h-8 bg-stone-50 border border-stone-200 px-2 text-xs font-semibold text-stone-700 cursor-pointer hover:bg-stone-100 relative group select-none"
                   onClick={(e) => {
                     const rect = e.currentTarget.getBoundingClientRect();
                     setContextMenu({ x: rect.left, y: rect.bottom + 4, type: 'col', index: colIdx });
                   }}
                 >
-                  <div className="truncate">{name || `Col ${colIdx + 1}`}</div>
-                  <div className="text-[8px] text-stone-500 absolute top-1 right-1">▼</div>
+                  <div className="flex items-center justify-between h-full">
+                    <span className="truncate">{name || `${String.fromCharCode(65 + colIdx)}`}</span>
+                    <ChevronDown className="w-3 h-3 text-stone-400 opacity-0 group-hover:opacity-100 flex-shrink-0" />
+                  </div>
                   <div
-                    className="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-amber-400 opacity-0 hover:opacity-100 transition-opacity"
+                    className="absolute top-0 right-0 w-0.5 h-full cursor-col-resize hover:bg-blue-400 opacity-0 hover:opacity-100 transition-opacity"
                     onMouseDown={(e) => handleColResizeStart(e, colIdx)}
-                    style={{ right: '-2px' }}
+                    style={{ right: '-1px' }}
                   />
                 </th>
               ))}
@@ -515,9 +517,9 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
           </thead>
           <tbody>
             {filteredData.map((row, rowIdx) => (
-              <tr key={rowIdx}>
+              <tr key={rowIdx} className="hover:bg-blue-50">
                 <td
-                  className="w-8 bg-stone-100 border border-stone-300 text-xs text-stone-500 text-center cursor-pointer hover:bg-stone-200 font-medium relative select-none"
+                  className="w-9 bg-stone-50 border border-stone-200 text-xs text-stone-600 text-center font-medium cursor-pointer hover:bg-stone-100 relative select-none"
                   onClick={(e) => {
                     const rect = e.currentTarget.getBoundingClientRect();
                     setContextMenu({ x: rect.left, y: rect.bottom + 4, type: 'row', index: rowIdx });
@@ -525,17 +527,19 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
                   title={rowNames[rowIdx] ? `${rowIdx + 1} - ${rowNames[rowIdx]}` : `第 ${rowIdx + 1} 列`}
                   style={{ height: sheetData.row_heights[rowIdx] }}
                 >
-                  <div className="truncate">{rowNames[rowIdx] ? `${rowIdx + 1}*` : rowIdx + 1}</div>
-                  <div className="text-[8px] absolute top-0.5 right-0.5 text-stone-500">▼</div>
+                  <div className="flex items-center justify-center h-full gap-1">
+                    <span>{rowIdx + 1}</span>
+                    <ChevronDown className="w-3 h-3 text-stone-400 opacity-0 group-hover:opacity-100" />
+                  </div>
                   <div
-                    className="absolute bottom-0 left-0 w-full h-1 cursor-row-resize hover:bg-amber-400 opacity-0 hover:opacity-100 transition-opacity"
+                    className="absolute bottom-0 left-0 w-full h-0.5 cursor-row-resize hover:bg-blue-400 opacity-0 hover:opacity-100 transition-opacity"
                     onMouseDown={(e) => handleRowResizeStart(e, rowIdx)}
-                    style={{ bottom: '-2px' }}
+                    style={{ bottom: '-1px' }}
                   />
                 </td>
                 {row.map((cell, colIdx) => {
                   const format = sheetData.cell_formats?.[`${rowIdx}_${colIdx}`] || {};
-                  const isEditing = !isBookingSheet && editCell?.row === rowIdx && editCell?.col === colIdx;
+                  const isEditing = editCell?.row === rowIdx && editCell?.col === colIdx;
                   const selected = isSelected(rowIdx, colIdx);
                   return (
                     <td
@@ -543,10 +547,10 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
                       style={{
                         width: sheetData.col_widths[colIdx],
                         height: sheetData.row_heights[rowIdx],
-                        backgroundColor: selected ? '#fef3c7' : (format.bg || 'white'),
+                        backgroundColor: selected ? '#fef08a' : (format.bg || 'white'),
                         color: format.color || 'black',
                         fontWeight: format.bold ? 'bold' : 'normal',
-                        border: selected ? '2px solid #f59e0b' : '1px solid #d6d3d1'
+                        border: selected ? '2px solid #eab308' : '1px solid #e5e7eb'
                       }}
                       className="px-2 py-1 text-xs cursor-cell select-none"
                       onClick={(e) => {
@@ -583,8 +587,8 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
         </table>
       </div>
 
-      {/* Context menus - only for non-booking sheets */}
-      {contextMenu && !isBookingSheet && (
+      {/* Context menus */}
+      {contextMenu && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setContextMenu(null)} />
           <div
