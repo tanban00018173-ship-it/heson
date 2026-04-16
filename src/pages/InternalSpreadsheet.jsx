@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { zhTW } from "date-fns/locale";
-import { Bot, Send, Edit2, Check, X, Download, RefreshCw, Table, Search, Loader2, ShieldCheck, ZoomIn, ZoomOut, Monitor, ArrowLeft } from "lucide-react";
+import { Bot, Send, Edit2, Check, X, Download, RefreshCw, Table, Search, Loader2, ShieldCheck, ZoomIn, ZoomOut, Monitor, ArrowLeft, Plus, Trash2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import RoleManager from "@/components/internal/RoleManager";
 import DeviceManager from "@/components/internal/DeviceManager";
@@ -160,8 +160,13 @@ export default function InternalSpreadsheet() {
    const [user, setUser] = useState(null);
    const [authChecked, setAuthChecked] = useState(false);
    const [searchTerm, setSearchTerm] = useState('');
-   const [activeTab, setActiveTab] = useState('sheet'); // 'sheet' | 'ai'
+   const [activeTab, setActiveTab] = useState('sheet'); // 'sheet' | 'ai' | 'roles' | 'devices'
+   const [activeSpreadsheet, setActiveSpreadsheet] = useState('booking'); // 'booking' or custom name
+   const [spreadsheets, setSpreadsheets] = useState([
+     { id: 'booking', name: '清潔訂單' }
+   ]);
    const [zoom, setZoom] = useState(1);
+   const [newSheetName, setNewSheetName] = useState('');
    const tableWrapperRef = useRef(null);
    const queryClient = useQueryClient();
 
@@ -232,10 +237,30 @@ export default function InternalSpreadsheet() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `booking_data_${format(new Date(), 'yyyyMMdd')}.csv`;
+    const currentSheet = spreadsheets.find(s => s.id === activeSpreadsheet);
+    a.download = `${currentSheet?.name || '試算表'}_${format(new Date(), 'yyyyMMdd')}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
+
+  const addSpreadsheet = () => {
+    if (!newSheetName.trim()) return;
+    const newId = 'sheet_' + Date.now();
+    setSpreadsheets([...spreadsheets, { id: newId, name: newSheetName }]);
+    setActiveSpreadsheet(newId);
+    setNewSheetName('');
+  };
+
+  const removeSpreadsheet = (id) => {
+    if (id === 'booking') return; // 不能刪除「清潔訂單」
+    const updated = spreadsheets.filter(s => s.id !== id);
+    setSpreadsheets(updated);
+    if (activeSpreadsheet === id) {
+      setActiveSpreadsheet(updated[0]?.id || 'booking');
+    }
+  };
+
+  const currentSheet = spreadsheets.find(s => s.id === activeSpreadsheet);
 
   if (!authChecked || !user) {
     return (
@@ -258,7 +283,7 @@ export default function InternalSpreadsheet() {
            </div>
            <div className="min-w-0">
              <h1 className="font-semibold text-stone-800 text-sm">內部試算表</h1>
-             <p className="text-xs text-stone-400">共 {bookings.length} 筆</p>
+             <p className="text-xs text-stone-400">{currentSheet?.name || '試算表'} · 共 {bookings.length} 筆</p>
            </div>
          </div>
          <div className="flex items-center gap-1 flex-shrink-0">
@@ -293,6 +318,51 @@ export default function InternalSpreadsheet() {
           </button>
         ))}
       </div>
+
+      {/* Spreadsheet tabs (only show in sheet tab) */}
+      {activeTab === 'sheet' && (
+        <div className="bg-stone-50 border-b border-stone-200 px-4 py-2 flex items-center gap-2 flex-shrink-0 overflow-x-auto">
+          {spreadsheets.map((sheet) => (
+            <div key={sheet.id} className="flex items-center gap-1">
+              <button
+                onClick={() => setActiveSpreadsheet(sheet.id)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                  activeSpreadsheet === sheet.id
+                    ? 'bg-white border border-amber-500 text-amber-600'
+                    : 'bg-white border border-stone-200 text-stone-600 hover:border-stone-300'
+                }`}
+              >
+                {sheet.name}
+              </button>
+              {sheet.id !== 'booking' && (
+                <button
+                  onClick={() => removeSpreadsheet(sheet.id)}
+                  className="text-stone-400 hover:text-red-500 transition-colors p-1"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              )}
+            </div>
+          ))}
+          <div className="flex items-center gap-1 ml-2 pl-2 border-l border-stone-200">
+            <Input
+              value={newSheetName}
+              onChange={e => setNewSheetName(e.target.value)}
+              placeholder="新試算表..."
+              className="h-7 text-xs px-2 py-0 w-32"
+              onKeyDown={e => { if (e.key === 'Enter') addSpreadsheet(); }}
+            />
+            <Button
+              onClick={addSpreadsheet}
+              disabled={!newSheetName.trim()}
+              size="icon"
+              className="h-7 w-7 bg-amber-500 hover:bg-amber-600 flex-shrink-0"
+            >
+              <Plus className="w-3 h-3" />
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Content */}
       <div className="flex-1 overflow-hidden flex min-h-0">
