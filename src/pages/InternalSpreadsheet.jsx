@@ -83,7 +83,6 @@ function AIChat({ bookings, onMutation }) {
       if (data.mutations && data.mutations.length > 0) {
         const undoItems = [];
         for (const m of data.mutations) {
-          // Find old data for undo
           const oldBooking = bookings.find(b => b.id === m.id);
           if (oldBooking) {
             const oldFields = {};
@@ -92,9 +91,16 @@ function AIChat({ bookings, onMutation }) {
           }
           await base44.entities.Booking.update(m.id, m.fields);
         }
-        // Record batch undo
         if (undoItems.length > 0 && onMutation) {
           onMutation({ type: 'ai', items: undoItems, description: `AI 修改 ${undoItems.length} 筆資料` });
+        }
+        queryClient.invalidateQueries({ queryKey: ['spreadsheetBookings'] });
+      }
+
+      // If AI returned deletions, delete them
+      if (data.deletions && data.deletions.length > 0) {
+        for (const id of data.deletions) {
+          await base44.entities.Booking.delete(id);
         }
         queryClient.invalidateQueries({ queryKey: ['spreadsheetBookings'] });
       }
