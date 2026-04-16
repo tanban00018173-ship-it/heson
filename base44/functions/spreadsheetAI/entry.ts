@@ -16,7 +16,6 @@ Deno.serve(async (req) => {
   const fullPrompt = `你是一個管理員內部試算表 AI 助理。你的職責：
 1. 回答關於試算表資料的查詢問題
 2. 接受批量或單個修改指令，並產生修改指令
-3. 接受刪除指令，刪除不符合條件的資料
 
 【試算表欄位說明】
 - client_name: 客戶姓名
@@ -28,10 +27,6 @@ Deno.serve(async (req) => {
 - cleaner_name: 指派管理師
 - notes: 備註
 
-【排序期間說明】
-排序期間的命名格式為「期數_起始月/日-結束月/日」，例如「26_4/10-5/9」代表第26期，日期範圍為4月10日到5月9日。
-當用戶提到某個排序期間時，需要根據該日期範圍來篩選 scheduled_date。
-
 【試算表現有資料】
 共 ${bookings.length} 筆記錄：
 ${sheetSummary || '（目前無資料）'}
@@ -41,10 +36,7 @@ ${sheetSummary || '（目前無資料）'}
 - 若問題本身可能有誤（例如日期格式錯誤、欄位名稱不存在），需引導用戶修正
 - 若用戶要求修改，你必須在回覆的 mutations 陣列中提供修改指令
 - mutations 格式：[{ "id": "預約ID", "fields": { "欄位名": "新值" } }]
-- 若用戶要求刪除資料，你必須在回覆的 deletions 陣列中提供要刪除的預約 ID
-- deletions 格式：["預約ID1", "預約ID2", ...]
-- 若不需要修改或刪除，mutations 和 deletions 為空陣列
-- 在刪除前，必須在 reply 中列出即將刪除的記錄摘要，讓管理員知道刪除了哪些資料
+- 若不需要修改，mutations 為空陣列
 - 回覆語言：繁體中文
 
 用戶指令：${message}`;
@@ -64,14 +56,9 @@ ${sheetSummary || '（目前無資料）'}
               fields: { type: "object" }
             }
           }
-        },
-        deletions: {
-          type: "array",
-          items: { type: "string" },
-          description: "Array of booking IDs to delete"
         }
       },
-      required: ["reply", "mutations", "deletions"]
+      required: ["reply", "mutations"]
     },
     model: "claude_sonnet_4_6"
   });
