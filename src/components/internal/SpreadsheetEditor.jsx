@@ -282,6 +282,17 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
     }
   }, [resizingCol, resizingRow, sheetData]);
 
+  useEffect(() => {
+    const handleClickOutside = () => {
+      setContextMenu(null);
+    };
+
+    if (contextMenu) {
+      document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
+    }
+  }, [contextMenu]);
+
   if (isLoading || !sheetData) {
     return <div className="flex items-center justify-center h-40">載入中...</div>;
   }
@@ -295,17 +306,6 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
     }
     return label;
   };
-
-  useEffect(() => {
-    const handleClickOutside = () => {
-      setContextMenu(null);
-    };
-
-    if (contextMenu) {
-      document.addEventListener('click', handleClickOutside);
-      return () => document.removeEventListener('click', handleClickOutside);
-    }
-  }, [contextMenu]);
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden bg-white">
