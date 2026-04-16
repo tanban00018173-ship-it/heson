@@ -193,17 +193,15 @@ export default function AdminDashboard() {
                       </div>
                     </Link>
 
-                    {user?.email === 'mingus445606@gmail.com' && (
-                      <Link to="/InternalSpreadsheet">
+                    <Link to="/InternalSpreadsheet">
                         <div className="flex items-center justify-between p-4 bg-amber-50 rounded-xl hover:bg-amber-100 transition-colors cursor-pointer">
                           <div className="flex items-center gap-3">
                             <Table className="w-5 h-5 text-amber-600" />
                             <span className="text-stone-700">內部試算表 + AI 助理</span>
                           </div>
-                          <Badge className="bg-amber-100 text-amber-700">專屬</Badge>
+                          <Badge className="bg-amber-100 text-amber-700">內部工具</Badge>
                         </div>
                       </Link>
-                    )}
 
 
                   </div>

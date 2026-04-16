@@ -167,7 +167,7 @@ export default function InternalSpreadsheet() {
       const isAuth = await base44.auth.isAuthenticated();
       if (!isAuth) { base44.auth.redirectToLogin(); return; }
       const me = await base44.auth.me();
-      if (me.email !== AUTHORIZED_EMAIL) {
+      if (me.role !== 'admin') {
         window.location.href = '/';
         return;
       }
