@@ -316,7 +316,6 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName }) {
                 );
               })
             )}
-            ))}
           </tbody>
         </table>
       </div>
