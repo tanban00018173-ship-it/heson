@@ -14,7 +14,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import RoleManager from "@/components/internal/RoleManager";
 import DeviceManager from "@/components/internal/DeviceManager";
 import SpreadsheetEditor from "@/components/internal/SpreadsheetEditor";
-import GoogleSheetEditor from "@/components/internal/GoogleSheetEditor";
 
 // Editable cell component
 function EditableCell({ value, onSave, type = 'text' }) {
@@ -183,22 +182,16 @@ export default function InternalSpreadsheet() {
    const [authChecked, setAuthChecked] = useState(false);
    const [searchTerm, setSearchTerm] = useState('');
    const [activeTab, setActiveTab] = useState('sheet'); // 'sheet' | 'ai' | 'roles' | 'devices'
-   const [activeSpreadsheet, setActiveSpreadsheet] = useState(''); // Google Sheet ID
-   const [googleSheetId, setGoogleSheetId] = useState(() => {
-     try {
-       const saved = localStorage.getItem('googleSheetId');
-       return saved || '';
-     } catch {
-       return '';
-     }
-   });
-   const defaultSpreadsheets = [];
+   const [activeSpreadsheet, setActiveSpreadsheet] = useState('sheet_booking'); // Unified sheet ID for bookings
+   const defaultSpreadsheets = [
+     { id: 'sheet_booking', name: '清潔訂單' }
+   ];
    const [spreadsheets, setSpreadsheets] = useState(() => {
      try {
        const saved = localStorage.getItem('spreadsheets');
-       return saved ? JSON.parse(saved) : [];
+       return saved ? JSON.parse(saved) : defaultSpreadsheets;
      } catch {
-       return [];
+       return defaultSpreadsheets;
      }
    });
    const [hiddenSheets, setHiddenSheets] = useState(() => {
@@ -222,7 +215,7 @@ export default function InternalSpreadsheet() {
    const [undoStack, setUndoStack] = useState([]); // Undo history
    const [undoing, setUndoing] = useState(false);
 
-  // Persist data to localStorage
+  // Persist spreadsheets and hiddenSheets to localStorage
   useEffect(() => {
     localStorage.setItem('spreadsheets', JSON.stringify(spreadsheets));
   }, [spreadsheets]);
@@ -230,10 +223,6 @@ export default function InternalSpreadsheet() {
   useEffect(() => {
     localStorage.setItem('hiddenSheets', JSON.stringify(hiddenSheets));
   }, [hiddenSheets]);
-
-  useEffect(() => {
-    localStorage.setItem('googleSheetId', googleSheetId);
-  }, [googleSheetId]);
 
   useEffect(() => {
     const check = async () => {
@@ -525,7 +514,7 @@ export default function InternalSpreadsheet() {
     setRenameValue('');
   };
 
-  const currentSheet = activeSpreadsheet ? spreadsheets.find(s => s.id === activeSpreadsheet) : null;
+  const currentSheet = spreadsheets.find(s => s.id === activeSpreadsheet);
 
   if (!authChecked || !user) {
     return (
@@ -856,29 +845,12 @@ export default function InternalSpreadsheet() {
       <div className="flex-1 overflow-hidden flex min-h-0">
         {activeTab === 'sheet' && (
           <div className="flex-1 flex flex-col overflow-hidden">
-            {googleSheetId ? (
-              <GoogleSheetEditor 
-                spreadsheetId={googleSheetId}
-                spreadsheetName="Google Sheets 試算表"
-              />
-            ) : (
-              <div className="flex items-center justify-center h-full">
-                <div className="text-center">
-                  <p className="text-stone-500 mb-4">請設定 Google Sheets ID</p>
-                  <input
-                    type="text"
-                    placeholder="貼上 Google Sheet ID..."
-                    value={googleSheetId}
-                    onChange={(e) => setGoogleSheetId(e.target.value)}
-                    className="px-3 py-2 border border-stone-200 rounded-lg text-sm mb-3 w-72"
-                  />
-                  <div className="text-xs text-stone-400 mt-2">
-                    在瀏覽器網址列取得 ID：<br/>
-                    https://docs.google.com/spreadsheets/d/<strong>這是ID</strong>/edit
-                  </div>
-                </div>
-              </div>
-            )}
+            {/* Check if current sheet is booking (default) or custom */}
+            {/* Unified spreadsheet editor for all sheet types */}
+            <SpreadsheetEditor 
+              spreadsheetId={activeSpreadsheet} 
+              spreadsheetName={currentSheet?.name}
+            />
           </div>
         )}
 
