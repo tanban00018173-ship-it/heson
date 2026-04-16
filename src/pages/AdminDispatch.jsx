@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Calendar, Clock, MapPin, User, CheckCircle, Loader2, AlertCircle, Eye, RefreshCw } from "lucide-react";
+import { Calendar, Clock, MapPin, User, CheckCircle, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { format } from "date-fns";
 import { zhTW } from "date-fns/locale";
@@ -54,11 +54,6 @@ export default function AdminDispatch() {
       return all.filter(c => c.is_active);
     },
     initialData: [],
-  });
-
-  const { data: sheetLogs = [], refetch: refetchLogs } = useQuery({
-    queryKey: ['sheetSyncLogs'],
-    queryFn: () => base44.entities.GoogleSheetLog.list('-created_date', 5),
   });
 
   const dispatchMutation = useMutation({
@@ -137,91 +132,7 @@ export default function AdminDispatch() {
                 </div>
               </CardContent>
             </Card>
-            <Card className="border-0 shadow-sm">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-stone-500">Google Sheet 同步</p>
-                    <p className="text-3xl font-semibold text-green-600 mt-1">
-                      {sheetLogs.filter(l => l.status === 'success').length}/{sheetLogs.length}
-                    </p>
-                  </div>
-                  <div className="w-12 h-12 bg-green-50 rounded-xl flex items-center justify-center">
-                    <CheckCircle className="w-6 h-6 text-green-600" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
           </div>
-
-          {/* Sheet Sync Status */}
-          {sheetLogs.length > 0 && (
-            <Card className="mb-8 border-0 shadow-sm">
-              <CardHeader className="pb-4">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-base">Google Sheet 同步狀況</CardTitle>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => refetchLogs()}
-                    className="h-8 w-8 p-0"
-                  >
-                    <RefreshCw className="w-4 h-4" />
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  {sheetLogs.map((log) => (
-                    <div
-                      key={log.id}
-                      className={`p-3 rounded-lg border flex items-center justify-between ${
-                        log.status === 'success'
-                          ? 'bg-green-50 border-green-200'
-                          : log.status === 'failed'
-                          ? 'bg-red-50 border-red-200'
-                          : 'bg-yellow-50 border-yellow-200'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3 flex-1 min-w-0">
-                        {log.status === 'success' ? (
-                          <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0" />
-                        ) : (
-                          <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
-                        )}
-                        <div className="min-w-0 flex-1">
-                          <p className="text-sm font-medium text-stone-800 truncate">
-                            {log.operation_type === 'ai_fill' ? '✨ AI 自動填寫' : '✏️ 手動編輯'}
-                          </p>
-                          <p className="text-xs text-stone-500 mt-0.5">
-                            {new Date(log.created_date).toLocaleTimeString('zh-TW')}
-                          </p>
-                        </div>
-                      </div>
-                      <span className={`px-2 py-1 rounded text-xs font-medium whitespace-nowrap ${
-                        log.status === 'success'
-                          ? 'bg-green-200 text-green-800'
-                          : log.status === 'failed'
-                          ? 'bg-red-200 text-red-800'
-                          : 'bg-yellow-200 text-yellow-800'
-                      }`}>
-                        {log.status === 'success' ? '成功' : log.status === 'failed' ? '失敗' : '待審'}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="w-full mt-3 text-stone-600 hover:text-stone-800"
-                  onClick={() => window.location.href = '/SheetSyncLog'}
-                >
-                  <Eye className="w-4 h-4 mr-2" />
-                  查看完整日誌
-                </Button>
-              </CardContent>
-            </Card>
-          )}
 
            {/* Pending Bookings */}
           {bookings?.length === 0 ? (
