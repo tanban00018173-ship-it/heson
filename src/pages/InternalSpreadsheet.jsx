@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -6,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { zhTW } from "date-fns/locale";
-import { Bot, Send, Edit2, Check, X, Download, RefreshCw, Table, Search, Loader2, ShieldCheck, ZoomIn, ZoomOut, Monitor } from "lucide-react";
+import { Bot, Send, Edit2, Check, X, Download, RefreshCw, Table, Search, Loader2, ShieldCheck, ZoomIn, ZoomOut, Monitor, ArrowLeft } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import RoleManager from "@/components/internal/RoleManager";
 import DeviceManager from "@/components/internal/DeviceManager";
@@ -155,13 +156,14 @@ const COLUMNS = [
 ];
 
 export default function InternalSpreadsheet() {
-  const [user, setUser] = useState(null);
-  const [authChecked, setAuthChecked] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [activeTab, setActiveTab] = useState('sheet'); // 'sheet' | 'ai'
-  const [zoom, setZoom] = useState(1);
-  const tableWrapperRef = useRef(null);
-  const queryClient = useQueryClient();
+   const navigate = useNavigate();
+   const [user, setUser] = useState(null);
+   const [authChecked, setAuthChecked] = useState(false);
+   const [searchTerm, setSearchTerm] = useState('');
+   const [activeTab, setActiveTab] = useState('sheet'); // 'sheet' | 'ai'
+   const [zoom, setZoom] = useState(1);
+   const tableWrapperRef = useRef(null);
+   const queryClient = useQueryClient();
 
   const changeZoom = (delta) => setZoom(z => Math.min(2, Math.max(0.4, +(z + delta).toFixed(1))));
 
@@ -246,27 +248,30 @@ export default function InternalSpreadsheet() {
   return (
     <div className="h-screen bg-stone-50 flex flex-col overflow-hidden">
       {/* Header */}
-      <div className="bg-white border-b border-stone-200 px-4 py-3 flex items-center justify-between flex-shrink-0 gap-2">
-        <div className="flex items-center gap-2 min-w-0">
-          <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center flex-shrink-0">
-            <Table className="w-4 h-4 text-amber-600" />
-          </div>
-          <div className="min-w-0">
-            <h1 className="font-semibold text-stone-800 text-sm">內部試算表</h1>
-            <p className="text-xs text-stone-400">共 {bookings.length} 筆</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-1 flex-shrink-0">
-          <Button variant="outline" size="sm" onClick={() => refetch()} className="gap-1 text-xs px-2">
-            <RefreshCw className="w-3 h-3" />
-            <span className="hidden sm:inline">重整</span>
-          </Button>
-          <Button variant="outline" size="sm" onClick={exportCSV} className="gap-1 text-xs px-2">
-            <Download className="w-3 h-3" />
-            <span className="hidden sm:inline">匯出 CSV</span>
-          </Button>
-        </div>
-      </div>
+       <div className="bg-white border-b border-stone-200 px-4 py-3 flex items-center justify-between flex-shrink-0 gap-2">
+         <div className="flex items-center gap-2 min-w-0">
+           <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="flex-shrink-0 h-8 w-8">
+             <ArrowLeft className="w-4 h-4" />
+           </Button>
+           <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center flex-shrink-0">
+             <Table className="w-4 h-4 text-amber-600" />
+           </div>
+           <div className="min-w-0">
+             <h1 className="font-semibold text-stone-800 text-sm">內部試算表</h1>
+             <p className="text-xs text-stone-400">共 {bookings.length} 筆</p>
+           </div>
+         </div>
+         <div className="flex items-center gap-1 flex-shrink-0">
+           <Button variant="outline" size="sm" onClick={() => refetch()} className="gap-1 text-xs px-2">
+             <RefreshCw className="w-3 h-3" />
+             <span className="hidden sm:inline">重整</span>
+           </Button>
+           <Button variant="outline" size="sm" onClick={exportCSV} className="gap-1 text-xs px-2">
+             <Download className="w-3 h-3" />
+             <span className="hidden sm:inline">匯出 CSV</span>
+           </Button>
+         </div>
+       </div>
 
       {/* Tabs */}
       <div className="bg-white border-b border-stone-200 px-2 flex gap-0 flex-shrink-0 overflow-x-auto">
