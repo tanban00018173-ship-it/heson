@@ -318,11 +318,11 @@ export default function InternalSpreadsheet() {
   };
 
   const removeSpreadsheet = (id) => {
-    if (id === 'booking') return; // 不能刪除「清潔訂單」
+    if (spreadsheets.length <= 1) return; // 至少保留一個試算表
     const updated = spreadsheets.filter(s => s.id !== id);
     setSpreadsheets(updated);
     if (activeSpreadsheet === id) {
-      setActiveSpreadsheet(updated[0]?.id || 'booking');
+      setActiveSpreadsheet(updated[0]?.id);
     }
   };
 
@@ -502,7 +502,7 @@ export default function InternalSpreadsheet() {
                 </>
               )}
               {/* Delete current sheet action */}
-              {activeSpreadsheet !== 'booking' && (
+              {spreadsheets.length > 1 && (
                 <>
                   <button
                     onClick={() => removeSpreadsheet(activeSpreadsheet)}
@@ -684,23 +684,21 @@ export default function InternalSpreadsheet() {
                   <Edit2 className="w-3.5 h-3.5" />
                   重新命名
                 </button>
-                {sheetContextMenu.id !== 'booking' && (
-                  <>
-                    <button
-                      onClick={() => { hideSheet(sheetContextMenu.id); setSheetContextMenu(null); }}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-xs text-stone-600 hover:bg-stone-50 transition-colors border-t border-stone-100"
-                    >
-                      <EyeOff className="w-3.5 h-3.5" />
-                      隱藏試算表
-                    </button>
-                    <button
-                      onClick={() => { removeSpreadsheet(sheetContextMenu.id); setSheetContextMenu(null); }}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-xs text-red-600 hover:bg-red-50 transition-colors"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                      刪除試算表
-                    </button>
-                  </>
+                <button
+                  onClick={() => { hideSheet(sheetContextMenu.id); setSheetContextMenu(null); }}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-stone-600 hover:bg-stone-50 transition-colors border-t border-stone-100"
+                >
+                  <EyeOff className="w-3.5 h-3.5" />
+                  隱藏試算表
+                </button>
+                {spreadsheets.length > 1 && (
+                  <button
+                    onClick={() => { removeSpreadsheet(sheetContextMenu.id); setSheetContextMenu(null); }}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-xs text-red-600 hover:bg-red-50 transition-colors"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    刪除試算表
+                  </button>
                 )}
               </div>
             </>
