@@ -223,7 +223,7 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
   };
 
   const handleCellChange = (row, col, value) => {
-    if (!sheetData || isBookingSheet) return; // 預約表只讀
+    if (!sheetData) return;
     const newData = sheetData.data.map(r => [...r]);
     newData[row][col] = value;
     updateMutation.mutate({ data: newData });
@@ -231,7 +231,6 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
   };
 
   const handleCellClick = (row, col, e) => {
-    if (isBookingSheet) return;
     if (e.shiftKey && selectedRange) {
       // Extend selection
       setSelectedRange({
@@ -298,7 +297,7 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
   }, [resizingCol, resizingRow, sheetData]);
 
   const insertCol = (beforeCol) => {
-    if (!sheetData || isBookingSheet) return;
+    if (!sheetData) return;
     const newData = sheetData.data.map(row => {
       const newRow = [...row];
       newRow.splice(beforeCol, 0, '');
@@ -319,7 +318,7 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
   };
 
   const deleteCol = (colIdx) => {
-    if (!sheetData || isBookingSheet || sheetData.col_count <= 1) return;
+    if (!sheetData || sheetData.col_count <= 1) return;
     const deletedData = sheetData.data.map(row => row[colIdx]);
     const newData = sheetData.data.map(row => {
       const newRow = [...row];
@@ -341,7 +340,7 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
   };
 
   const copyCol = (colIdx) => {
-    if (!sheetData || isBookingSheet) return;
+    if (!sheetData) return;
     const newData = sheetData.data.map(row => {
       const newRow = [...row];
       newRow.splice(colIdx + 1, 0, row[colIdx]);
@@ -362,7 +361,7 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
   };
 
   const insertRow = (beforeRow) => {
-    if (!sheetData || isBookingSheet) return;
+    if (!sheetData) return;
     const newData = [...sheetData.data];
     newData.splice(beforeRow, 0, Array(sheetData.col_count).fill(''));
     const newRowHeights = [...sheetData.row_heights];
@@ -377,7 +376,7 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
   };
 
   const deleteRow = (rowIdx) => {
-    if (!sheetData || isBookingSheet || sheetData.row_count <= 1) return;
+    if (!sheetData || sheetData.row_count <= 1) return;
     const deletedData = [...sheetData.data[rowIdx]];
     const newData = [...sheetData.data];
     newData.splice(rowIdx, 1);
@@ -393,7 +392,7 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
   };
 
   const copyRow = (rowIdx) => {
-    if (!sheetData || isBookingSheet) return;
+    if (!sheetData) return;
     const newData = [...sheetData.data];
     newData.splice(rowIdx + 1, 0, [...newData[rowIdx]]);
     const newRowHeights = [...sheetData.row_heights];
@@ -418,7 +417,7 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
   };
 
   const renameCol = (colIdx) => {
-    if (!sheetData || isBookingSheet || !newColName.trim()) return;
+    if (!sheetData || !newColName.trim()) return;
     const newColNames = [...sheetData.col_names];
     const oldName = newColNames[colIdx];
     newColNames[colIdx] = newColName;
@@ -430,7 +429,7 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
   };
 
   const renameRow = (rowIdx) => {
-    if (!sheetData || isBookingSheet || !newRowName.trim()) return;
+    if (!sheetData || !newRowName.trim()) return;
     const oldName = rowNames[rowIdx];
     recordUndo({ type: 'renameRow', rowIdx, oldName, description: `重新命名第 ${rowIdx + 1} 列` });
     setRowNames({ ...rowNames, [rowIdx]: newRowName });
@@ -466,22 +465,20 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
             {searchTerm && <span className="text-stone-500">找到 {filteredData.length - 1} 筆</span>}
           </>
         )}
-        {!isBookingSheet && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleUndo}
-            disabled={undoStack.length === 0 || undoing}
-            className="gap-1 text-xs px-2 h-6"
-            title={undoStack.length > 0 ? `復原: ${undoStack[undoStack.length - 1]?.description}` : '沒有可復原的操作'}
-          >
-            <Undo2 className="w-3 h-3" />
-            復原
-            {undoStack.length > 0 && (
-              <Badge className="ml-1 h-4 px-1 text-[10px] bg-amber-100 text-amber-700">{undoStack.length}</Badge>
-            )}
-          </Button>
-        )}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleUndo}
+          disabled={undoStack.length === 0 || undoing}
+          className="gap-1 text-xs px-2 h-6"
+          title={undoStack.length > 0 ? `復原: ${undoStack[undoStack.length - 1]?.description}` : '沒有可復原的操作'}
+        >
+          <Undo2 className="w-3 h-3" />
+          復原
+          {undoStack.length > 0 && (
+            <Badge className="ml-1 h-4 px-1 text-[10px] bg-amber-100 text-amber-700">{undoStack.length}</Badge>
+          )}
+        </Button>
         <div className="flex items-center gap-1 ml-auto">
           <button onClick={() => changeZoom(-0.1)} className="p-1 hover:bg-stone-200 text-stone-600">−</button>
           <span className="w-10 text-center text-xs text-stone-600">{Math.round(zoom * 100)}%</span>
@@ -551,18 +548,14 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
                         fontWeight: format.bold ? 'bold' : 'normal',
                         border: selected ? '2px solid #f59e0b' : '1px solid #d6d3d1'
                       }}
-                      className={`px-2 py-1 text-xs ${isBookingSheet ? 'cursor-default' : 'cursor-cell'} select-none`}
+                      className="px-2 py-1 text-xs cursor-cell select-none"
                       onClick={(e) => {
-                        if (!isBookingSheet) {
-                          handleCellClick(rowIdx, colIdx, e);
-                          setEditCell({ row: rowIdx, col: colIdx });
-                        }
+                        handleCellClick(rowIdx, colIdx, e);
+                        setEditCell({ row: rowIdx, col: colIdx });
                       }}
                       onContextMenu={(e) => {
                         e.preventDefault();
-                        if (!isBookingSheet) {
-                          setContextMenu({ x: e.clientX, y: e.clientY, type: 'cell', row: rowIdx, col: colIdx });
-                        }
+                        setContextMenu({ x: e.clientX, y: e.clientY, type: 'cell', row: rowIdx, col: colIdx });
                       }}
                     >
                       {isEditing ? (
@@ -595,26 +588,26 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
         <>
           <div className="fixed inset-0 z-40" onClick={() => setContextMenu(null)} />
           <div
-            className="fixed z-50 bg-white border border-stone-200 rounded-lg shadow-lg py-1 min-w-[150px]"
+            className="fixed z-50 bg-white border border-stone-200 rounded-lg shadow-lg py-0.5 min-w-[140px]"
             style={{ left: contextMenu.x, top: contextMenu.y }}
           >
             {contextMenu.type === 'col' && (
               <>
                 <button
                   onClick={() => insertCol(contextMenu.index)}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-stone-100"
+                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-stone-600 hover:bg-stone-100 transition-colors"
                 >
                   <Plus className="w-3 h-3" /> 新增左欄
                 </button>
                 <button
                   onClick={() => insertCol(contextMenu.index + 1)}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-stone-100"
+                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-stone-600 hover:bg-stone-100 transition-colors"
                 >
                   <Plus className="w-3 h-3" /> 新增右欄
                 </button>
                 <button
                   onClick={() => copyCol(contextMenu.index)}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-stone-100"
+                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-stone-600 hover:bg-stone-100 transition-colors"
                 >
                   <Copy className="w-3 h-3" /> 複製
                 </button>
@@ -624,14 +617,14 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
                     setNewColName(sheetData.col_names[contextMenu.index] || '');
                     setContextMenu(null);
                   }}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-stone-100"
+                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-stone-600 hover:bg-stone-100 transition-colors"
                 >
                   <Type className="w-3 h-3" /> 重新命名
                 </button>
                 {sheetData.col_count > 1 && (
                   <button
                     onClick={() => deleteCol(contextMenu.index)}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-xs text-red-600 hover:bg-red-50"
+                    className="w-full flex items-center gap-2 px-3 py-2 text-xs text-stone-600 hover:bg-red-50 transition-colors border-t border-stone-100"
                   >
                     <Trash2 className="w-3 h-3" /> 刪除
                   </button>
@@ -642,19 +635,19 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
               <>
                 <button
                   onClick={() => insertRow(contextMenu.index)}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-stone-100"
+                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-stone-600 hover:bg-stone-100 transition-colors"
                 >
                   <Plus className="w-3 h-3" /> 新增上方
                 </button>
                 <button
                   onClick={() => insertRow(contextMenu.index + 1)}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-stone-100"
+                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-stone-600 hover:bg-stone-100 transition-colors"
                 >
                   <Plus className="w-3 h-3" /> 新增下方
                 </button>
                 <button
                   onClick={() => copyRow(contextMenu.index)}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-stone-100"
+                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-stone-600 hover:bg-stone-100 transition-colors"
                 >
                   <Copy className="w-3 h-3" /> 複製
                 </button>
@@ -664,14 +657,14 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
                     setNewRowName(rowNames[contextMenu.index] || '');
                     setContextMenu(null);
                   }}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-stone-100"
+                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-stone-600 hover:bg-stone-100 transition-colors"
                 >
                   <Type className="w-3 h-3" /> 重新命名
                 </button>
                 {sheetData.row_count > 1 && (
                   <button
                     onClick={() => deleteRow(contextMenu.index)}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-xs text-red-600 hover:bg-red-50"
+                    className="w-full flex items-center gap-2 px-3 py-2 text-xs text-stone-600 hover:bg-red-50 transition-colors border-t border-stone-100"
                   >
                     <Trash2 className="w-3 h-3" /> 刪除
                   </button>
@@ -684,17 +677,16 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
                   setFormatDialog({ row: contextMenu.row, col: contextMenu.col });
                   setContextMenu(null);
                 }}
-                className="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-stone-100"
+                className="w-full flex items-center gap-2 px-3 py-2 text-xs text-stone-600 hover:bg-stone-100 transition-colors"
               >
-                設定格式
+                <Type className="w-3 h-3" /> 設定格式
               </button>
             )}
           </div>
         </>
       )}
 
-      {/* Rename column dialog - only for non-booking sheets */}
-      {!isBookingSheet && (
+      {/* Rename column dialog */}
       <Dialog open={renamingCol !== null} onOpenChange={() => setRenamingCol(null)}>
         <DialogContent>
           <DialogHeader>
@@ -715,10 +707,8 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      )}
 
-      {/* Rename row dialog - only for non-booking sheets */}
-      {!isBookingSheet && (
+      {/* Rename row dialog */}
       <Dialog open={renamingRow !== null} onOpenChange={() => setRenamingRow(null)}>
         <DialogContent>
           <DialogHeader>
@@ -739,10 +729,8 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      )}
 
-      {/* Cell format dialog - only for non-booking sheets */}
-      {!isBookingSheet && (
+      {/* Cell format dialog */}
       <Dialog open={!!formatDialog} onOpenChange={() => setFormatDialog(null)}>
         <DialogContent>
           <DialogHeader>
@@ -782,7 +770,6 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      )}
     </div>
   );
 }
