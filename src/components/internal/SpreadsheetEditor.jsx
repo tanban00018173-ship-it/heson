@@ -26,6 +26,8 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
   const [selectedRange, setSelectedRange] = useState(null); // { startRow, startCol, endRow, endCol }
   const [resizingCol, setResizingCol] = useState(null); // { colIdx, startX, startWidth }
   const [resizingRow, setResizingRow] = useState(null); // { rowIdx, startY, startHeight }
+  const [selectedCol, setSelectedCol] = useState(null); // Currently selected column index
+  const [selectedRow, setSelectedRow] = useState(null); // Currently selected row index
   const tableRef = useRef(null);
 
   const BOOKING_COLUMNS = [
@@ -493,15 +495,24 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
             <tr className="bg-stone-50">
               <th className="w-9 h-8 bg-stone-100 border border-stone-200 text-xs text-stone-600 text-center font-medium"></th>
               {sheetData.col_names.map((name, colIdx) => (
-                <th
-                  key={colIdx}
-                  style={{ width: sheetData.col_widths[colIdx] }}
-                  className="h-8 bg-stone-50 border border-stone-200 px-2 text-xs font-semibold text-stone-700 cursor-pointer hover:bg-stone-100 relative group select-none"
-                  onClick={(e) => {
-                    const rect = e.currentTarget.getBoundingClientRect();
-                    setContextMenu({ x: rect.left, y: rect.bottom + 4, type: 'col', index: colIdx });
-                  }}
-                >
+               <th
+                 key={colIdx}
+                 style={{ width: sheetData.col_widths[colIdx] }}
+                 className={`h-8 bg-stone-50 border border-stone-200 px-2 text-xs font-semibold cursor-pointer hover:bg-stone-100 relative group select-none ${selectedCol === colIdx ? 'bg-yellow-100 border-yellow-400' : 'text-stone-700'}`}
+                 onClick={(e) => {
+                   e.stopPropagation();
+                   if (selectedCol === colIdx) {
+                     // Second click: show context menu
+                     const rect = e.currentTarget.getBoundingClientRect();
+                     setContextMenu({ x: rect.left, y: rect.bottom + 4, type: 'col', index: colIdx });
+                   } else {
+                     // First click: select column
+                     setSelectedCol(colIdx);
+                     setSelectedRow(null);
+                     setContextMenu(null);
+                   }
+                 }}
+               >
                   <div className="flex items-center justify-between h-full">
                     <span className="truncate">{String.fromCharCode(65 + colIdx)}</span>
                     <ChevronDown className="w-3 h-3 text-stone-400 opacity-0 group-hover:opacity-100 flex-shrink-0" />
@@ -519,10 +530,19 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
             {filteredData.map((row, rowIdx) => (
               <tr key={rowIdx} className="hover:bg-blue-50">
                 <td
-                  className="w-9 bg-stone-50 border border-stone-200 text-xs text-stone-600 text-center font-medium cursor-pointer hover:bg-stone-100 relative group select-none"
+                  className={`w-9 bg-stone-50 border border-stone-200 text-xs text-stone-600 text-center font-medium cursor-pointer hover:bg-stone-100 relative group select-none ${selectedRow === rowIdx ? 'bg-yellow-100 border-yellow-400' : ''}`}
                   onClick={(e) => {
-                    const rect = e.currentTarget.getBoundingClientRect();
-                    setContextMenu({ x: rect.left, y: rect.bottom + 4, type: 'row', index: rowIdx });
+                    e.stopPropagation();
+                    if (selectedRow === rowIdx) {
+                      // Second click: show context menu
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      setContextMenu({ x: rect.left, y: rect.bottom + 4, type: 'row', index: rowIdx });
+                    } else {
+                      // First click: select row
+                      setSelectedRow(rowIdx);
+                      setSelectedCol(null);
+                      setContextMenu(null);
+                    }
                   }}
                   title={rowNames[rowIdx] ? `${rowIdx + 1} - ${rowNames[rowIdx]}` : `第 ${rowIdx + 1} 列`}
                   style={{ height: sheetData.row_heights[rowIdx] }}
@@ -589,7 +609,11 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
       {/* Context menus */}
       {contextMenu && (
         <>
-          <div className="fixed inset-0 z-40" onClick={() => setContextMenu(null)} />
+          <div className="fixed inset-0 z-40" onClick={() => {
+            setContextMenu(null);
+            setSelectedCol(null);
+            setSelectedRow(null);
+          }} />
           <div
             className="fixed z-50 bg-white border border-stone-200 rounded-lg shadow-lg py-0.5 min-w-[140px]"
             style={{ left: contextMenu.x, top: contextMenu.y }}
