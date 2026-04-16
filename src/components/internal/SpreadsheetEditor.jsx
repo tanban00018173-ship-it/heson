@@ -236,11 +236,35 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
     setPendingEdit({ row, col, newValue: value, oldValue });
   };
 
-  const confirmCellChange = () => {
+  const confirmCellChange = async () => {
     if (!pendingEdit || !sheetData) return;
-    const newData = sheetData.data.map(r => [...r]);
-    newData[pendingEdit.row][pendingEdit.col] = pendingEdit.newValue;
-    updateMutation.mutate({ data: newData });
+    
+    try {
+      if (isBookingSheet) {
+        // Update Booking entity directly
+        const bookingIndex = filteredData.indexOf(filteredData[pendingEdit.row]);
+        if (bookingIndex >= 0 && bookings[bookingIndex]) {
+          const booking = bookings.find(b => b === filteredData[pendingEdit.row]);
+          if (!booking) return;
+          
+          const fieldKey = BOOKING_COLUMNS[pendingEdit.col]?.key;
+          if (!fieldKey) return;
+          
+          await base44.entities.Booking.update(booking.id, {
+            [fieldKey]: pendingEdit.newValue
+          });
+          await refetch();
+        }
+      } else {
+        // Update CustomSheet data
+        const newData = sheetData.data.map(r => [...r]);
+        newData[pendingEdit.row][pendingEdit.col] = pendingEdit.newValue;
+        updateMutation.mutate({ data: newData });
+      }
+    } catch (err) {
+      console.error('Failed to update:', err);
+    }
+    
     setEditCell(null);
     setPendingEdit(null);
   };
