@@ -28,48 +28,27 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
   const [resizingRow, setResizingRow] = useState(null); // { rowIdx, startY, startHeight }
   const tableRef = useRef(null);
 
-  const BOOKING_COLUMNS = [
-    { key: 'client_name', label: '客戶姓名' },
-    { key: 'service_type', label: '服務類型' },
-    { key: 'scheduled_date', label: '預約日期' },
-    { key: 'time_slot', label: '時段' },
-    { key: 'status', label: '狀態' },
-    { key: 'address', label: '地址' },
-    { key: 'cleaner_name', label: '指派管理師' },
-    { key: 'notes', label: '備註' },
-    { key: 'created_date', label: '建立時間' },
-  ];
-
-  const convertBookingsToData = (bookingsList) => {
-    const data = [BOOKING_COLUMNS.map(c => c.label)];
-    bookingsList.forEach(b => {
-      const row = BOOKING_COLUMNS.map(col => {
-        if (col.key === 'created_date' && b[col.key]) {
-          return new Date(b[col.key]).toLocaleDateString('zh-TW');
-        }
-        return b[col.key] ?? '';
-      });
-      data.push(row);
-    });
-    return data;
+  const initializeBookingSheet = () => {
+    // Initialize 20 rows x 10 columns for booking sheet
+    const data = Array(20).fill(null).map(() => Array(10).fill(''));
+    return {
+      id: 'booking',
+      spreadsheet_id: 'booking',
+      data,
+      row_count: 20,
+      col_count: 10,
+      col_widths: Array(10).fill(120),
+      row_heights: Array(20).fill(30),
+      cell_formats: {},
+      col_names: Array(10).fill(null).map((_, i) => String.fromCharCode(65 + i))
+    };
   };
 
   const { data: sheetData, isLoading, refetch } = useQuery({
     queryKey: ['customSheet', spreadsheetId],
     queryFn: async () => {
       if (isBookingSheet) {
-        const data = convertBookingsToData(bookings);
-        return {
-          id: 'booking',
-          spreadsheet_id: spreadsheetId,
-          data,
-          row_count: data.length,
-          col_count: BOOKING_COLUMNS.length,
-          col_widths: Array(BOOKING_COLUMNS.length).fill(120),
-          row_heights: Array(data.length).fill(30),
-          cell_formats: {},
-          col_names: BOOKING_COLUMNS.map(c => c.label)
-        };
+        return initializeBookingSheet();
       }
 
       const sheets = await base44.entities.CustomSheet.filter({ spreadsheet_id: spreadsheetId });
@@ -442,29 +421,13 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
     return <div className="flex items-center justify-center h-40">載入中...</div>;
   }
 
-  const filteredData = isBookingSheet ? sheetData.data.filter((row, idx) => {
-    if (idx === 0 || !searchTerm) return true;
-    const q = searchTerm.toLowerCase();
-    return row.some(cell => String(cell).toLowerCase().includes(q));
-  }) : sheetData.data;
+
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
-      {/* Info bar with search, undo, and zoom */}
+      {/* Info bar with undo and zoom */}
       <div className="px-4 py-2 bg-stone-50 border-b border-stone-200 flex items-center justify-between text-xs text-stone-600 gap-3">
         <span>{spreadsheetName} · {sheetData.row_count} 行 × {sheetData.col_count} 列</span>
-        {isBookingSheet && (
-          <>
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="搜尋..."
-              className="px-2 py-1 text-xs border border-stone-300 rounded"
-            />
-            {searchTerm && <span className="text-stone-500">找到 {filteredData.length - 1} 筆</span>}
-          </>
-        )}
         <Button
           variant="outline"
           size="sm"
@@ -498,44 +461,52 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
                   style={{ width: sheetData.col_widths[colIdx] }}
                   className="h-7 bg-stone-100 border border-stone-300 px-2 text-xs font-medium text-stone-700 cursor-pointer hover:bg-stone-200 relative group select-none"
                   onClick={(e) => {
-                    const rect = e.currentTarget.getBoundingClientRect();
-                    setContextMenu({ x: rect.left, y: rect.bottom + 4, type: 'col', index: colIdx });
+                    if (!isBookingSheet) {
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      setContextMenu({ x: rect.left, y: rect.bottom + 4, type: 'col', index: colIdx });
+                    }
                   }}
                 >
                   <div className="truncate">{name || `Col ${colIdx + 1}`}</div>
-                  <div className="text-[8px] text-stone-500 absolute top-1 right-1">▼</div>
-                  <div
-                    className="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-amber-400 opacity-0 hover:opacity-100 transition-opacity"
-                    onMouseDown={(e) => handleColResizeStart(e, colIdx)}
-                    style={{ right: '-2px' }}
-                  />
+                  {!isBookingSheet && <div className="text-[8px] text-stone-500 absolute top-1 right-1">▼</div>}
+                  {!isBookingSheet && (
+                    <div
+                      className="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-amber-400 opacity-0 hover:opacity-100 transition-opacity"
+                      onMouseDown={(e) => handleColResizeStart(e, colIdx)}
+                      style={{ right: '-2px' }}
+                    />
+                  )}
                 </th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {filteredData.map((row, rowIdx) => (
+            {sheetData.data.map((row, rowIdx) => (
               <tr key={rowIdx}>
                 <td
                   className="w-8 bg-stone-100 border border-stone-300 text-xs text-stone-500 text-center cursor-pointer hover:bg-stone-200 font-medium relative select-none"
                   onClick={(e) => {
-                    const rect = e.currentTarget.getBoundingClientRect();
-                    setContextMenu({ x: rect.left, y: rect.bottom + 4, type: 'row', index: rowIdx });
+                    if (!isBookingSheet) {
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      setContextMenu({ x: rect.left, y: rect.bottom + 4, type: 'row', index: rowIdx });
+                    }
                   }}
                   title={rowNames[rowIdx] ? `${rowIdx + 1} - ${rowNames[rowIdx]}` : `第 ${rowIdx + 1} 列`}
                   style={{ height: sheetData.row_heights[rowIdx] }}
                 >
-                  <div className="truncate">{rowNames[rowIdx] ? `${rowIdx + 1}*` : rowIdx + 1}</div>
-                  <div className="text-[8px] absolute top-0.5 right-0.5 text-stone-500">▼</div>
-                  <div
-                    className="absolute bottom-0 left-0 w-full h-1 cursor-row-resize hover:bg-amber-400 opacity-0 hover:opacity-100 transition-opacity"
-                    onMouseDown={(e) => handleRowResizeStart(e, rowIdx)}
-                    style={{ bottom: '-2px' }}
-                  />
+                  <div className="truncate">{rowIdx + 1}</div>
+                  {!isBookingSheet && <div className="text-[8px] absolute top-0.5 right-0.5 text-stone-500">▼</div>}
+                  {!isBookingSheet && (
+                    <div
+                      className="absolute bottom-0 left-0 w-full h-1 cursor-row-resize hover:bg-amber-400 opacity-0 hover:opacity-100 transition-opacity"
+                      onMouseDown={(e) => handleRowResizeStart(e, rowIdx)}
+                      style={{ bottom: '-2px' }}
+                    />
+                  )}
                 </td>
                 {row.map((cell, colIdx) => {
                   const format = sheetData.cell_formats?.[`${rowIdx}_${colIdx}`] || {};
-                  const isEditing = !isBookingSheet && editCell?.row === rowIdx && editCell?.col === colIdx;
+                  const isEditing = editCell?.row === rowIdx && editCell?.col === colIdx;
                   const selected = isSelected(rowIdx, colIdx);
                   return (
                     <td
@@ -583,7 +554,7 @@ export default function SpreadsheetEditor({ spreadsheetId, spreadsheetName, isBo
         </table>
       </div>
 
-      {/* Context menus - only for non-booking sheets */}
+      {/* Context menus */}
       {contextMenu && !isBookingSheet && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setContextMenu(null)} />
