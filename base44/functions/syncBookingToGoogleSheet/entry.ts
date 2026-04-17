@@ -1,7 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
 const SPREADSHEET_ID = '1AgmwQLTTtslxU8Fn5GNdF9IjDAf4ih7ea5zmCUbuWWs';
-const SHEET_NAME = '訂單資料';
+const SHEET_NAME = 'H／民宿案件';
 
 function mapBookingToSheetRow(booking, index) {
   return [
