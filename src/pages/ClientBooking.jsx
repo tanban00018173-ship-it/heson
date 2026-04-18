@@ -61,6 +61,35 @@ export default function ClientBooking() {
     };
 
     await base44.entities.Booking.create(bookingData);
+
+    // 送出到 Google Apps Script webhook（寫入 Google Sheet + LINE 通知）
+    try {
+      await fetch('https://script.google.com/macros/s/AKfycbzhKriJPOoQsSmr-TGOiVv-y9e97QFqydw4fd5_9-77MnlOsh10f0JO9DrgvhX2nOc/exec', {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({
+          "姓名": user?.full_name || '',
+          "聯絡電話": profile?.phone || '',
+          "電子郵件": user?.email || '',
+          "需要服務地址": profile?.address || '',
+          "服務地區": '',
+          "空間型態": profile?.housing_type || '',
+          "需求清潔坪數": profile?.square_footage?.toString() || '',
+          "是否有寵物": profile?.has_pets ? '是' : '',
+          "想要的時長": profile?.subscription_plan || bookingData.service_type || '',
+          "您想申請的服務類型": profile?.subscription_plan || '單次清潔',
+          "特殊需求": formData.notes || '',
+          "預計開始日期": format(date, 'yyyy-MM-dd'),
+          "偏好時段": formData.time_slot || '',
+          "偏好的星期": '',
+          "同意條款": "是",
+          "得知來源": ''
+        })
+      });
+    } catch (webhookErr) {
+      console.warn('Webhook 呼叫失敗，不影響預約:', webhookErr);
+    }
+
     await base44.integrations.Core.SendEmail({
       to: "larry87tw@gmail.com",
       subject: `新預約通知 - ${user?.full_name}`,

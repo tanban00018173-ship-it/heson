@@ -246,6 +246,34 @@ export default function BookingForm() {
       };
 
       const booking = await base44.entities.Booking.create(bookingData);
+
+      // 送出到 Google Apps Script webhook（寫入 Google Sheet + LINE 通知）
+      try {
+        await fetch('https://script.google.com/macros/s/AKfycbzhKriJPOoQsSmr-TGOiVv-y9e97QFqydw4fd5_9-77MnlOsh10f0JO9DrgvhX2nOc/exec', {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain' },
+          body: JSON.stringify({
+            "姓名": formData.name || '',
+            "聯絡電話": formData.phone || '',
+            "電子郵件": user?.email || '',
+            "需要服務地址": formData.address || '',
+            "服務地區": '',
+            "空間型態": formData.housing_type || '',
+            "需求清潔坪數": formData.square_footage || '',
+            "是否有寵物": '',
+            "想要的時長": formData.service_type || '',
+            "您想申請的服務類型": selectedCategory.label || '',
+            "特殊需求": formData.notes || '',
+            "預計開始日期": format(date, 'yyyy-MM-dd'),
+            "偏好時段": formData.time_slot || '',
+            "偏好的星期": '',
+            "同意條款": "是",
+            "得知來源": ''
+          })
+        });
+      } catch (webhookErr) {
+        console.warn('Webhook 呼叫失敗，不影響預約:', webhookErr);
+      }
       
       // 發送通知給管理員
       await base44.integrations.Core.SendEmail({
