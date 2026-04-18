@@ -27,10 +27,24 @@ export default function PaymentRedirect() {
         });
 
         const { formHtml } = res.data;
-        // 直接寫入完整 HTML，自動提交表單
-        document.open();
-        document.write(formHtml);
-        document.close();
+        // 用 DOMParser 解析，抽出 form action + inputs，不用 document.write
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(formHtml, 'text/html');
+        const sourceForm = doc.querySelector('form');
+        if (!sourceForm) throw new Error('找不到付款表單');
+
+        const form = document.createElement('form');
+        form.method = sourceForm.method || 'POST';
+        form.action = sourceForm.action;
+        sourceForm.querySelectorAll('input').forEach(input => {
+          const hidden = document.createElement('input');
+          hidden.type = 'hidden';
+          hidden.name = input.name;
+          hidden.value = input.value;
+          form.appendChild(hidden);
+        });
+        document.body.appendChild(form);
+        form.submit();
       } catch (err) {
         setError(err.message || '付款初始化失敗，請稍後重試');
       }

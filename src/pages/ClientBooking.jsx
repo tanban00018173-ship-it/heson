@@ -12,6 +12,20 @@ import { CalendarIcon, Check, Loader2, MapPin } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 
+const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL || 'service@heson.tw';
+
+const REGION_PATTERNS = [
+  '台北', '新北', '桃園', '新竹', '苗栗', '台中', '彰化', '南投',
+  '雲林', '嘉義', '台南', '高雄', '屏東', '宜蘭', '花蓮', '台東', '基隆', '澎湖', '金門'
+];
+
+function inferRegion(address) {
+  if (!address) return '';
+  for (const region of REGION_PATTERNS) {
+    if (address.includes(region)) return region;
+  }
+  return '';
+}
 const timeSlots = [
   { value: "上午 08:00-12:00", label: "上午", sub: "08:00 – 12:00" },
   { value: "下午 13:00-17:00", label: "下午", sub: "13:00 – 17:00" },
@@ -49,56 +63,68 @@ export default function ClientBooking() {
     if (!date || !formData.time_slot) { toast.error("請選擇日期與時段"); return; }
     setIsSubmitting(true);
 
-    const bookingData = {
-      client_id: user?.id,
-      client_name: user?.full_name,
-      service_type: profile?.subscription_plan || '單次清潔',
-      status: '待確認',
-      scheduled_date: format(date, 'yyyy-MM-dd'),
-      time_slot: formData.time_slot,
-      address: profile?.address || '',
-      notes: formData.notes,
-    };
-
-    await base44.entities.Booking.create(bookingData);
-
-    // 送出到 Google Apps Script webhook（寫入 Google Sheet + LINE 通知）
     try {
-      await fetch('https://script.google.com/macros/s/AKfycbzhKriJPOoQsSmr-TGOiVv-y9e97QFqydw4fd5_9-77MnlOsh10f0JO9DrgvhX2nOc/exec', {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify({
-          "姓名": user?.full_name || '',
-          "聯絡電話": profile?.phone || '',
-          "電子郵件": user?.email || '',
-          "需要服務地址": profile?.address || '',
-          "服務地區": '',
-          "空間型態": profile?.housing_type || '',
-          "需求清潔坪數": profile?.square_footage?.toString() || '',
-          "是否有寵物": profile?.has_pets ? '是' : '',
-          "想要的時長": profile?.subscription_plan || bookingData.service_type || '',
-          "您想申請的服務類型": profile?.subscription_plan || '單次清潔',
-          "特殊需求": formData.notes || '',
-          "預計開始日期": format(date, 'yyyy-MM-dd'),
-          "偏好時段": formData.time_slot || '',
-          "偏好的星期": '',
-          "同意條款": "是",
-          "得知來源": ''
-        })
-      });
-    } catch (webhookErr) {
-      console.warn('Webhook 呼叫失敗，不影響預約:', webhookErr);
+      const bookingData = {
+        client_id: user?.id,
+        client_name: user?.full_name,
+        service_type: profile?.subscription_plan || '單次清潔',
+        status: '待確認',
+        scheduled_date: format(date, 'yyyy-MM-dd'),
+        time_slot: formData.time_slot,
+        address: profile?.address || '',
+        notes: formData.notes,
+      };
+
+      const booking = await base44.entities.Booking.create(bookingData);
+
+      // 送出到 Google Apps Script webhook（寫入 Google Sheet + LINE 通知）
+      try {
+        await fetch('https://script.google.com/macros/s/AKfycbzhKriJPOoQsSmr-TGOiVv-y9e97QFqydw4fd5_9-77MnlOsh10f0JO9DrgvhX2nOc/exec', {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain' },
+          body: JSON.stringify({
+            "_secret": "heson-secret-2026",
+            "內部編號": booking.id,
+            "姓名": user?.full_name || '',
+            "聯絡電話": profile?.phone || '',
+            "電子郵件": user?.email || '',
+            "需要服務地址": profile?.address || '',
+            "服務地區": inferRegion(profile?.address),
+            "空間型態": profile?.housing_type || '',
+            "需求清潔坪數": profile?.square_footage?.toString() || '',
+            "是否有寵物": profile?.has_pets ? '有' : '沒有',
+            "想要的時長": profile?.subscription_plan || bookingData.service_type || '',
+            "您想申請的服務類型": profile?.subscription_plan || '單次清潔',
+            "特殊需求": formData.notes || '',
+            "預計開始日期": format(date, 'yyyy-MM-dd'),
+            "偏好時段": formData.time_slot || '',
+            "偏好的星期": '',
+            "同意條款": "是",
+            "得知來源": ''
+          })
+        });
+      } catch (webhookErr) {
+        console.warn('Webhook 呼叫失敗，不影響預約:', webhookErr);
+      }
+
+      // 發送通知（失敗不影響預約）
+      try {
+        await base44.integrations.Core.SendEmail({
+          to: ADMIN_EMAIL,
+          subject: `新預約通知 - ${user?.full_name}`,
+          body: `新的預約已建立：\n\n客戶姓名：${user?.full_name}\n預約日期：${format(date, 'yyyy-MM-dd')}\n時段：${formData.time_slot}\n服務地址：${profile?.address || ''}\n服務類型：${profile?.subscription_plan || '單次清潔'}\n備註：${formData.notes || '無'}`,
+        });
+      } catch (emailErr) {
+        console.warn('Email 通知失敗，不影響預約:', emailErr);
+      }
+
+      setIsSuccess(true);
+      toast.success("預約成功！");
+    } catch (err) {
+      toast.error('預約建立失敗，請稍後重試');
+    } finally {
+      setIsSubmitting(false);
     }
-
-    await base44.integrations.Core.SendEmail({
-      to: "larry87tw@gmail.com",
-      subject: `新預約通知 - ${user?.full_name}`,
-      body: `新的預約已建立：\n\n客戶姓名：${user?.full_name}\n預約日期：${format(date, 'yyyy-MM-dd')}\n時段：${formData.time_slot}\n服務地址：${profile?.address || ''}\n服務類型：${profile?.subscription_plan || '單次清潔'}\n備註：${formData.notes || '無'}`,
-    });
-
-    setIsSubmitting(false);
-    setIsSuccess(true);
-    toast.success("預約成功！");
   };
 
   if (!user) {

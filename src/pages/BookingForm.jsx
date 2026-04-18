@@ -16,10 +16,29 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format } from "date-fns";
 import { zhTW } from "date-fns/locale";
-import { CalendarIcon, Check, Loader2, Sparkles, AlertCircle, Phone, MapPin } from "lucide-react";
+import { CalendarIcon, Check, Loader2, Sparkles, AlertCircle, Phone, MapPin, PawPrint } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
+
+const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL || 'service@heson.tw';
+
+const REGION_PATTERNS = [
+  '台北', '新北', '桃園', '新竹', '苗栗', '台中', '彰化', '南投',
+  '雲林', '嘉義', '台南', '高雄', '屏東', '宜蘭', '花蓮', '台東', '基隆', '澎湖', '金門'
+];
+
+function inferRegion(address) {
+  if (!address) return '';
+  for (const region of REGION_PATTERNS) {
+    if (address.includes(region)) return region;
+  }
+  return '';
+}
+
+const REFERRAL_OPTIONS = ['Facebook', 'Instagram', 'Threads', '朋友推薦', 'LINE', 'Google 搜尋', '其他'];
+
+const WEEKDAYS = ['週一', '週二', '週三', '週四', '週五', '週六', '週日'];
 
 const serviceCategories = [
   {
@@ -103,6 +122,9 @@ export default function BookingForm() {
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [showLinePrompt, setShowLinePrompt] = useState(false);
   const [policyAgreed, setPolicyAgreed] = useState(false);
+  const [hasPet, setHasPet] = useState('');
+  const [referralSource, setReferralSource] = useState('');
+  const [preferredWeekdays, setPreferredWeekdays] = useState([]);
   const { data: cleaners = [] } = useQuery({
     queryKey: ['activeCleaners'],
     queryFn: () => base44.entities.CleanerProfile.filter({ is_active: true }),
@@ -218,6 +240,9 @@ export default function BookingForm() {
 
     setIsSubmitting(true);
 
+    let bookingCreated = false;
+    let booking = null;
+
     try {
       let notesArr = [`【${selectedCategory.label}】`];
       if (formData.housing_type) notesArr.push(`房型: ${formData.housing_type}`);
@@ -243,9 +268,11 @@ export default function BookingForm() {
         time_slot: formData.time_slot,
         address: formData.address,
         notes: notesArr.join(' | '),
+        cleaner_id: (formData.preferred_cleaner && formData.preferred_cleaner !== '__none__') ? formData.preferred_cleaner : undefined,
       };
 
-      const booking = await base44.entities.Booking.create(bookingData);
+      booking = await base44.entities.Booking.create(bookingData);
+      bookingCreated = true;
 
       // 送出到 Google Apps Script webhook（寫入 Google Sheet + LINE 通知）
       try {
@@ -253,91 +280,57 @@ export default function BookingForm() {
           method: 'POST',
           headers: { 'Content-Type': 'text/plain' },
           body: JSON.stringify({
+            "_secret": "heson-secret-2026",
+            "內部編號": booking.id,
             "姓名": formData.name || '',
             "聯絡電話": formData.phone || '',
             "電子郵件": user?.email || '',
             "需要服務地址": formData.address || '',
-            "服務地區": '',
+            "服務地區": inferRegion(formData.address),
             "空間型態": formData.housing_type || '',
             "需求清潔坪數": formData.square_footage || '',
-            "是否有寵物": '',
+            "是否有寵物": hasPet,
             "想要的時長": formData.service_type || '',
             "您想申請的服務類型": selectedCategory.label || '',
             "特殊需求": formData.notes || '',
             "預計開始日期": format(date, 'yyyy-MM-dd'),
             "偏好時段": formData.time_slot || '',
-            "偏好的星期": '',
+            "偏好的星期": preferredWeekdays.join(', '),
             "同意條款": "是",
-            "得知來源": ''
+            "得知來源": referralSource
           })
         });
       } catch (webhookErr) {
         console.warn('Webhook 呼叫失敗，不影響預約:', webhookErr);
       }
-      
-      // 發送通知給管理員
-      await base44.integrations.Core.SendEmail({
-        to: "larry87tw@gmail.com",
-        subject: `新預約通知 - ${formData.name}`,
-        body: `新的預約已建立：\n\n客戶姓名：${formData.name}\n聯絡電話：${formData.phone}\n服務地址：${formData.address}\n服務類型：${selectedCategory.label}\n預約日期：${format(date, 'yyyy-MM-dd')}\n時段：${formData.time_slot}\n\n${notesArr.slice(1).join('\n')}`
-      });
+
+      // 發送通知給管理員（失敗不影響預約流程）
+      try {
+        await base44.integrations.Core.SendEmail({
+          to: ADMIN_EMAIL,
+          subject: `新預約通知 - ${formData.name}`,
+          body: `新的預約已建立：\n\n客戶姓名：${formData.name}\n聯絡電話：${formData.phone}\n服務地址：${formData.address}\n服務類型：${selectedCategory.label}\n預約日期：${format(date, 'yyyy-MM-dd')}\n時段：${formData.time_slot}\n\n${notesArr.slice(1).join('\n')}`
+        });
+      } catch (emailErr) {
+        console.warn('Email 通知失敗，不影響預約:', emailErr);
+      }
 
       setIsSubmitting(false);
 
-      // 如果是赫頌直營，跳轉到LINE提示頁面
       if (selectedPlan?.plan_type === 'heson_direct') {
-        setShowLinePrompt(true);
         window.location.href = `/PaymentRedirect?booking_id=${booking.id}&amount=${getAmount()}&item_name=${encodeURIComponent(`HESON ${selectedPlan.name}`)}&plan_type=heson_direct`;
       } else {
         window.location.href = `/PaymentRedirect?booking_id=${booking.id}&amount=${getAmount()}&item_name=${encodeURIComponent(`HESON ${selectedCategory.label}`)}`;
       }
     } catch (error) {
       setIsSubmitting(false);
-      toast.error('預約建立失敗，請稍後重試');
+      if (bookingCreated) {
+        toast.error('預約已建立，但通知發送失敗。請截圖聯繫客服確認。');
+      } else {
+        toast.error('預約建立失敗，請稍後重試');
+      }
     }
   };
-
-  if (isSuccess) {
-    return (
-      <div className="min-h-screen">
-        <Navbar />
-        <section className="pt-32 pb-20 min-h-[80vh] flex items-center bg-gradient-to-br from-stone-50 via-amber-50/30 to-stone-100">
-          <div className="container mx-auto px-6 lg:px-12">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="max-w-lg mx-auto text-center"
-            >
-              <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                <Check className="w-10 h-10 text-green-600" />
-              </div>
-              <h1 className="text-3xl font-medium text-stone-800 mb-4">
-                預約成功！
-              </h1>
-              <p className="text-stone-600 mb-4">
-                感謝您的預約，我們的客服人員將於 24 小時內與您聯繫確認服務細節。
-              </p>
-              <div className="flex justify-center mb-6">
-                <CalendarExportButton booking={{
-                  scheduled_date: date ? format(date, 'yyyy-MM-dd') : '',
-                  time_slot: formData.time_slot,
-                  service_type: selectedCategory.label,
-                  address: formData.address,
-                }} />
-              </div>
-              <Button 
-                onClick={() => setIsSuccess(false)}
-                className="bg-stone-800 hover:bg-stone-900 text-white rounded-full px-8"
-              >
-                再次預約
-              </Button>
-            </motion.div>
-          </div>
-        </section>
-        <Footer />
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen">
@@ -701,7 +694,7 @@ export default function BookingForm() {
                             mode="single"
                             selected={date}
                             onSelect={setDate}
-                            disabled={(date) => date < new Date()}
+                            disabled={(date) => date < new Date(Date.now() + 48 * 60 * 60 * 1000)}
                             initialFocus
                           />
                         </PopoverContent>
@@ -738,9 +731,60 @@ export default function BookingForm() {
                         <SelectValue placeholder="不指定（由我們安排最適合的清潔師）" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value={null}>不指定（由我們安排）</SelectItem>
+                        <SelectItem value="__none__">不指定（由我們安排）</SelectItem>
                         {cleaners.map(c => (
                           <SelectItem key={c.id} value={c.nickname}>{c.nickname}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* 是否有寵物 */}
+                  <div className="space-y-2">
+                    <Label>家中是否有寵物？</Label>
+                    <div className="flex gap-3">
+                      {['有', '沒有'].map(v => (
+                        <button
+                          key={v}
+                          type="button"
+                          onClick={() => setHasPet(v)}
+                          className={`flex-1 py-2.5 rounded-xl border-2 text-sm font-medium transition-all ${hasPet === v ? 'border-amber-500 bg-amber-50 text-amber-700' : 'border-stone-200 text-stone-600 hover:border-stone-300'}`}
+                        >
+                          {v}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* 偏好的星期（僅定期方案顯示） */}
+                  {['基礎月護-4次', '進階月安-8次', '尊榮月恆-12次'].includes(formData.service_type) && (
+                    <div className="space-y-2">
+                      <Label>偏好的服務星期（可複選）</Label>
+                      <div className="flex flex-wrap gap-2">
+                        {WEEKDAYS.map(day => (
+                          <button
+                            key={day}
+                            type="button"
+                            onClick={() => setPreferredWeekdays(prev =>
+                              prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day]
+                            )}
+                            className={`px-3 py-1.5 rounded-lg border-2 text-sm transition-all ${preferredWeekdays.includes(day) ? 'border-amber-500 bg-amber-50 text-amber-700' : 'border-stone-200 text-stone-600 hover:border-stone-300'}`}
+                          >
+                            {day}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 得知來源 */}
+                  <div className="space-y-2">
+                    <Label>您是從哪裡得知赫頌？</Label>
+                    <Select value={referralSource} onValueChange={setReferralSource}>
+                      <SelectTrigger className="rounded-xl"><SelectValue placeholder="請選擇（選填）" /></SelectTrigger>
+                      <SelectContent>
+                        {REFERRAL_OPTIONS.map(opt => (
+                          <SelectItem key={opt} value={opt}>{opt}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
