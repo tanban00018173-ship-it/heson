@@ -34,36 +34,37 @@ export default function OrderQuery() {
       toast.error('請輸入手機號碼');
       return;
     }
+
+    // 正規化電話：去掉空格和 dash
+    const normalized = trimmed.replace(/[\s-]/g, '');
+    if (!/^09\d{8}$/.test(normalized)) {
+      toast.error('請輸入正確的 10 碼手機號碼（09 開頭）');
+      return;
+    }
+
     setLoading(true);
     setSearched(false);
 
-    // Fetch all bookings where notes contains the phone, or client_name matches
-    // We search by cross-referencing ClientProfile phone
-    const profiles = await base44.entities.ClientProfile.filter({ phone: trimmed });
-    
-    let results = [];
-    if (profiles.length > 0) {
-      // Find bookings for these user_ids
-      for (const profile of profiles) {
-        if (profile.user_id) {
-          const userBookings = await base44.entities.Booking.filter({ client_id: profile.user_id });
-          results = results.concat(userBookings);
-        }
+    // 1. 用 phone 欄位精確查詢（避免把所有訂單載到 client）
+    const phoneBookings = await base44.entities.Booking.filter({ phone: normalized });
+
+    // 2. 透過 ClientProfile 查同一用戶的所有預約
+    const profiles = await base44.entities.ClientProfile.filter({ phone: normalized });
+    let profileBookings = [];
+    for (const profile of profiles) {
+      if (profile.user_id) {
+        const ub = await base44.entities.Booking.filter({ client_id: profile.user_id });
+        profileBookings = profileBookings.concat(ub);
       }
     }
 
-    // Also search by phone in notes field (guest bookings store phone in notes)
-    const noteBookings = await base44.entities.Booking.list('-created_date', 200);
-    const noteMatches = noteBookings.filter(b =>
-      b.notes && b.notes.includes(trimmed)
-    );
-    // Merge, deduplicate by id
-    const allIds = new Set(results.map(b => b.id));
-    for (const b of noteMatches) {
-      if (!allIds.has(b.id)) results.push(b);
+    // 合併去重
+    const seen = new Set();
+    const results = [];
+    for (const b of [...phoneBookings, ...profileBookings]) {
+      if (!seen.has(b.id)) { seen.add(b.id); results.push(b); }
     }
 
-    // Sort by scheduled_date desc
     results.sort((a, b) => new Date(b.scheduled_date) - new Date(a.scheduled_date));
     setBookings(results);
     setSearched(true);

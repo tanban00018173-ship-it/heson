@@ -13,7 +13,7 @@ const QUICK_QUESTIONS = [
   '服務區域有哪些？',
 ];
 
-const SERVICE_TYPES = ['單次清潔', '基礎月護-4次', '進階月安-8次', '尊寵月怡-12次'];
+const SERVICE_TYPES = ['單次清潔', '基礎月護-4次', '進階月安-8次', '尊榮月恆-12次'];
 const TIME_SLOTS = ['上午 08:00-12:00', '下午 13:00-17:00', '晚間 18:00-21:00'];
 
 const TAIWAN_CITIES = [
@@ -23,7 +23,24 @@ const TAIWAN_CITIES = [
   '台東縣', '澎湖縣', '金門縣', '連江縣',
 ];
 
-const BOOKING_STEPS = ['service', 'city', 'road', 'date', 'time', 'name', 'phone', 'confirm'];
+const BOOKING_STEPS = ['service', 'city', 'road', 'date', 'time', 'name', 'phone', 'pets', 'referral', 'confirm'];
+
+const REFERRAL_OPTIONS = ['Facebook', 'Instagram', 'Threads', '朋友推薦', 'LINE', 'Google 搜尋'];
+
+const REGION_PATTERNS = [
+  '台北', '新北', '桃園', '新竹', '苗栗', '台中', '彰化', '南投',
+  '雲林', '嘉義', '台南', '高雄', '屏東', '宜蘭', '花蓮', '台東', '基隆', '澎湖', '金門'
+];
+
+function inferRegion(address) {
+  if (!address) return '';
+  for (const region of REGION_PATTERNS) {
+    if (address.includes(region)) return region;
+  }
+  return '';
+}
+
+const GAS_WEBHOOK = 'https://script.google.com/macros/s/AKfycbzhKriJPOoQsSmr-TGOiVv-y9e97QFqydw4fd5_9-77MnlOsh10f0JO9DrgvhX2nOc/exec';
 
 function getMinDate() {
   const d = new Date();
@@ -92,6 +109,28 @@ export default function HesonAIChat() {
       addMessage('assistant', '請問您的姓名是？');
       setBookingData(newData);
       setBookingStep('name');
+    } else if (step === 'pets') {
+      newData.has_pets = value === 'yes';
+      addMessage('user', value === 'yes' ? '有寵物' : '沒有寵物');
+      addMessage('assistant', '您是從哪裡知道赫頌家事管理的？');
+      setBookingData(newData);
+      setBookingStep('referral');
+    } else if (step === 'referral') {
+      newData.referral_source = value;
+      addMessage('user', value);
+      addMessage('assistant',
+        `✅ 請確認您的預約資訊：\n\n` +
+        `📋 服務類型：${bookingData.service_type}\n` +
+        `📅 日期：${bookingData.scheduled_date}\n` +
+        `⏰ 時段：${bookingData.time_slot}\n` +
+        `🏠 地址：${bookingData.address}\n` +
+        `👤 姓名：${bookingData.client_name}\n` +
+        `📞 電話：${bookingData.phone}\n` +
+        `🐾 寵物：${newData.has_pets ? '有' : '沒有'}\n` +
+        `📣 得知來源：${value}`
+      );
+      setBookingData(newData);
+      setBookingStep('confirm');
     }
   };
 
@@ -109,7 +148,10 @@ export default function HesonAIChat() {
     setInput('');
 
     if (bookingStep === 'road') {
-      const newData = { ...bookingData, address: `${bookingData.city || ''}${text}` };
+      // 去重：若用戶輸入已包含 city 前綴則不再拼接
+      const city = bookingData.city || '';
+      const fullAddress = text.startsWith(city) ? text : `${city}${text}`;
+      const newData = { ...bookingData, address: fullAddress };
       addMessage('user', text);
       addMessage('assistant', '請選擇希望的服務日期：');
       setBookingData(newData);
@@ -121,19 +163,16 @@ export default function HesonAIChat() {
       setBookingData(newData);
       setBookingStep('phone');
     } else if (bookingStep === 'phone') {
-      const newData = { ...bookingData, phone: text };
+      const normalizedPhone = text.replace(/[\s-]/g, '');
+      if (!/^09\d{8}$/.test(normalizedPhone)) {
+        addMessage('assistant', '請輸入 10 碼手機號碼（09 開頭），例如：0912345678');
+        return;
+      }
+      const newData = { ...bookingData, phone: normalizedPhone };
       addMessage('user', text);
-      addMessage('assistant',
-        `✅ 請確認您的預約資訊：\n\n` +
-        `📋 服務類型：${newData.service_type}\n` +
-        `📅 日期：${newData.scheduled_date}\n` +
-        `⏰ 時段：${newData.time_slot}\n` +
-        `🏠 地址：${newData.address}\n` +
-        `👤 姓名：${newData.client_name}\n` +
-        `📞 電話：${newData.phone}`
-      );
+      addMessage('assistant', '家中是否有寵物？');
       setBookingData(newData);
-      setBookingStep('confirm');
+      setBookingStep('pets');
     } else {
       sendChat(text);
     }
@@ -142,7 +181,7 @@ export default function HesonAIChat() {
   const getAmount = (serviceType) => {
     if (serviceType === '基礎月護-4次') return 8400;
     if (serviceType === '進階月安-8次') return 16000;
-    if (serviceType === '尊寵月怡-12次') return 24600;
+    if (serviceType === '尊榮月恆-12次') return 24600;
     return 2000;
   };
 
@@ -167,25 +206,38 @@ export default function HesonAIChat() {
          scheduled_date: bookingData.scheduled_date,
          time_slot: bookingData.time_slot,
          address: bookingData.address,
-         notes: `電話: ${bookingData.phone} (由小赫 AI 協助預約)`,
+         phone: bookingData.phone,
+         notes: '由小赫 AI 協助預約',
        });
 
-       // 同步到 Google Sheet
+       // 送出到 Apps Script webhook（寫入 Google Sheet + LINE 通知）
        try {
-         await base44.functions.invoke('syncBookingToSheet', {
-           bookingId: booking.id,
-           bookingData: {
-             client_name: bookingData.client_name,
-             phone: bookingData.phone,
-             address: bookingData.address,
-             service_type: bookingData.service_type,
-             scheduled_date: bookingData.scheduled_date,
-             time_slot: bookingData.time_slot,
-             email: user.email || '',
-           }
+         await fetch(GAS_WEBHOOK, {
+           method: 'POST',
+           headers: { 'Content-Type': 'text/plain' },
+           body: JSON.stringify({
+             "_secret": "heson-secret-2026",
+             "內部編號": booking.id,
+             "姓名": bookingData.client_name || '',
+             "聯絡電話": bookingData.phone || '',
+             "電子郵件": user.email || '',
+             "需要服務地址": bookingData.address || '',
+             "服務地區": inferRegion(bookingData.address),
+             "空間型態": '',
+             "需求清潔坪數": '',
+             "是否有寵物": bookingData.has_pets ? '有' : '沒有',
+             "想要的時長": bookingData.service_type || '',
+             "您想申請的服務類型": bookingData.service_type || '',
+             "特殊需求": '',
+             "預計開始日期": bookingData.scheduled_date || '',
+             "偏好時段": bookingData.time_slot || '',
+             "偏好的星期": '',
+             "同意條款": "是",
+             "得知來源": bookingData.referral_source || ''
+           })
          });
        } catch (syncErr) {
-         console.warn('Sheet sync failed:', syncErr);
+         console.warn('Webhook 呼叫失敗，不影響預約:', syncErr);
        }
 
        addMessage('assistant', '🎉 預約已建立！正在跳轉至付款頁面...');
@@ -382,6 +434,37 @@ export default function HesonAIChat() {
                   <button onClick={cancelBooking} className="w-full text-xs text-stone-400 hover:text-stone-600 transition-colors">
                     取消
                   </button>
+                </div>
+              )}
+
+              {bookingStep === 'pets' && (
+                <div className="px-3 py-2 flex gap-2">
+                  <button
+                    onClick={() => handleBookingStep('yes')}
+                    className="flex-1 text-sm bg-amber-50 border border-amber-300 text-amber-800 py-2.5 rounded-xl font-medium hover:bg-amber-100 transition-all"
+                  >
+                    🐾 有寵物
+                  </button>
+                  <button
+                    onClick={() => handleBookingStep('no')}
+                    className="flex-1 text-sm bg-stone-50 border border-stone-300 text-stone-700 py-2.5 rounded-xl font-medium hover:bg-stone-100 transition-all"
+                  >
+                    🚫 沒有寵物
+                  </button>
+                </div>
+              )}
+
+              {bookingStep === 'referral' && (
+                <div className="px-3 py-2 grid grid-cols-3 gap-1.5">
+                  {REFERRAL_OPTIONS.map(r => (
+                    <button
+                      key={r}
+                      onClick={() => handleBookingStep(r)}
+                      className="text-xs bg-stone-50 border border-stone-300 text-stone-700 px-2 py-2 rounded-xl hover:bg-amber-50 hover:border-amber-300 transition-all font-medium"
+                    >
+                      {r}
+                    </button>
+                  ))}
                 </div>
               )}
 

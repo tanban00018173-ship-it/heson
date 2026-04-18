@@ -15,7 +15,7 @@
       "enum": [
         "\u57fa\u790e\u6708\u8b77-4\u6b21",
         "\u9032\u968e\u6708\u5b89-8\u6b21",
-        "\u5c0a\u9f8d\u6708\u6046-12\u6b21",
+        "\u5c0a\u69ae\u6708\u6046-12\u6b21",
         "\u55ae\u6b21\u6e05\u6f54"
       ],
       "description": "\u670d\u52d9\u985e\u578b"
@@ -47,6 +47,10 @@
     "address": {
       "type": "string",
       "description": "\u670d\u52d9\u5730\u5740"
+    },
+    "phone": {
+      "type": "string",
+      "description": "\u806f\u7d61\u96fb\u8a71"
     },
     "notes": {
       "type": "string",
