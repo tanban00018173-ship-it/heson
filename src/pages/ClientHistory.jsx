@@ -43,8 +43,9 @@ export default function ClientHistory() {
   });
 
   const { data: reports } = useQuery({
-    queryKey: ['serviceReports'],
-    queryFn: () => base44.entities.ServiceReport.list(),
+    queryKey: ['serviceReports', user?.id],
+    queryFn: () => base44.entities.ServiceReport.filter({ client_id: user?.id }),
+    enabled: !!user?.id,
     initialData: [],
   });
 

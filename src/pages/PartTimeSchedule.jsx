@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,18 @@ export default function PartTimeSchedulePage() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
+  const [authChecked, setAuthChecked] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      const ok = await base44.auth.isAuthenticated();
+      if (!ok) { base44.auth.redirectToLogin(); return; }
+      const me = await base44.auth.me();
+      if (me.role !== 'admin') { window.location.href = '/'; return; }
+      setAuthChecked(true);
+    })();
+  }, []);
+
   const [viewMode, setViewMode] = useState('week'); // 'week' | 'month'
   const [currentDate, setCurrentDate] = useState(new Date());
   const [formOpen, setFormOpen] = useState(false);
@@ -27,11 +39,13 @@ export default function PartTimeSchedulePage() {
   const { data: schedules = [], isLoading } = useQuery({
     queryKey: ['partTimeSchedules'],
     queryFn: () => base44.entities.PartTimeSchedule.list('-date', 1000),
+    enabled: authChecked,
   });
 
   const { data: histories = [] } = useQuery({
     queryKey: ['partTimeScheduleHistories'],
     queryFn: () => base44.entities.PartTimeScheduleHistory.list('-changed_at', 200),
+    enabled: authChecked,
   });
 
   // Save history snapshot
@@ -125,6 +139,14 @@ export default function PartTimeSchedulePage() {
     }
     return format(currentDate, 'yyyy年 MM月', { locale: zhTW });
   };
+
+  if (!authChecked) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-stone-50">
+        <div className="w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="h-screen flex flex-col bg-stone-50 overflow-hidden">

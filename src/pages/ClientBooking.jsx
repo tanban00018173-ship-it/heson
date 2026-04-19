@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { GAS_BOOKING_WEBHOOK } from '@/lib/webhooks';
 import Sidebar from "@/components/dashboard/Sidebar";
 import MobileNav from "@/components/dashboard/MobileNav";
 import { base44 } from "@/api/base44Client";
@@ -79,7 +80,7 @@ export default function ClientBooking() {
 
       // 送出到 Google Apps Script webhook（寫入 Google Sheet + LINE 通知）
       try {
-        await fetch('https://script.google.com/macros/s/AKfycbzhKriJPOoQsSmr-TGOiVv-y9e97QFqydw4fd5_9-77MnlOsh10f0JO9DrgvhX2nOc/exec', {
+        await fetch(GAS_BOOKING_WEBHOOK, {
           method: 'POST',
           headers: { 'Content-Type': 'text/plain' },
           body: JSON.stringify({

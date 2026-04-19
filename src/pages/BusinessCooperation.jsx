@@ -9,6 +9,8 @@ import { CheckCircle, Loader2, Building2, Users, Award, Clock } from "lucide-rea
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
 
+const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL || 'service@heson.tw';
+
 export default function BusinessCooperation() {
   const [form, setForm] = useState({ company:'', name:'', phone:'', email:'', address:'', needs:'' });
   const [submitted, setSubmitted] = useState(false);
@@ -19,7 +21,7 @@ export default function BusinessCooperation() {
     if (!form.company || !form.name || !form.phone) { toast.error('請填寫必填欄位'); return; }
     setLoading(true);
     await base44.integrations.Core.SendEmail({
-      to: 'larry87tw@gmail.com',
+      to: ADMIN_EMAIL,
       subject: `企業合作洽談 - ${form.company}`,
       body: `公司名稱：${form.company}\n聯絡人：${form.name}\n電話：${form.phone}\n Email：${form.email}\n地址：${form.address}\n需求：${form.needs}`,
     });

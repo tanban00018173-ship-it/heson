@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Send, Loader2, CheckCircle2, ChevronLeft } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import CalendarExportButton from '@/components/CalendarExportButton';
+import { GAS_BOOKING_WEBHOOK as GAS_WEBHOOK } from '@/lib/webhooks';
 
 const WELCOME = '您好！我是小赫 🏠 HESON 的 AI 客服助理，我可以回答問題，也可以幫您直接完成預約！';
 
@@ -39,8 +40,6 @@ function inferRegion(address) {
   }
   return '';
 }
-
-const GAS_WEBHOOK = 'https://script.google.com/macros/s/AKfycbzhKriJPOoQsSmr-TGOiVv-y9e97QFqydw4fd5_9-77MnlOsh10f0JO9DrgvhX2nOc/exec';
 
 function getMinDate() {
   const d = new Date();

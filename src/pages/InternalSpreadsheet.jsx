@@ -240,7 +240,7 @@ export default function InternalSpreadsheet() {
 
   const { data: bookings = [], isLoading, refetch } = useQuery({
     queryKey: ['spreadsheetBookings'],
-    queryFn: () => base44.entities.Booking.list('-created_date', 500),
+    queryFn: () => base44.entities.Booking.list('-created_date', 50),
     enabled: authChecked,
   });
 
