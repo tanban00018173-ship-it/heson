@@ -24,9 +24,14 @@ const TAIWAN_CITIES = [
   '台東縣', '澎湖縣', '金門縣', '連江縣',
 ];
 
-const BOOKING_STEPS = ['service', 'city', 'road', 'date', 'time', 'name', 'phone', 'pets', 'referral', 'confirm'];
+const BOOKING_STEPS = ['service', 'city', 'road', 'housing_type', 'square_footage', 'date', 'time', 'weekdays', 'name', 'phone', 'pets', 'cleaning_tools', 'enhance_areas', 'referral', 'notes', 'confirm'];
 
-const REFERRAL_OPTIONS = ['Facebook', 'Instagram', 'Threads', '朋友推薦', 'LINE', 'Google 搜尋'];
+const REFERRAL_OPTIONS = ['Facebook', 'Instagram', 'Threads', '朋友推薦', 'LINE', 'Google 搜尋', '其他'];
+const HOUSING_TYPES = ['透天', '公寓', '華廈、大樓', '農舍'];
+const WEEKDAYS = ['週一', '週二', '週三', '週四', '週五', '週六', '週日'];
+const CLEANING_TOOLS_OPTIONS = ['客戶自備', '我方自帶', '混合'];
+const ENHANCE_AREAS = ['廚房', '浴室', '窗戶', '陽台', '地板', '衣櫃內部', '油煙機', '冰箱', '其他'];
+const RECURRING_PLANS = ['基礎月護-4次', '進階月安-8次', '尊榮月恆-12次'];
 
 const REGION_PATTERNS = [
   '台北', '新北', '桃園', '新竹', '苗栗', '台中', '彰化', '南投',
@@ -45,6 +50,48 @@ function getMinDate() {
   const d = new Date();
   d.setDate(d.getDate() + 1);
   return d.toISOString().split('T')[0];
+}
+
+function WeekdaysSelector({ onConfirm }) {
+  const [selected, setSelected] = React.useState([]);
+  const toggle = (day) => setSelected(prev => prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day]);
+  return (
+    <div className="px-3 py-2 space-y-2">
+      <div className="flex flex-wrap gap-1.5">
+        {WEEKDAYS.map(day => (
+          <button key={day} onClick={() => toggle(day)}
+            className={`text-xs px-2.5 py-1.5 rounded-lg border-2 font-medium transition-all ${selected.includes(day) ? 'border-amber-500 bg-amber-100 text-amber-800' : 'border-stone-300 bg-stone-50 text-stone-700 hover:border-amber-300'}`}>
+            {day}
+          </button>
+        ))}
+      </div>
+      <button onClick={() => onConfirm(selected.length ? selected : ['不限'])}
+        className="w-full text-xs bg-gradient-to-r from-amber-500 to-amber-600 text-white py-2 rounded-xl font-medium hover:from-amber-600 hover:to-amber-700 transition-all">
+        確認選擇
+      </button>
+    </div>
+  );
+}
+
+function EnhanceAreasSelector({ onConfirm }) {
+  const [selected, setSelected] = React.useState([]);
+  const toggle = (area) => setSelected(prev => prev.includes(area) ? prev.filter(a => a !== area) : [...prev, area]);
+  return (
+    <div className="px-3 py-2 space-y-2">
+      <div className="flex flex-wrap gap-1.5">
+        {ENHANCE_AREAS.map(area => (
+          <button key={area} onClick={() => toggle(area)}
+            className={`text-xs px-2.5 py-1.5 rounded-lg border-2 font-medium transition-all ${selected.includes(area) ? 'border-amber-500 bg-amber-100 text-amber-800' : 'border-stone-300 bg-stone-50 text-stone-700 hover:border-amber-300'}`}>
+            {area}
+          </button>
+        ))}
+      </div>
+      <button onClick={() => onConfirm(selected)}
+        className="w-full text-xs bg-gradient-to-r from-amber-500 to-amber-600 text-white py-2 rounded-xl font-medium hover:from-amber-600 hover:to-amber-700 transition-all">
+        確認選擇
+      </button>
+    </div>
+  );
 }
 
 export default function HesonAIChat() {
@@ -94,6 +141,12 @@ export default function HesonAIChat() {
       addMessage('assistant', `已選擇 ${value}，請輸入詳細路名與門牌號碼（例：中山北路二段100號）：`);
       setBookingData(newData);
       setBookingStep('road');
+    } else if (step === 'housing_type') {
+      newData.housing_type = value;
+      addMessage('user', value);
+      addMessage('assistant', '請問空間大約幾坪？（請輸入數字）');
+      setBookingData(newData);
+      setBookingStep('square_footage');
     } else if (step === 'date') {
       const [yyyy, mm, dd] = value.split('-');
       const weekday = ['日','一','二','三','四','五','六'][new Date(value).getDay()];
@@ -105,28 +158,80 @@ export default function HesonAIChat() {
     } else if (step === 'time') {
       newData.time_slot = normalizeTimeSlot(value);
       addMessage('user', value);
+      if (RECURRING_PLANS.includes(newData.service_type)) {
+        addMessage('assistant', '定期方案請選擇偏好的服務星期（可多選，選好後按確認）：');
+        setBookingData(newData);
+        setBookingStep('weekdays');
+      } else {
+        addMessage('assistant', '請問您的姓名是？');
+        setBookingData(newData);
+        setBookingStep('name');
+      }
+    } else if (step === 'weekdays') {
+      // value is an array joined string from UI confirm action
+      newData.weekdays = value;
+      addMessage('user', Array.isArray(value) ? value.join(', ') : value);
       addMessage('assistant', '請問您的姓名是？');
       setBookingData(newData);
       setBookingStep('name');
     } else if (step === 'pets') {
       newData.has_pets = value === 'yes';
       addMessage('user', value === 'yes' ? '有寵物' : '沒有寵物');
+      addMessage('assistant', '請問現場清潔工具由哪方提供？');
+      setBookingData(newData);
+      setBookingStep('cleaning_tools');
+    } else if (step === 'cleaning_tools') {
+      newData.cleaning_tools = value;
+      addMessage('user', value);
+      addMessage('assistant', '請選擇您最重視的加強清潔區域（可多選，選好後按確認）：');
+      setBookingData(newData);
+      setBookingStep('enhance_areas');
+    } else if (step === 'enhance_areas') {
+      newData.enhance_areas = value;
+      addMessage('user', Array.isArray(value) ? value.join(', ') : '（已選擇）');
       addMessage('assistant', '您是從哪裡知道赫頌家事管理的？');
       setBookingData(newData);
       setBookingStep('referral');
     } else if (step === 'referral') {
       newData.referral_source = value;
       addMessage('user', value);
+      if (value === '朋友推薦') {
+        addMessage('assistant', '請留下推薦人姓名（選填，可直接跳過）：');
+        setBookingData(newData);
+        setBookingStep('referrer');
+      } else {
+        addMessage('assistant', '有任何特別需求嗎？（直接輸入或按跳過）');
+        setBookingData(newData);
+        setBookingStep('notes');
+      }
+    } else if (step === 'referrer') {
+      newData.referrer = value;
+      addMessage('user', value || '（略過）');
+      addMessage('assistant', '有任何特別需求嗎？（直接輸入或按跳過）');
+      setBookingData(newData);
+      setBookingStep('notes');
+    } else if (step === 'notes') {
+      newData.notes = value;
+      addMessage('user', value || '（無）');
+      const weekdayStr = Array.isArray(newData.weekdays) ? newData.weekdays.join(', ') : (newData.weekdays || '');
+      const enhanceStr = Array.isArray(newData.enhance_areas) ? newData.enhance_areas.join(', ') : '';
       addMessage('assistant',
         `✅ 請確認您的預約資訊：\n\n` +
-        `📋 服務類型：${bookingData.service_type}\n` +
-        `📅 日期：${bookingData.scheduled_date}\n` +
-        `⏰ 時段：${bookingData.time_slot}\n` +
-        `🏠 地址：${bookingData.address}\n` +
-        `👤 姓名：${bookingData.client_name}\n` +
-        `📞 電話：${bookingData.phone}\n` +
+        `📋 服務類型：${newData.service_type}\n` +
+        `📅 日期：${newData.scheduled_date}\n` +
+        `⏰ 時段：${newData.time_slot}\n` +
+        `🏠 地址：${newData.address}\n` +
+        (newData.housing_type ? `🏘️ 空間型態：${newData.housing_type}\n` : '') +
+        (newData.square_footage ? `📐 坪數：${newData.square_footage}\n` : '') +
+        `👤 姓名：${newData.client_name}\n` +
+        `📞 電話：${newData.phone}\n` +
         `🐾 寵物：${newData.has_pets ? '有' : '沒有'}\n` +
-        `📣 得知來源：${value}`
+        `🧹 現場掃具：${newData.cleaning_tools || '我方自帶'}\n` +
+        (enhanceStr ? `✨ 加強清潔：${enhanceStr}\n` : '') +
+        (weekdayStr ? `📆 偏好星期：${weekdayStr}\n` : '') +
+        `📣 得知來源：${newData.referral_source}` +
+        (newData.referrer ? `\n👥 推薦人：${newData.referrer}` : '') +
+        (newData.notes ? `\n📝 特殊需求：${newData.notes}` : '')
       );
       setBookingData(newData);
       setBookingStep('confirm');
@@ -147,11 +252,21 @@ export default function HesonAIChat() {
     setInput('');
 
     if (bookingStep === 'road') {
-      // 去重：若用戶輸入已包含 city 前綴則不再拼接
       const city = bookingData.city || '';
       const fullAddress = text.startsWith(city) ? text : `${city}${text}`;
       const newData = { ...bookingData, address: fullAddress };
       addMessage('user', text);
+      addMessage('assistant', '請選擇空間型態：');
+      setBookingData(newData);
+      setBookingStep('housing_type');
+    } else if (bookingStep === 'square_footage') {
+      const sqft = parseFloat(text);
+      if (isNaN(sqft) || sqft <= 0 || sqft >= 300) {
+        addMessage('assistant', '請輸入有效坪數（1～299 之間的數字）');
+        return;
+      }
+      const newData = { ...bookingData, square_footage: text };
+      addMessage('user', `${text} 坪`);
       addMessage('assistant', '請選擇希望的服務日期：');
       setBookingData(newData);
       setBookingStep('date');
@@ -172,6 +287,10 @@ export default function HesonAIChat() {
       addMessage('assistant', '家中是否有寵物？');
       setBookingData(newData);
       setBookingStep('pets');
+    } else if (bookingStep === 'referrer') {
+      handleBookingStep(text || '（略過）');
+    } else if (bookingStep === 'notes') {
+      handleBookingStep(text);
     } else {
       sendChat(text);
     }
@@ -211,6 +330,8 @@ export default function HesonAIChat() {
 
        // 送出到 Apps Script webhook（寫入 Google Sheet + LINE 通知）
        try {
+         const weekdayStr = Array.isArray(bookingData.weekdays) ? bookingData.weekdays.join(', ') : (bookingData.weekdays || '');
+         const enhanceStr = Array.isArray(bookingData.enhance_areas) ? bookingData.enhance_areas.join(', ') : '';
          await fetch(GAS_WEBHOOK, {
            method: 'POST',
            headers: { 'Content-Type': 'text/plain' },
@@ -222,15 +343,18 @@ export default function HesonAIChat() {
              "電子郵件": user.email || '',
              "需要服務地址": bookingData.address || '',
              "服務地區": inferRegion(bookingData.address),
-             "空間型態": '',
-             "需求清潔坪數": '',
+             "空間型態": bookingData.housing_type || '',
+             "需求清潔坪數": bookingData.square_footage || '',
              "是否有寵物": bookingData.has_pets ? '有' : '沒有',
              "想要的時長": bookingData.service_type || '',
              "您想申請的服務類型": bookingData.service_type || '',
-             "特殊需求": '',
+             "特殊需求": bookingData.notes || '',
              "預計開始日期": bookingData.scheduled_date || '',
              "偏好時段": bookingData.time_slot || '',
-             "偏好的星期": '',
+             "偏好的星期": weekdayStr,
+             "現場掃具": bookingData.cleaning_tools || '我方自帶',
+             "加強清潔": enhanceStr,
+             "親友推薦人": bookingData.referrer || '',
              "同意條款": "是",
              "得知來源": bookingData.referral_source || ''
            })
@@ -395,6 +519,17 @@ export default function HesonAIChat() {
                 </div>
               )}
 
+              {bookingStep === 'housing_type' && (
+                <div className="px-3 py-2 grid grid-cols-2 gap-2">
+                  {HOUSING_TYPES.map(h => (
+                    <button key={h} onClick={() => handleBookingStep(h)}
+                      className="text-xs bg-stone-50 border border-stone-300 text-stone-700 px-2 py-2.5 rounded-xl hover:bg-amber-50 hover:border-amber-300 transition-all font-medium">
+                      {h}
+                    </button>
+                  ))}
+                </div>
+              )}
+
               {bookingStep === 'date' && (
                 <div className="px-3 py-3 flex flex-col gap-2">
                   <p className="text-xs text-stone-500 font-medium">請點選日期：</p>
@@ -436,6 +571,25 @@ export default function HesonAIChat() {
                 </div>
               )}
 
+              {bookingStep === 'weekdays' && (
+                <WeekdaysSelector onConfirm={(days) => handleBookingStep(days)} />
+              )}
+
+              {bookingStep === 'cleaning_tools' && (
+                <div className="px-3 py-2 flex flex-col gap-1.5">
+                  {CLEANING_TOOLS_OPTIONS.map(t => (
+                    <button key={t} onClick={() => handleBookingStep(t)}
+                      className="text-xs bg-stone-50 border border-stone-300 text-stone-700 px-3 py-2.5 rounded-xl hover:bg-amber-50 hover:border-amber-300 transition-all text-left font-medium">
+                      {t}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {bookingStep === 'enhance_areas' && (
+                <EnhanceAreasSelector onConfirm={(areas) => handleBookingStep(areas)} />
+              )}
+
               {bookingStep === 'pets' && (
                 <div className="px-3 py-2 flex gap-2">
                   <button
@@ -467,6 +621,15 @@ export default function HesonAIChat() {
                 </div>
               )}
 
+              {bookingStep === 'notes' && (
+                <div className="px-3 py-2 flex gap-2">
+                  <button onClick={() => handleBookingStep('')}
+                    className="flex-1 text-xs bg-stone-50 border border-stone-300 text-stone-500 py-2.5 rounded-xl font-medium hover:bg-stone-100 transition-all">
+                    跳過
+                  </button>
+                </div>
+              )}
+
               {bookingStep === 'confirm' && (
                 <div className="px-3 py-2 flex gap-2">
                   <button
@@ -484,7 +647,7 @@ export default function HesonAIChat() {
                 </div>
               )}
 
-              {(!bookingStep || bookingStep === 'road' || bookingStep === 'name' || bookingStep === 'phone') && (
+              {(!bookingStep || bookingStep === 'road' || bookingStep === 'square_footage' || bookingStep === 'name' || bookingStep === 'phone' || bookingStep === 'referrer' || bookingStep === 'notes') && (
                 <div className="px-3 py-3 flex gap-2 bg-gradient-to-r from-amber-50 to-white border-t border-stone-200">
                   <input
                     value={input}
@@ -492,8 +655,11 @@ export default function HesonAIChat() {
                     onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleTextInput()}
                     placeholder={
                       bookingStep === 'road' ? '例：中山北路二段100號' :
+                      bookingStep === 'square_footage' ? '請輸入坪數（數字）' :
                       bookingStep === 'name' ? '請輸入您的姓名' :
                       bookingStep === 'phone' ? '09XX-XXX-XXX' :
+                      bookingStep === 'referrer' ? '推薦人姓名（可直接按跳過）' :
+                      bookingStep === 'notes' ? '特別需求（可直接按跳過）' :
                       '輸入您的問題...'
                     }
                     className="flex-1 text-sm border border-amber-200 rounded-xl px-4 py-2.5 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-200 transition-all bg-white placeholder-stone-400 font-medium"

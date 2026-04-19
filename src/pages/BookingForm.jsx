@@ -17,7 +17,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format } from "date-fns";
 import { zhTW } from "date-fns/locale";
-import { CalendarIcon, Check, Loader2, Sparkles, AlertCircle, Phone, MapPin, PawPrint } from "lucide-react";
+import { CalendarIcon, Check, Loader2, Sparkles, AlertCircle, Phone, MapPin, Upload, X } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -126,6 +126,11 @@ export default function BookingForm() {
   const [hasPet, setHasPet] = useState('');
   const [referralSource, setReferralSource] = useState('');
   const [preferredWeekdays, setPreferredWeekdays] = useState([]);
+  const [cleaningTools, setCleaningTools] = useState('我方自帶');
+  const [enhanceAreas, setEnhanceAreas] = useState([]);
+  const [referrer, setReferrer] = useState('');
+  const [photoFiles, setPhotoFiles] = useState([]);
+  const [uploadStatus, setUploadStatus] = useState('');
   const { data: cleaners = [] } = useQuery({
     queryKey: ['activeCleaners'],
     queryFn: () => base44.entities.CleanerProfile.filter({ is_active: true }),
@@ -244,6 +249,21 @@ export default function BookingForm() {
     let bookingCreated = false;
     let booking = null;
 
+    // 上傳照片
+    let photoUrls = [];
+    if (photoFiles.length > 0) {
+      for (let i = 0; i < photoFiles.length; i++) {
+        setUploadStatus(`上傳照片中 ${i + 1}/${photoFiles.length}`);
+        try {
+          const { file_url } = await base44.integrations.Core.UploadFile({ file: photoFiles[i] });
+          photoUrls.push(file_url);
+        } catch (uploadErr) {
+          console.warn('照片上傳失敗:', uploadErr);
+        }
+      }
+      setUploadStatus('');
+    }
+
     try {
       let notesArr = [`【${selectedCategory.label}】`];
       if (formData.housing_type) notesArr.push(`房型: ${formData.housing_type}`);
@@ -297,6 +317,10 @@ export default function BookingForm() {
             "預計開始日期": format(date, 'yyyy-MM-dd'),
             "偏好時段": formData.time_slot || '',
             "偏好的星期": preferredWeekdays.join(', '),
+            "現場掃具": cleaningTools,
+            "加強清潔": enhanceAreas.join(', '),
+            "親友推薦人": referrer,
+            "現場照片上傳": photoUrls.join(', '),
             "同意條款": "是",
             "得知來源": referralSource
           })
@@ -778,10 +802,46 @@ export default function BookingForm() {
                     </div>
                   )}
 
+                  {/* 現場掃具 */}
+                  <div className="space-y-2">
+                    <Label>現場清潔工具</Label>
+                    <div className="flex gap-2">
+                      {['客戶自備', '我方自帶', '混合'].map(v => (
+                        <button
+                          key={v}
+                          type="button"
+                          onClick={() => setCleaningTools(v)}
+                          className={`flex-1 py-2 rounded-xl border-2 text-sm font-medium transition-all ${cleaningTools === v ? 'border-amber-500 bg-amber-50 text-amber-700' : 'border-stone-200 text-stone-600 hover:border-stone-300'}`}
+                        >
+                          {v}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* 加強清潔 */}
+                  <div className="space-y-2">
+                    <Label>加強清潔區域（可複選，選填）</Label>
+                    <div className="flex flex-wrap gap-2">
+                      {['廚房', '浴室', '窗戶', '陽台', '地板', '衣櫃內部', '油煙機', '冰箱', '其他'].map(area => (
+                        <button
+                          key={area}
+                          type="button"
+                          onClick={() => setEnhanceAreas(prev =>
+                            prev.includes(area) ? prev.filter(a => a !== area) : [...prev, area]
+                          )}
+                          className={`px-3 py-1.5 rounded-lg border-2 text-sm transition-all ${enhanceAreas.includes(area) ? 'border-amber-500 bg-amber-50 text-amber-700' : 'border-stone-200 text-stone-600 hover:border-stone-300'}`}
+                        >
+                          {area}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
                   {/* 得知來源 */}
                   <div className="space-y-2">
                     <Label>您是從哪裡得知赫頌？</Label>
-                    <Select value={referralSource} onValueChange={setReferralSource}>
+                    <Select value={referralSource} onValueChange={(v) => { setReferralSource(v); if (v !== '朋友推薦') setReferrer(''); }}>
                       <SelectTrigger className="rounded-xl"><SelectValue placeholder="請選擇（選填）" /></SelectTrigger>
                       <SelectContent>
                         {REFERRAL_OPTIONS.map(opt => (
@@ -789,6 +849,53 @@ export default function BookingForm() {
                         ))}
                       </SelectContent>
                     </Select>
+                  </div>
+
+                  {/* 親友推薦人 */}
+                  {referralSource === '朋友推薦' && (
+                    <div className="space-y-2">
+                      <Label>推薦人姓名（選填）</Label>
+                      <Input
+                        value={referrer}
+                        onChange={(e) => setReferrer(e.target.value)}
+                        placeholder="請輸入推薦人姓名"
+                        className="rounded-xl"
+                      />
+                    </div>
+                  )}
+
+                  {/* 現場照片上傳 */}
+                  <div className="space-y-2">
+                    <Label>現場照片（選填，有助於精準估價）</Label>
+                    <div className="border-2 border-dashed border-stone-200 rounded-xl p-4 hover:border-amber-300 transition-colors">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={(e) => {
+                          const files = Array.from(e.target.files || []).slice(0, 5);
+                          setPhotoFiles(files);
+                        }}
+                        className="hidden"
+                        id="photo-upload"
+                      />
+                      <label htmlFor="photo-upload" className="flex flex-col items-center gap-2 cursor-pointer">
+                        <Upload className="w-6 h-6 text-stone-400" />
+                        <span className="text-sm text-stone-500">點擊上傳照片（最多 5 張）</span>
+                      </label>
+                      {photoFiles.length > 0 && (
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {photoFiles.map((file, i) => (
+                            <div key={i} className="flex items-center gap-1 bg-stone-100 rounded-lg px-2 py-1 text-xs text-stone-600">
+                              <span>{file.name.length > 15 ? file.name.slice(0, 15) + '…' : file.name}</span>
+                              <button type="button" onClick={() => setPhotoFiles(prev => prev.filter((_, idx) => idx !== i))}>
+                                <X className="w-3 h-3 text-stone-400 hover:text-stone-700" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   {/* Notes */}
@@ -815,7 +922,7 @@ export default function BookingForm() {
                     {isSubmitting ? (
                       <>
                         <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                        處理中...
+                        {uploadStatus || '處理中...'}
                       </>
                     ) : (
                       "確認預約並前往付款"

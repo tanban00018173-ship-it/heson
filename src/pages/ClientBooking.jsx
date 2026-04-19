@@ -9,7 +9,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Textarea } from "@/components/ui/textarea";
 import { format } from "date-fns";
 import { zhTW } from "date-fns/locale";
-import { CalendarIcon, Check, Loader2, MapPin } from "lucide-react";
+import { CalendarIcon, Check, Loader2, MapPin, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 
@@ -37,8 +37,19 @@ export default function ClientBooking() {
   const [user, setUser] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState('');
   const [date, setDate] = useState(null);
   const [formData, setFormData] = useState({ time_slot: '', notes: '' });
+  const [referralSource, setReferralSource] = useState('');
+  const [referrer, setReferrer] = useState('');
+  const [preferredWeekdays, setPreferredWeekdays] = useState([]);
+  const [cleaningTools, setCleaningTools] = useState('我方自帶');
+  const [enhanceAreas, setEnhanceAreas] = useState([]);
+  const [photoFiles, setPhotoFiles] = useState([]);
+
+  const REFERRAL_OPTIONS = ['Facebook', 'Instagram', 'Threads', '朋友推薦', 'LINE', 'Google 搜尋', '其他'];
+  const WEEKDAYS = ['週一', '週二', '週三', '週四', '週五', '週六', '週日'];
+  const isRecurring = profile?.subscription_plan && (profile.subscription_plan.includes('月') || profile.subscription_plan.includes('定期'));
 
   useEffect(() => {
     const loadUser = async () => {
@@ -63,6 +74,21 @@ export default function ClientBooking() {
     e.preventDefault();
     if (!date || !formData.time_slot) { toast.error("請選擇日期與時段"); return; }
     setIsSubmitting(true);
+
+    // 上傳照片
+    let photoUrls = [];
+    if (photoFiles.length > 0) {
+      for (let i = 0; i < photoFiles.length; i++) {
+        setUploadStatus(`上傳照片中 ${i + 1}/${photoFiles.length}`);
+        try {
+          const { file_url } = await base44.integrations.Core.UploadFile({ file: photoFiles[i] });
+          photoUrls.push(file_url);
+        } catch (uploadErr) {
+          console.warn('照片上傳失敗:', uploadErr);
+        }
+      }
+      setUploadStatus('');
+    }
 
     try {
       const bookingData = {
@@ -99,9 +125,13 @@ export default function ClientBooking() {
             "特殊需求": formData.notes || '',
             "預計開始日期": format(date, 'yyyy-MM-dd'),
             "偏好時段": formData.time_slot || '',
-            "偏好的星期": '',
+            "偏好的星期": preferredWeekdays.join(', '),
+            "現場掃具": cleaningTools,
+            "加強清潔": enhanceAreas.join(', '),
+            "親友推薦人": referrer,
+            "現場照片上傳": photoUrls.join(', '),
             "同意條款": "是",
-            "得知來源": ''
+            "得知來源": referralSource
           })
         });
       } catch (webhookErr) {
@@ -228,6 +258,90 @@ export default function ClientBooking() {
                 </div>
               </div>
 
+              {/* 現場掃具 */}
+              <div className="bg-white rounded-3xl p-6 border border-[#e8eef6]">
+                <p className="text-xs font-semibold tracking-widest uppercase text-stone-400 mb-3">現場清潔工具</p>
+                <div className="flex gap-2">
+                  {['客戶自備', '我方自帶', '混合'].map(v => (
+                    <button key={v} type="button" onClick={() => setCleaningTools(v)}
+                      className={`flex-1 py-2.5 rounded-2xl border-2 text-sm font-medium transition-all ${cleaningTools === v ? 'border-stone-900 bg-stone-900 text-white' : 'border-[#e8eef6] bg-[#eef4fc] text-stone-600 hover:border-stone-300'}`}
+                    >{v}</button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 加強清潔 */}
+              <div className="bg-white rounded-3xl p-6 border border-[#e8eef6]">
+                <p className="text-xs font-semibold tracking-widest uppercase text-stone-400 mb-3">加強清潔區域（可複選，選填）</p>
+                <div className="flex flex-wrap gap-2">
+                  {['廚房', '浴室', '窗戶', '陽台', '地板', '衣櫃內部', '油煙機', '冰箱', '其他'].map(area => (
+                    <button key={area} type="button"
+                      onClick={() => setEnhanceAreas(prev => prev.includes(area) ? prev.filter(a => a !== area) : [...prev, area])}
+                      className={`px-3 py-1.5 rounded-xl border-2 text-sm transition-all ${enhanceAreas.includes(area) ? 'border-stone-900 bg-stone-900 text-white' : 'border-[#e8eef6] bg-[#eef4fc] text-stone-600 hover:border-stone-300'}`}
+                    >{area}</button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 偏好星期（定期方案才顯示） */}
+              {isRecurring && (
+                <div className="bg-white rounded-3xl p-6 border border-[#e8eef6]">
+                  <p className="text-xs font-semibold tracking-widest uppercase text-stone-400 mb-3">偏好的服務星期（可複選）</p>
+                  <div className="flex flex-wrap gap-2">
+                    {WEEKDAYS.map(day => (
+                      <button key={day} type="button"
+                        onClick={() => setPreferredWeekdays(prev => prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day])}
+                        className={`px-3 py-1.5 rounded-xl border-2 text-sm transition-all ${preferredWeekdays.includes(day) ? 'border-stone-900 bg-stone-900 text-white' : 'border-[#e8eef6] bg-[#eef4fc] text-stone-600 hover:border-stone-300'}`}
+                      >{day}</button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* 得知來源 */}
+              <div className="bg-white rounded-3xl p-6 border border-[#e8eef6]">
+                <p className="text-xs font-semibold tracking-widest uppercase text-stone-400 mb-3">得知來源（選填）</p>
+                <div className="flex flex-wrap gap-2">
+                  {REFERRAL_OPTIONS.map(opt => (
+                    <button key={opt} type="button"
+                      onClick={() => { setReferralSource(opt); if (opt !== '朋友推薦') setReferrer(''); }}
+                      className={`px-3 py-1.5 rounded-xl border-2 text-sm transition-all ${referralSource === opt ? 'border-stone-900 bg-stone-900 text-white' : 'border-[#e8eef6] bg-[#eef4fc] text-stone-600 hover:border-stone-300'}`}
+                    >{opt}</button>
+                  ))}
+                </div>
+                {referralSource === '朋友推薦' && (
+                  <input
+                    className="mt-3 w-full rounded-2xl border border-[#e8eef6] bg-[#eef4fc] px-4 py-2.5 text-sm focus:outline-none focus:bg-white"
+                    placeholder="推薦人姓名（選填）"
+                    value={referrer}
+                    onChange={e => setReferrer(e.target.value)}
+                  />
+                )}
+              </div>
+
+              {/* 現場照片上傳 */}
+              <div className="bg-white rounded-3xl p-6 border border-[#e8eef6]">
+                <p className="text-xs font-semibold tracking-widest uppercase text-stone-400 mb-3">現場照片（選填，有助於精準估價）</p>
+                <label htmlFor="client-photo-upload" className="flex flex-col items-center gap-2 border-2 border-dashed border-[#e8eef6] rounded-2xl p-4 cursor-pointer hover:border-stone-400 transition-colors bg-[#eef4fc]">
+                  <Upload className="w-5 h-5 text-stone-400" />
+                  <span className="text-sm text-stone-500">點擊上傳照片（最多 5 張）</span>
+                </label>
+                <input id="client-photo-upload" type="file" accept="image/*" multiple className="hidden"
+                  onChange={e => setPhotoFiles(Array.from(e.target.files || []).slice(0, 5))} />
+                {photoFiles.length > 0 && (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {photoFiles.map((file, i) => (
+                      <div key={i} className="flex items-center gap-1 bg-stone-100 rounded-lg px-2 py-1 text-xs text-stone-600">
+                        <span>{file.name.length > 15 ? file.name.slice(0, 15) + '…' : file.name}</span>
+                        <button type="button" onClick={() => setPhotoFiles(prev => prev.filter((_, idx) => idx !== i))}>
+                          <X className="w-3 h-3 text-stone-400 hover:text-stone-700" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               {/* Notes */}
               <div className="bg-white rounded-3xl p-6 border border-[#e8eef6]">
                 <p className="text-xs font-semibold tracking-widest uppercase text-stone-400 mb-3">備註（選填）</p>
@@ -266,7 +380,7 @@ export default function ClientBooking() {
                   disabled={isSubmitting || !date || !formData.time_slot}
                   className="w-full bg-white text-[#131b2e] font-headline font-bold py-4 rounded-2xl hover:scale-[1.02] active:scale-95 transition-transform duration-200 shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-2"
                 >
-                  {isSubmitting ? <><Loader2 className="w-5 h-5 animate-spin" />處理中...</> : '確認預約'}
+                  {isSubmitting ? <><Loader2 className="w-5 h-5 animate-spin" />{uploadStatus || '處理中...'}</> : '確認預約'}
                 </button>
                 <p className="text-center text-[11px] text-[#7c839b] mt-4">確認後將於 24 小時內與您聯繫</p>
               </div>
