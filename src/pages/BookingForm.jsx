@@ -340,6 +340,32 @@ export default function BookingForm() {
         console.warn('Email 通知失敗，不影響預約:', emailErr);
       }
 
+      // 同步到 Google Sheet 對應子工作表（失敗不影響預約流程）
+      try {
+        await base44.functions.invoke('syncBookingToSheet', {
+          bookingId: booking.id,
+          bookingData: {
+            client_name: formData.name,
+            phone: formData.phone,
+            address: formData.address,
+            service_area: inferRegion(formData.address),
+            housing_type: formData.housing_type || '',
+            square_footage: formData.square_footage || '',
+            service_type: selectedCategory.label + (formData.service_type ? ` - ${formData.service_type}` : ''),
+            scheduled_date: format(date, 'yyyy-MM-dd'),
+            time_slot: formData.time_slot,
+            cleaning_tools: cleaningTools,
+            enhance_areas: enhanceAreas,
+            preferred_weekdays: preferredWeekdays,
+            notes: formData.notes || '',
+            referral_source: referralSource,
+            referrer: referrer,
+          }
+        });
+      } catch (sheetErr) {
+        console.warn('Google Sheet 同步失敗，不影響預約:', sheetErr);
+      }
+
       setIsSubmitting(false);
 
       if (selectedPlan?.plan_type === 'heson_direct') {

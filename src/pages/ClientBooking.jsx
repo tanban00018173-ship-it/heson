@@ -138,6 +138,32 @@ export default function ClientBooking() {
         console.warn('Webhook 呼叫失敗，不影響預約:', webhookErr);
       }
 
+      // 同步到 Google Sheet 對應子工作表（失敗不影響預約）
+      try {
+        await base44.functions.invoke('syncBookingToSheet', {
+          bookingId: booking.id,
+          bookingData: {
+            client_name: user?.full_name || '',
+            phone: profile?.phone || '',
+            address: profile?.address || '',
+            service_area: inferRegion(profile?.address),
+            housing_type: profile?.housing_type || '',
+            square_footage: profile?.square_footage?.toString() || '',
+            service_type: profile?.subscription_plan || '單次清潔',
+            scheduled_date: format(date, 'yyyy-MM-dd'),
+            time_slot: formData.time_slot,
+            cleaning_tools: cleaningTools,
+            enhance_areas: enhanceAreas,
+            preferred_weekdays: preferredWeekdays,
+            notes: formData.notes || '',
+            referral_source: referralSource,
+            referrer: referrer,
+          }
+        });
+      } catch (sheetErr) {
+        console.warn('Google Sheet 同步失敗，不影響預約:', sheetErr);
+      }
+
       // 發送通知（失敗不影響預約）
       try {
         await base44.integrations.Core.SendEmail({
