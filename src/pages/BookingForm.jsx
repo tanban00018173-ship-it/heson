@@ -131,6 +131,8 @@ export default function BookingForm() {
   // 使用會員資料勾選
   const [useProfilePhone, setUseProfilePhone] = useState(false);
   const [useProfileAddress, setUseProfileAddress] = useState(false);
+  const [useProfileName, setUseProfileName] = useState(false);
+  const [useProfileEmail, setUseProfileEmail] = useState(false);
 
   // 服務地址
   const [addrCity, setAddrCity] = useState('');
@@ -164,7 +166,6 @@ export default function BookingForm() {
       if (isAuth) {
         const userData = await base44.auth.me();
         setUser(userData);
-        setOrderer(prev => ({ ...prev, name: userData.full_name || '', email: userData.email || '' }));
         try {
           const profiles = await base44.entities.ClientProfile.filter({ user_id: userData.id });
           if (profiles[0]) setSavedProfile(profiles[0]);
@@ -174,7 +175,16 @@ export default function BookingForm() {
     loadUserData();
   }, []);
 
-  // 當勾選「常用電話」時帶入
+  // 勾選「常用姓名」
+  useEffect(() => {
+    if (useProfileName && user?.full_name) {
+      setOrderer(prev => ({ ...prev, name: user.full_name }));
+    } else if (!useProfileName) {
+      setOrderer(prev => ({ ...prev, name: '' }));
+    }
+  }, [useProfileName, user]);
+
+  // 勾選「常用電話」
   useEffect(() => {
     if (useProfilePhone && savedProfile?.phone) {
       setOrderer(prev => ({ ...prev, phone: savedProfile.phone }));
@@ -182,6 +192,15 @@ export default function BookingForm() {
       setOrderer(prev => ({ ...prev, phone: '' }));
     }
   }, [useProfilePhone, savedProfile]);
+
+  // 勾選「常用Email」
+  useEffect(() => {
+    if (useProfileEmail && user?.email) {
+      setOrderer(prev => ({ ...prev, email: user.email }));
+    } else if (!useProfileEmail) {
+      setOrderer(prev => ({ ...prev, email: '' }));
+    }
+  }, [useProfileEmail, user]);
 
   // 當勾選「常用地址」時帶入
   useEffect(() => {
@@ -391,7 +410,15 @@ export default function BookingForm() {
               <h2 className="text-base font-semibold text-stone-800 border-b border-stone-100 pb-2">訂購人資訊</h2>
 
               <div className="space-y-1.5">
-                <Label>姓名 *</Label>
+                <div className="flex items-center justify-between">
+                  <Label>姓名 *</Label>
+                  {user?.full_name && (
+                    <label className="flex items-center gap-1.5 text-xs text-stone-500 cursor-pointer">
+                      <Checkbox checked={useProfileName} onCheckedChange={setUseProfileName} className="h-3.5 w-3.5" />
+                      使用會員姓名（{user.full_name}）
+                    </label>
+                  )}
+                </div>
                 <Input value={orderer.name} onChange={e => setOrderer(p => ({...p, name: e.target.value}))}
                   placeholder="請輸入姓名" className="rounded-xl" />
               </div>
@@ -401,8 +428,7 @@ export default function BookingForm() {
                   <Label>聯絡電話 *</Label>
                   {savedProfile?.phone && (
                     <label className="flex items-center gap-1.5 text-xs text-stone-500 cursor-pointer">
-                      <Checkbox checked={useProfilePhone} onCheckedChange={setUseProfilePhone}
-                        className="h-3.5 w-3.5" />
+                      <Checkbox checked={useProfilePhone} onCheckedChange={setUseProfilePhone} className="h-3.5 w-3.5" />
                       使用常用電話（{savedProfile.phone}）
                     </label>
                   )}
@@ -412,7 +438,15 @@ export default function BookingForm() {
               </div>
 
               <div className="space-y-1.5">
-                <Label>電子郵件</Label>
+                <div className="flex items-center justify-between">
+                  <Label>電子郵件</Label>
+                  {user?.email && (
+                    <label className="flex items-center gap-1.5 text-xs text-stone-500 cursor-pointer">
+                      <Checkbox checked={useProfileEmail} onCheckedChange={setUseProfileEmail} className="h-3.5 w-3.5" />
+                      使用會員Email（{user.email}）
+                    </label>
+                  )}
+                </div>
                 <Input value={orderer.email} onChange={e => setOrderer(p => ({...p, email: e.target.value}))}
                   placeholder="email@example.com" className="rounded-xl" />
               </div>
