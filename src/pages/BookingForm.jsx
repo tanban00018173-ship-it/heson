@@ -21,6 +21,7 @@ import { CalendarIcon, Loader2, Sparkles, AlertCircle, Upload, X, ChevronDown, C
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
+import AddressMap from "@/components/AddressMap";
 
 const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL || 'service@heson.tw';
 
@@ -220,6 +221,7 @@ export default function BookingForm() {
   const [addrCity, setAddrCity] = useState('');
   const [addrDistrict, setAddrDistrict] = useState('');
   const [addrDetail, setAddrDetail] = useState('');
+  const [addrCoords, setAddrCoords] = useState(null);
 
   // 清潔類型 & 服務方案
   const [cleaningType, setCleaningType] = useState('');
@@ -373,6 +375,7 @@ export default function BookingForm() {
           housingType ? `房型: ${housingType}` : '',
           squareFootage ? `坪數: ${squareFootage}` : '',
           enhanceAreas.length ? `加強: ${enhanceAreas.join(', ')}` : '',
+          addrCoords ? `GPS: ${addrCoords.lat.toFixed(6)},${addrCoords.lng.toFixed(6)}` : '',
           notes ? `備註: ${notes}` : '',
         ].filter(Boolean).join(' | '),
       });
@@ -405,6 +408,7 @@ export default function BookingForm() {
             "現場照片上傳": photoUrls.join(', '),
             "同意條款": "是",
             "得知來源": referralSource,
+            "GPS座標": addrCoords ? `${addrCoords.lat.toFixed(6)},${addrCoords.lng.toFixed(6)}` : '',
           })
         });
       } catch (e) { console.warn('Webhook 失敗:', e); }
@@ -572,6 +576,14 @@ export default function BookingForm() {
                 <Input value={addrDetail} onChange={e => setAddrDetail(e.target.value)}
                   placeholder="路名、門牌號碼、樓層" className="rounded-xl" />
               </div>
+
+              {/* 地圖定位 */}
+              {addrDetail && addrCity && (
+                <AddressMap
+                  address={fullAddress}
+                  onLocationChange={setAddrCoords}
+                />
+              )}
 
               {addrCity && !HESON_DIRECT_CITIES.includes(addrCity) && (
                 <p className="text-xs text-stone-400 bg-stone-50 rounded-lg px-3 py-2">
