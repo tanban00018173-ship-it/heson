@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { MapPin, Loader2, RefreshCw, Move } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
+// Inject Leaflet CSS once
 function useLeafletCSS() {
   useEffect(() => {
     if (document.getElementById('leaflet-css')) return;
@@ -13,13 +14,88 @@ function useLeafletCSS() {
   }, []);
 }
 
-async function geocodeAddress(address) {
-  const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1&countrycodes=tw`;
-  const res = await fetch(url, { headers: { 'Accept-Language': 'zh-TW', 'User-Agent': 'HesonBooking/1.0' } });
-  const data = await res.json();
-  if (data && data[0]) {
-    return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+// Romanization helpers for Taiwan addresses
+const CITY_EN = {
+  '台北市': 'Taipei', '臺北市': 'Taipei', '新北市': 'New Taipei', '基隆市': 'Keelung',
+  '桃園市': 'Taoyuan', '新竹市': 'Hsinchu', '新竹縣': 'Hsinchu County',
+  '苗栗縣': 'Miaoli', '台中市': 'Taichung', '臺中市': 'Taichung',
+  '彰化縣': 'Changhua', '南投縣': 'Nantou', '雲林縣': 'Yunlin',
+  '嘉義市': 'Chiayi', '嘉義縣': 'Chiayi County', '台南市': 'Tainan', '臺南市': 'Tainan',
+  '高雄市': 'Kaohsiung', '屏東縣': 'Pingtung', '宜蘭縣': 'Yilan',
+  '花蓮縣': 'Hualien', '台東縣': 'Taitung', '澎湖縣': 'Penghu',
+  '金門縣': 'Kinmen', '連江縣': 'Lienchiang',
+};
+
+const DISTRICT_EN = {
+  '中正區': 'Zhongzheng District', '大同區': 'Datong District', '中山區': 'Zhongshan District',
+  '松山區': 'Songshan District', '大安區': 'Da\'an District', '萬華區': 'Wanhua District',
+  '信義區': 'Xinyi District', '士林區': 'Shilin District', '北投區': 'Beitou District',
+  '內湖區': 'Neihu District', '南港區': 'Nangang District', '文山區': 'Wenshan District',
+  '板橋區': 'Banqiao District', '三重區': 'Sanchong District', '中和區': 'Zhonghe District',
+  '永和區': 'Yonghe District', '新莊區': 'Xinzhuang District', '新店區': 'Xindian District',
+  '淡水區': 'Danshui District', '汐止區': 'Xizhi District', '土城區': 'Tucheng District',
+  '蘆洲區': 'Luzhou District', '樹林區': 'Shulin District', '三峽區': 'Sanxia District',
+  '鶯歌區': 'Yingge District', '林口區': 'Linkou District',
+  '桃園區': 'Taoyuan District', '中壢區': 'Zhongli District', '龜山區': 'Guishan District',
+  '八德區': 'Bade District', '楊梅區': 'Yangmei District', '蘆竹區': 'Luzhu District',
+  '西屯區': 'Xitun District', '南屯區': 'Nantun District', '北屯區': 'Beitun District',
+  '豐原區': 'Fengyuan District', '大里區': 'Dali District', '太平區': 'Taiping District',
+};
+
+// Build an English query from a Taiwan address string
+function buildEnglishQuery(address) {
+  let eng = address;
+  for (const [zh, en] of Object.entries(CITY_EN)) {
+    eng = eng.replace(zh, en + ', ');
   }
+  for (const [zh, en] of Object.entries(DISTRICT_EN)) {
+    eng = eng.replace(zh, en + ', ');
+  }
+  // Replace common road patterns: 重慶南路一段122號 → just keep numbers and Taiwan
+  // Strip remaining CJK for a cleaner query
+  eng = eng.replace(/[\u4e00-\u9fff]+/g, ' ').replace(/\s+/g, ' ').trim();
+  return eng + ', Taiwan';
+}
+
+async function nominatimQuery(q) {
+  const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=1&countrycodes=tw`;
+  const res = await fetch(url, { headers: { 'User-Agent': 'HesonBooking/1.0' } });
+  const data = await res.json();
+  if (data && data[0]) return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+  return null;
+}
+
+// Try multiple geocoding strategies
+async function geocodeAddress(address) {
+  // Strategy 1: full Chinese address
+  let result = await nominatimQuery(address);
+  if (result) return result;
+
+  // Strategy 2: English transliteration
+  const engQuery = buildEnglishQuery(address);
+  result = await nominatimQuery(engQuery);
+  if (result) return result;
+
+  // Strategy 3: city + district only (fallback to district center)
+  for (const [zh, en] of Object.entries(DISTRICT_EN)) {
+    if (address.includes(zh)) {
+      for (const [zhC, enC] of Object.entries(CITY_EN)) {
+        if (address.includes(zhC)) {
+          result = await nominatimQuery(`${en}, ${enC}, Taiwan`);
+          if (result) return result;
+        }
+      }
+    }
+  }
+
+  // Strategy 4: city only
+  for (const [zh, en] of Object.entries(CITY_EN)) {
+    if (address.includes(zh)) {
+      result = await nominatimQuery(`${en}, Taiwan`);
+      if (result) return result;
+    }
+  }
+
   return null;
 }
 
@@ -28,13 +104,11 @@ export default function AddressMap({ address, onLocationChange }) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const markerRef = useRef(null);
-  const [status, setStatus] = useState('idle'); // idle | loading | found | manual | error
+  const [status, setStatus] = useState('idle');
   const [position, setPosition] = useState(null);
 
-  const setupMap = useCallback(async (lat, lng) => {
+  const setupMap = useCallback(async (lat, lng, zoom = 17) => {
     const L = (await import('leaflet')).default;
-
-    // Fix Leaflet default icon
     delete L.Icon.Default.prototype._getIconUrl;
     L.Icon.Default.mergeOptions({
       iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
@@ -45,35 +119,27 @@ export default function AddressMap({ address, onLocationChange }) {
     if (!containerRef.current) return;
 
     if (!mapRef.current) {
-      mapRef.current = L.map(containerRef.current).setView([lat, lng], 17);
-
+      mapRef.current = L.map(containerRef.current).setView([lat, lng], zoom);
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© <a href="https://www.openstreetmap.org/">OpenStreetMap</a>',
+        attribution: '© OpenStreetMap',
         maxZoom: 19,
       }).addTo(mapRef.current);
 
-      // Click map to reposition marker
       mapRef.current.on('click', (e) => {
-        const { lat: newLat, lng: newLng } = e.latlng;
-        if (markerRef.current) {
-          markerRef.current.setLatLng([newLat, newLng]);
-        }
-        const coords = { lat: newLat, lng: newLng };
+        const coords = { lat: e.latlng.lat, lng: e.latlng.lng };
+        markerRef.current?.setLatLng([coords.lat, coords.lng]);
         setPosition(coords);
         setStatus('manual');
         onLocationChange?.(coords);
       });
     } else {
-      mapRef.current.setView([lat, lng], 17);
+      mapRef.current.setView([lat, lng], zoom);
     }
 
-    // Update or create marker
     if (markerRef.current) {
       markerRef.current.setLatLng([lat, lng]);
     } else {
       markerRef.current = L.marker([lat, lng], { draggable: true }).addTo(mapRef.current);
-      markerRef.current.bindPopup('可拖曳大頭針或點擊地圖手動校正').openPopup();
-
       markerRef.current.on('dragend', (e) => {
         const { lat: newLat, lng: newLng } = e.target.getLatLng();
         const coords = { lat: newLat, lng: newLng };
@@ -83,12 +149,11 @@ export default function AddressMap({ address, onLocationChange }) {
       });
     }
 
-    // Invalidate size after map is visible
-    setTimeout(() => mapRef.current?.invalidateSize(), 100);
+    setTimeout(() => mapRef.current?.invalidateSize(), 150);
   }, [onLocationChange]);
 
   const doGeocode = useCallback(async () => {
-    if (!address || address.length < 6) return;
+    if (!address || address.length < 5) return;
     setStatus('loading');
     try {
       const result = await geocodeAddress(address);
@@ -96,29 +161,27 @@ export default function AddressMap({ address, onLocationChange }) {
         setPosition(result);
         setStatus('found');
         onLocationChange?.(result);
-        await setupMap(result.lat, result.lng);
+        await setupMap(result.lat, result.lng, 17);
       } else {
         setStatus('error');
-        // Show map centered on Taiwan for manual marking
-        await setupMap(23.97, 120.97);
-        mapRef.current?.setZoom(8);
+        // Show Taiwan map for manual click
+        await setupMap(23.97, 120.97, 8);
       }
     } catch {
       setStatus('error');
+      await setupMap(23.97, 120.97, 8);
     }
   }, [address, setupMap, onLocationChange]);
 
-  // Debounce geocode on address change
   useEffect(() => {
-    if (!address || address.length < 6) {
+    if (!address || address.length < 5) {
       setStatus('idle');
       return;
     }
-    const t = setTimeout(doGeocode, 1000);
+    const t = setTimeout(doGeocode, 1200);
     return () => clearTimeout(t);
   }, [address, doGeocode]);
 
-  // Cleanup
   useEffect(() => {
     return () => {
       mapRef.current?.remove();
@@ -127,11 +190,10 @@ export default function AddressMap({ address, onLocationChange }) {
     };
   }, []);
 
-  if (!address || address.length < 6) return null;
+  if (status === 'idle') return null;
 
   return (
     <div className="space-y-2">
-      {/* Status bar */}
       <div className="flex items-center justify-between min-h-[20px]">
         <div className="flex items-center gap-1.5 text-xs">
           <MapPin className="w-3.5 h-3.5 text-stone-400 flex-shrink-0" />
@@ -152,28 +214,27 @@ export default function AddressMap({ address, onLocationChange }) {
             <span className="text-red-500">無法自動定位，請點擊地圖手動標記</span>
           )}
         </div>
-        {(status === 'found' || status === 'manual' || status === 'error') && (
-          <Button type="button" variant="ghost" size="sm" className="h-6 text-xs px-2 text-stone-500 hover:text-stone-700" onClick={doGeocode}>
+        {status !== 'loading' && (
+          <Button type="button" variant="ghost" size="sm"
+            className="h-6 text-xs px-2 text-stone-500 hover:text-stone-700"
+            onClick={doGeocode}>
             <RefreshCw className="w-3 h-3 mr-1" />重新定位
           </Button>
         )}
       </div>
 
-      {/* Map container — always rendered when status is not idle/loading-before-first-show */}
-      <div
-        ref={containerRef}
-        className="rounded-xl overflow-hidden border border-stone-200 bg-stone-100"
-        style={{ height: 240, display: status === 'idle' ? 'none' : 'block' }}
-      />
-
-      {/* Loading placeholder */}
       {status === 'loading' && (
-        <div className="rounded-xl border border-stone-200 bg-stone-50 flex items-center justify-center -mt-[240px] relative z-0 pointer-events-none" style={{ height: 240 }}>
+        <div className="rounded-xl border border-stone-200 bg-stone-50 flex items-center justify-center" style={{ height: 240 }}>
           <Loader2 className="w-6 h-6 animate-spin text-stone-300" />
         </div>
       )}
 
-      {/* Coords display */}
+      <div
+        ref={containerRef}
+        className="rounded-xl overflow-hidden border border-stone-200"
+        style={{ height: 240, display: status === 'loading' ? 'none' : 'block' }}
+      />
+
       {position && status !== 'loading' && (
         <p className="text-xs text-stone-400">
           座標：{position.lat.toFixed(6)}, {position.lng.toFixed(6)}
