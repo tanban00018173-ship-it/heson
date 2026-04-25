@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { MapPin, Loader2, RefreshCw, Move } from 'lucide-react';
+import { MapPin, Loader2, RefreshCw, Move, Pencil, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 // Inject Leaflet CSS once
@@ -106,6 +106,7 @@ export default function AddressMap({ address, onLocationChange }) {
   const markerRef = useRef(null);
   const [status, setStatus] = useState('idle');
   const [position, setPosition] = useState(null);
+  const [confirmed, setConfirmed] = useState(false);
 
   const setupMap = useCallback(async (lat, lng, zoom = 17) => {
     const L = (await import('leaflet')).default;
@@ -126,6 +127,7 @@ export default function AddressMap({ address, onLocationChange }) {
       }).addTo(mapRef.current);
 
       mapRef.current.on('click', (e) => {
+        if (confirmed) return;
         const coords = { lat: e.latlng.lat, lng: e.latlng.lng };
         markerRef.current?.setLatLng([coords.lat, coords.lng]);
         setPosition(coords);
@@ -141,6 +143,7 @@ export default function AddressMap({ address, onLocationChange }) {
     } else {
       markerRef.current = L.marker([lat, lng], { draggable: true }).addTo(mapRef.current);
       markerRef.current.on('dragend', (e) => {
+        if (confirmed) return;
         const { lat: newLat, lng: newLng } = e.target.getLatLng();
         const coords = { lat: newLat, lng: newLng };
         setPosition(coords);
@@ -172,6 +175,11 @@ export default function AddressMap({ address, onLocationChange }) {
       await setupMap(23.97, 120.97, 8);
     }
   }, [address, setupMap, onLocationChange]);
+
+  // Reset confirmed when address changes
+  useEffect(() => {
+    setConfirmed(false);
+  }, [address]);
 
   useEffect(() => {
     if (!address || address.length < 5) {
@@ -214,13 +222,29 @@ export default function AddressMap({ address, onLocationChange }) {
             <span className="text-red-500">無法自動定位，請點擊地圖手動標記</span>
           )}
         </div>
-        {status !== 'loading' && (
-          <Button type="button" variant="ghost" size="sm"
-            className="h-6 text-xs px-2 text-stone-500 hover:text-stone-700"
-            onClick={doGeocode}>
-            <RefreshCw className="w-3 h-3 mr-1" />重新定位
-          </Button>
-        )}
+          <div className="flex items-center gap-1">
+          {status !== 'loading' && !confirmed && (
+            <Button type="button" variant="ghost" size="sm"
+              className="h-6 text-xs px-2 text-stone-500 hover:text-stone-700"
+              onClick={doGeocode}>
+              <RefreshCw className="w-3 h-3 mr-1" />重新定位
+            </Button>
+          )}
+          {position && status !== 'loading' && !confirmed && (
+            <Button type="button" size="sm"
+              className="h-6 text-xs px-3 bg-green-600 hover:bg-green-700 text-white rounded-lg"
+              onClick={() => { setConfirmed(true); markerRef.current?.dragging?.disable(); }}>
+              <CheckCircle2 className="w-3 h-3 mr-1" />確認位置
+            </Button>
+          )}
+          {confirmed && (
+            <Button type="button" variant="outline" size="sm"
+              className="h-6 text-xs px-3 text-amber-600 border-amber-300 hover:bg-amber-50 rounded-lg"
+              onClick={() => { setConfirmed(false); markerRef.current?.dragging?.enable(); }}>
+              <Pencil className="w-3 h-3 mr-1" />編輯位置
+            </Button>
+          )}
+        </div>
       </div>
 
       {status === 'loading' && (
@@ -229,11 +253,16 @@ export default function AddressMap({ address, onLocationChange }) {
         </div>
       )}
 
-      <div
-        ref={containerRef}
-        className="rounded-xl overflow-hidden border border-stone-200"
-        style={{ height: 240, display: status === 'loading' ? 'none' : 'block' }}
-      />
+      <div className="relative">
+        <div
+          ref={containerRef}
+          className="rounded-xl overflow-hidden border border-stone-200"
+          style={{ height: 240, display: status === 'loading' ? 'none' : 'block' }}
+        />
+        {confirmed && (
+          <div className="absolute inset-0 rounded-xl bg-transparent z-[1000] cursor-not-allowed" />
+        )}
+      </div>
 
       {position && status !== 'loading' && (
         <p className="text-xs text-stone-400">
