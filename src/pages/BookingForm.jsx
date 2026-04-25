@@ -14,9 +14,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { format } from "date-fns";
 import { zhTW } from "date-fns/locale";
-import { CalendarIcon, Loader2, Sparkles, AlertCircle, Upload, X, ChevronDown } from "lucide-react";
+import { CalendarIcon, Loader2, Sparkles, AlertCircle, Upload, X, ChevronDown, Check } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -133,6 +134,55 @@ function inferRegion(city) {
     '宜蘭縣': '宜蘭', '花蓮縣': '花蓮', '台東縣': '台東',
   };
   return map[city] || city;
+}
+
+function DistrictCombobox({ districts, value, onChange, disabled }) {
+  const [open, setOpen] = React.useState(false);
+  const [search, setSearch] = React.useState('');
+
+  const filtered = districts.filter(d => d.includes(search));
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          role="combobox"
+          disabled={disabled}
+          className="w-full justify-between rounded-xl font-normal text-sm"
+        >
+          <span className={value ? 'text-foreground' : 'text-muted-foreground'}>
+            {value || (disabled ? '請先選縣市' : '請選擇')}
+          </span>
+          <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[200px] p-0" align="start">
+        <Command shouldFilter={false}>
+          <CommandInput
+            placeholder="搜尋鄉鎮市區..."
+            value={search}
+            onValueChange={setSearch}
+          />
+          <CommandList>
+            <CommandEmpty>無符合結果</CommandEmpty>
+            <CommandGroup>
+              {filtered.map(d => (
+                <CommandItem
+                  key={d}
+                  value={d}
+                  onSelect={() => { onChange(d); setOpen(false); setSearch(''); }}
+                >
+                  <Check className={`mr-2 h-4 w-4 ${value === d ? 'opacity-100' : 'opacity-0'}`} />
+                  {d}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
 }
 
 export default function BookingForm() {
@@ -496,14 +546,12 @@ export default function BookingForm() {
                 </div>
                 <div className="space-y-1.5">
                   <Label>鄉鎮市區</Label>
-                  <Select value={addrDistrict} onValueChange={setAddrDistrict} disabled={!addrCity}>
-                    <SelectTrigger className="rounded-xl"><SelectValue placeholder={addrCity ? '請選擇' : '請先選縣市'} /></SelectTrigger>
-                    <SelectContent className="max-h-56">
-                      {(CITY_DISTRICTS[addrCity] || []).map(d => (
-                        <SelectItem key={d} value={d}>{d}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <DistrictCombobox
+                    districts={CITY_DISTRICTS[addrCity] || []}
+                    value={addrDistrict}
+                    onChange={setAddrDistrict}
+                    disabled={!addrCity}
+                  />
                 </div>
               </div>
 
