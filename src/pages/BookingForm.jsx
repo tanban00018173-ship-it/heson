@@ -229,6 +229,7 @@ export default function BookingForm() {
 
   // 其他表單欄位
   const [housingType, setHousingType] = useState('');
+  const [hasElevator, setHasElevator] = useState('');
   const [squareFootage, setSquareFootage] = useState('');
   const [hasPet, setHasPet] = useState('');
   const [cleaningTools, setCleaningTools] = useState('我方自帶');
@@ -371,8 +372,8 @@ export default function BookingForm() {
         address: fullAddress,
         phone: orderer.phone,
         notes: [
-          `清潔類型: ${cleaningType}`,
-          housingType ? `房型: ${housingType}` : '',
+        `清潔類型: ${cleaningType}`,
+        housingType ? `房型: ${housingType}${hasElevator ? ` (${hasElevator})` : ''}` : '',
           squareFootage ? `坪數: ${squareFootage}` : '',
           enhanceAreas.length ? `加強: ${enhanceAreas.join(', ')}` : '',
           addrCoords ? `GPS: ${addrCoords.lat.toFixed(6)},${addrCoords.lng.toFixed(6)}` : '',
@@ -394,6 +395,7 @@ export default function BookingForm() {
             "需要服務地址": fullAddress,
             "服務地區": inferRegion(addrCity),
             "空間型態": housingType,
+            "有無電梯": hasElevator,
             "需求清潔坪數": squareFootage,
             "是否有寵物": hasPet,
             "您想申請的服務類型": cleaningType,
@@ -606,24 +608,41 @@ export default function BookingForm() {
 
                 {/* 房屋資訊 */}
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
-                    <Label>房屋型態</Label>
-                    <Select value={housingType} onValueChange={setHousingType}>
-                      <SelectTrigger className="rounded-xl"><SelectValue placeholder="請選擇" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="透天">透天</SelectItem>
-                        <SelectItem value="公寓">公寓</SelectItem>
-                        <SelectItem value="華廈、大樓">華廈、大樓</SelectItem>
-                        <SelectItem value="農舍">農舍</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>坪數</Label>
-                    <Input type="number" value={squareFootage} onChange={e => setSquareFootage(e.target.value)}
-                      placeholder="例：30" className="rounded-xl" />
+                <div className="space-y-1.5">
+                  <Label>房屋型態</Label>
+                  <Select value={housingType} onValueChange={setHousingType}>
+                    <SelectTrigger className="rounded-xl"><SelectValue placeholder="請選擇" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="透天">透天</SelectItem>
+                      <SelectItem value="公寓">公寓</SelectItem>
+                      <SelectItem value="華廈">華廈</SelectItem>
+                      <SelectItem value="大樓">大樓</SelectItem>
+                      <SelectItem value="農舍">農舍</SelectItem>
+                      <SelectItem value="廠辦">廠辦</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label>坪數</Label>
+                  <Input type="number" value={squareFootage} onChange={e => setSquareFootage(e.target.value)}
+                    placeholder="例：30" className="rounded-xl" />
+                </div>
+                </div>
+
+                {/* 有無電梯 */}
+                {housingType && (
+                <div className="space-y-1.5">
+                  <Label>有無電梯</Label>
+                  <div className="flex gap-2">
+                    {['有電梯', '無電梯'].map(v => (
+                      <button key={v} type="button" onClick={() => setHasElevator(v)}
+                        className={`flex-1 py-2 rounded-xl border-2 text-sm font-medium transition-all ${hasElevator === v ? 'border-amber-500 bg-amber-50 text-amber-700' : 'border-stone-200 text-stone-600 hover:border-stone-300'}`}>
+                        {v}
+                      </button>
+                    ))}
                   </div>
                 </div>
+                )}
 
                 {/* 清潔類型 */}
                 <div className="space-y-1.5">
