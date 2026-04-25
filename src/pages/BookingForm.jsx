@@ -136,11 +136,11 @@ function inferRegion(city) {
   return map[city] || city;
 }
 
-function DistrictCombobox({ districts, value, onChange, disabled }) {
+function SearchCombobox({ items, value, onChange, disabled, placeholder, disabledPlaceholder, searchPlaceholder }) {
   const [open, setOpen] = React.useState(false);
   const [search, setSearch] = React.useState('');
 
-  const filtered = districts.filter(d => d.includes(search));
+  const filtered = items.filter(d => d.includes(search));
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -152,15 +152,15 @@ function DistrictCombobox({ districts, value, onChange, disabled }) {
           className="w-full justify-between rounded-xl font-normal text-sm"
         >
           <span className={value ? 'text-foreground' : 'text-muted-foreground'}>
-            {value || (disabled ? '請先選縣市' : '請選擇')}
+            {value || (disabled ? disabledPlaceholder : placeholder)}
           </span>
           <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[200px] p-0" align="start">
+      <PopoverContent className="w-[220px] p-0" align="start">
         <Command shouldFilter={false}>
           <CommandInput
-            placeholder="搜尋鄉鎮市區..."
+            placeholder={searchPlaceholder}
             value={search}
             onValueChange={setSearch}
           />
@@ -182,6 +182,20 @@ function DistrictCombobox({ districts, value, onChange, disabled }) {
         </Command>
       </PopoverContent>
     </Popover>
+  );
+}
+
+function DistrictCombobox({ districts, value, onChange, disabled }) {
+  return (
+    <SearchCombobox
+      items={districts}
+      value={value}
+      onChange={onChange}
+      disabled={disabled}
+      placeholder="請選擇"
+      disabledPlaceholder="請先選縣市"
+      searchPlaceholder="搜尋鄉鎮市區..."
+    />
   );
 }
 
@@ -321,6 +335,7 @@ export default function BookingForm() {
     if (!orderer.name) missing.push('訂購人姓名');
     if (!orderer.phone) missing.push('聯絡電話');
     if (!addrCity) missing.push('服務縣市');
+    if (!addrDistrict) missing.push('鄉鎮市區');
     if (!addrDetail) missing.push('詳細地址');
     if (!cleaningType) missing.push('清潔類型');
     if (!servicePlan) missing.push('服務方案');
@@ -533,19 +548,16 @@ export default function BookingForm() {
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <Label>縣市 *</Label>
-                  <Select value={addrCity} onValueChange={handleCityChange}>
-                    <SelectTrigger className="rounded-xl"><SelectValue placeholder="請選擇縣市" /></SelectTrigger>
-                    <SelectContent className="max-h-56">
-                      {TAIWAN_CITIES.map(c => (
-                        <SelectItem key={c} value={c}>
-                          {c}{HESON_DIRECT_CITIES.includes(c) ? ' ✓' : ''}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <SearchCombobox
+                    items={TAIWAN_CITIES.map(c => HESON_DIRECT_CITIES.includes(c) ? `${c} ✓` : c)}
+                    value={addrCity ? (HESON_DIRECT_CITIES.includes(addrCity) ? `${addrCity} ✓` : addrCity) : ''}
+                    onChange={v => handleCityChange(v.replace(' ✓', ''))}
+                    placeholder="請選擇縣市"
+                    searchPlaceholder="搜尋縣市..."
+                  />
                 </div>
                 <div className="space-y-1.5">
-                  <Label>鄉鎮市區</Label>
+                  <Label>鄉鎮市區 *</Label>
                   <DistrictCombobox
                     districts={CITY_DISTRICTS[addrCity] || []}
                     value={addrDistrict}
