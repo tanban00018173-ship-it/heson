@@ -202,14 +202,6 @@ export default function BookingForm() {
     }
   }, [useProfileEmail, user]);
 
-  // 手動修改欄位時取消對應勾選
-  const handleOrdererChange = (field, value) => {
-    setOrderer(prev => ({ ...prev, [field]: value }));
-    if (field === 'name' && useProfileName && value !== user?.full_name) setUseProfileName(false);
-    if (field === 'phone' && useProfilePhone && value !== savedProfile?.phone) setUseProfilePhone(false);
-    if (field === 'email' && useProfileEmail && value !== user?.email) setUseProfileEmail(false);
-  };
-
   // 當勾選「常用地址」時帶入
   useEffect(() => {
     if (useProfileAddress && savedProfile?.address) {
@@ -427,7 +419,7 @@ export default function BookingForm() {
                     </label>
                   )}
                 </div>
-                <Input value={orderer.name} onChange={e => handleOrdererChange('name', e.target.value)}
+                <Input value={orderer.name} onChange={e => setOrderer(p => ({...p, name: e.target.value}))}
                   placeholder="請輸入姓名" className="rounded-xl" />
               </div>
 
@@ -441,7 +433,7 @@ export default function BookingForm() {
                     </label>
                   )}
                 </div>
-                <Input value={orderer.phone} onChange={e => handleOrdererChange('phone', e.target.value)}
+                <Input value={orderer.phone} onChange={e => setOrderer(p => ({...p, phone: e.target.value}))}
                   placeholder="09XX-XXX-XXX" className="rounded-xl" />
               </div>
 
@@ -455,7 +447,7 @@ export default function BookingForm() {
                     </label>
                   )}
                 </div>
-                <Input value={orderer.email} onChange={e => handleOrdererChange('email', e.target.value)}
+                <Input value={orderer.email} onChange={e => setOrderer(p => ({...p, email: e.target.value}))}
                   placeholder="email@example.com" className="rounded-xl" />
               </div>
             </CardContent>
