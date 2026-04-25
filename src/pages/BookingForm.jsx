@@ -164,7 +164,7 @@ export default function BookingForm() {
       if (isAuth) {
         const userData = await base44.auth.me();
         setUser(userData);
-        setOrderer(prev => ({ ...prev, name: userData.full_name || '', email: userData.email || '' }));
+        setOrderer(prev => ({ ...prev, name: '', email: '' }));
         try {
           const profiles = await base44.entities.ClientProfile.filter({ user_id: userData.id });
           if (profiles[0]) setSavedProfile(profiles[0]);
@@ -391,7 +391,16 @@ export default function BookingForm() {
               <h2 className="text-base font-semibold text-stone-800 border-b border-stone-100 pb-2">訂購人資訊</h2>
 
               <div className="space-y-1.5">
-                <Label>姓名 *</Label>
+                <div className="flex items-center justify-between">
+                  <Label>姓名 *</Label>
+                  {user?.full_name && (
+                    <button type="button"
+                      onClick={() => setOrderer(p => ({...p, name: p.name ? '' : user.full_name}))}
+                      className="text-xs text-amber-600 underline">
+                      {orderer.name ? '清除' : `使用會員姓名（${user.full_name}）`}
+                    </button>
+                  )}
+                </div>
                 <Input value={orderer.name} onChange={e => setOrderer(p => ({...p, name: e.target.value}))}
                   placeholder="請輸入姓名" className="rounded-xl" />
               </div>
@@ -400,11 +409,11 @@ export default function BookingForm() {
                 <div className="flex items-center justify-between">
                   <Label>聯絡電話 *</Label>
                   {savedProfile?.phone && (
-                    <label className="flex items-center gap-1.5 text-xs text-stone-500 cursor-pointer">
-                      <Checkbox checked={useProfilePhone} onCheckedChange={setUseProfilePhone}
-                        className="h-3.5 w-3.5" />
-                      使用常用電話（{savedProfile.phone}）
-                    </label>
+                    <button type="button"
+                      onClick={() => setOrderer(p => ({...p, phone: p.phone ? '' : savedProfile.phone}))}
+                      className="text-xs text-amber-600 underline">
+                      {orderer.phone ? '清除' : `使用常用電話（${savedProfile.phone}）`}
+                    </button>
                   )}
                 </div>
                 <Input value={orderer.phone} onChange={e => setOrderer(p => ({...p, phone: e.target.value}))}
@@ -412,7 +421,16 @@ export default function BookingForm() {
               </div>
 
               <div className="space-y-1.5">
-                <Label>電子郵件</Label>
+                <div className="flex items-center justify-between">
+                  <Label>電子郵件</Label>
+                  {user?.email && (
+                    <button type="button"
+                      onClick={() => setOrderer(p => ({...p, email: p.email ? '' : user.email}))}
+                      className="text-xs text-amber-600 underline">
+                      {orderer.email ? '清除' : `使用會員信箱`}
+                    </button>
+                  )}
+                </div>
                 <Input value={orderer.email} onChange={e => setOrderer(p => ({...p, email: e.target.value}))}
                   placeholder="email@example.com" className="rounded-xl" />
               </div>
