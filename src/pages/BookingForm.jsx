@@ -179,8 +179,6 @@ export default function BookingForm() {
   useEffect(() => {
     if (useProfileName && user?.full_name) {
       setOrderer(prev => ({ ...prev, name: user.full_name }));
-    } else if (!useProfileName) {
-      setOrderer(prev => ({ ...prev, name: '' }));
     }
   }, [useProfileName, user]);
 
@@ -188,8 +186,6 @@ export default function BookingForm() {
   useEffect(() => {
     if (useProfilePhone && savedProfile?.phone) {
       setOrderer(prev => ({ ...prev, phone: savedProfile.phone }));
-    } else if (!useProfilePhone) {
-      setOrderer(prev => ({ ...prev, phone: '' }));
     }
   }, [useProfilePhone, savedProfile]);
 
@@ -197,8 +193,6 @@ export default function BookingForm() {
   useEffect(() => {
     if (useProfileEmail && user?.email) {
       setOrderer(prev => ({ ...prev, email: user.email }));
-    } else if (!useProfileEmail) {
-      setOrderer(prev => ({ ...prev, email: '' }));
     }
   }, [useProfileEmail, user]);
 
@@ -419,7 +413,7 @@ export default function BookingForm() {
                     </label>
                   )}
                 </div>
-                <Input value={orderer.name} onChange={e => setOrderer(p => ({...p, name: e.target.value}))}
+                <Input value={orderer.name} onChange={e => { setUseProfileName(false); setOrderer(p => ({...p, name: e.target.value})); }}
                   placeholder="請輸入姓名" className="rounded-xl" />
               </div>
 
@@ -433,7 +427,7 @@ export default function BookingForm() {
                     </label>
                   )}
                 </div>
-                <Input value={orderer.phone} onChange={e => setOrderer(p => ({...p, phone: e.target.value}))}
+                <Input value={orderer.phone} onChange={e => { setUseProfilePhone(false); setOrderer(p => ({...p, phone: e.target.value})); }}
                   placeholder="09XX-XXX-XXX" className="rounded-xl" />
               </div>
 
@@ -447,7 +441,7 @@ export default function BookingForm() {
                     </label>
                   )}
                 </div>
-                <Input value={orderer.email} onChange={e => setOrderer(p => ({...p, email: e.target.value}))}
+                <Input value={orderer.email} onChange={e => { setUseProfileEmail(false); setOrderer(p => ({...p, email: e.target.value})); }}
                   placeholder="email@example.com" className="rounded-xl" />
               </div>
             </CardContent>
