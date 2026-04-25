@@ -362,7 +362,7 @@ export default function BookingForm() {
         <div className="container mx-auto px-5 max-w-2xl text-center">
           <div className="inline-flex items-center gap-2 bg-white/80 backdrop-blur-sm px-4 py-1.5 rounded-full shadow-sm mb-4">
             <Sparkles className="w-4 h-4 text-amber-600" />
-            <span className="text-sm text-stone-600 font-medium">首次預約享免費試掃</span>
+            <span className="text-sm text-stone-600 font-medium">首次預約折 NT$ 300</span>
           </div>
           <h1 className="text-3xl font-medium text-stone-800">立即預約服務</h1>
           <p className="text-stone-500 mt-2 text-sm">填寫以下資料，讓我們為您安排最適合的服務</p>
