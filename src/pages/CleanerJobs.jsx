@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Menu, X, ClipboardList, Zap, LogOut, User, BarChart3, Home } from "lucide-react";
+import { Menu, X, ClipboardList, Zap, LogOut, User, Home } from "lucide-react";
+import AdminViewSwitcher from "@/components/AdminViewSwitcher";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
@@ -142,29 +143,12 @@ export default function CleanerJobs() {
                 前台（客戶視角）
               </Link>
 
-              {/* 僅管理員可見的後台入口 */}
+              {/* 管理員視角切換 */}
               {user?.role === 'admin' && (
-                <>
-                  <div className="pt-2 pb-1 px-4">
-                    <p className="text-xs text-stone-400 font-medium">管理員</p>
-                  </div>
-                  <Link
-                    to={createPageUrl('AdminDashboard')}
-                    onClick={() => setMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-stone-600 hover:bg-stone-50"
-                  >
-                    <BarChart3 className="w-5 h-5 text-stone-400" />
-                    後台總覽
-                  </Link>
-                  <Link
-                    to={createPageUrl('AdminDispatch')}
-                    onClick={() => setMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-stone-600 hover:bg-stone-50"
-                  >
-                    <ClipboardList className="w-5 h-5 text-stone-400" />
-                    派單管理
-                  </Link>
-                </>
+                <div className="pt-2 pb-1 px-4">
+                  <p className="text-xs text-stone-400 font-medium mb-2">切換視角</p>
+                  <AdminViewSwitcher />
+                </div>
               )}
             </nav>
 
