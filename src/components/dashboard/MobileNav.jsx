@@ -36,6 +36,7 @@ export default function MobileNav({ userRole = 'client', userName = '' }) {
     { name: "我的行程", path: "CleanerSchedule", icon: Calendar },
     { name: "服務回報", path: "CleanerReport", icon: FileText },
     { name: "個人資料", path: "CleanerProfile", icon: User },
+    { name: "前台（客戶視角）", path: "ClientDashboard", icon: Home },
   ];
 
   const adminLinks = [

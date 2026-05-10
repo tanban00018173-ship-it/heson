@@ -16,6 +16,7 @@ import FlashTaskMap from "@/components/cleaner/FlashTaskMap";
 export default function CleanerJobs() {
   const [user, setUser] = useState(null);
   const [cleanerProfile, setCleanerProfile] = useState(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -27,6 +28,7 @@ export default function CleanerJobs() {
       }
       const userData = await base44.auth.me();
       setUser(userData);
+      if (userData.role === 'admin') setIsAdmin(true);
       
       // Load cleaner profile
       const profiles = await base44.entities.CleanerProfile.filter({ user_id: userData.id });
@@ -100,9 +102,9 @@ export default function CleanerJobs() {
   return (
     <div className="min-h-screen bg-stone-50 flex">
       <div className="hidden lg:block">
-        <Sidebar userRole="cleaner" userName={cleanerProfile?.nickname || user?.full_name} />
+        <Sidebar userRole={isAdmin ? 'admin' : 'cleaner'} userName={cleanerProfile?.nickname || user?.full_name} />
       </div>
-      <MobileNav userRole="cleaner" userName={cleanerProfile?.nickname || user?.full_name} />
+      <MobileNav userRole={isAdmin ? 'admin' : 'cleaner'} userName={cleanerProfile?.nickname || user?.full_name} />
       
       <main className="flex-1 pt-16 lg:pt-0">
         <div className="p-6 lg:p-8 max-w-5xl mx-auto">

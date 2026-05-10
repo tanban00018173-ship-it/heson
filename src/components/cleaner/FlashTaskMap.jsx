@@ -129,10 +129,9 @@ export default function FlashTaskMap({ flashTasks = [], onAccept }) {
     import('leaflet').then(({ default: L }) => renderTaskMarkers(L));
   }, [flashTasks, renderTaskMarkers]);
 
-  // 頁面載入時自動請求 GPS
-  useEffect(() => {
-    requestGPS();
-  }, []);
+  // 頁面載入時自動請求 GPS（只執行一次）
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { requestGPS(); }, []);
 
   useEffect(() => {
     return () => {
@@ -177,9 +176,17 @@ export default function FlashTaskMap({ flashTasks = [], onAccept }) {
       )}
 
       {/* 地圖 */}
+      {gpsStatus === 'loading' && (
+        <div className="flex items-center justify-center" style={{ height: 380 }}>
+          <div className="flex flex-col items-center gap-3 text-stone-400">
+            <Loader2 className="w-8 h-8 animate-spin text-amber-400" />
+            <span className="text-sm">正在取得定位...</span>
+          </div>
+        </div>
+      )}
       <div
         ref={containerRef}
-        style={{ height: 380, display: gpsStatus === 'idle' ? 'none' : 'block' }}
+        style={{ height: 380, display: gpsStatus === 'loading' ? 'none' : 'block' }}
       />
 
       {/* 任務詳情 popup */}
