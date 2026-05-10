@@ -113,7 +113,7 @@ function MapInner({ apiKey, flashTasks, onAccept }) {
           }}
           zIndex={1000}
         />
-        {zoom >= 15 && flashTasks.filter(t => t.gps_lat && t.gps_lng).map(task => (
+        {zoom >= 15 && flashTasks.filter(t => t.gps_lat && t.gps_lng).slice(0, 5).map(task => (
           <Marker
             key={task.id}
             position={{ lat: task.gps_lat, lng: task.gps_lng }}
