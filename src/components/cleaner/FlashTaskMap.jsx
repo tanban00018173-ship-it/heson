@@ -21,6 +21,8 @@ const mapOptions = {
   streetViewControl: false,
   mapTypeControl: false,
   fullscreenControl: false,
+  draggable: true,
+  gestureHandling: 'greedy',
 };
 
 function openGoogleNavigation(lat, lng, address) {
