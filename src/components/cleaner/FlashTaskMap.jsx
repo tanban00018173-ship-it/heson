@@ -24,14 +24,6 @@ const mapOptions = {
   draggable: true,
   gestureHandling: 'greedy',
   clickableIcons: false,
-  styles: [
-    // 只隱藏 POI 文字標籤，保留圖標幫助對照地址
-    {
-      featureType: 'poi',
-      elementType: 'labels.text',
-      stylers: [{ visibility: 'off' }],
-    },
-  ],
 };
 
 function openGoogleNavigation(lat, lng, address) {
@@ -45,7 +37,6 @@ function MapInner({ apiKey, flashTasks, onAccept }) {
   const [gpsStatus, setGpsStatus] = useState('loading');
   const [selectedTask, setSelectedTask] = useState(null);
   const [accepting, setAccepting] = useState(false);
-  const [zoom, setZoom] = useState(14);
   const mapRef = useRef(null);
 
   const { isLoaded, loadError } = useLoadScript({
@@ -100,14 +91,9 @@ function MapInner({ apiKey, flashTasks, onAccept }) {
       <GoogleMap
         mapContainerStyle={mapContainerStyle}
         center={userPos}
-        zoom={zoom}
+        zoom={14}
         options={mapOptions}
         onLoad={map => { mapRef.current = map; }}
-        onZoomChanged={() => {
-          if (mapRef.current) {
-            setZoom(mapRef.current.getZoom());
-          }
-        }}
       >
         <Marker
           position={userPos}
@@ -121,7 +107,7 @@ function MapInner({ apiKey, flashTasks, onAccept }) {
           }}
           zIndex={1000}
         />
-        {zoom >= 15 && flashTasks.filter(t => t.gps_lat && t.gps_lng).slice(0, 5).map(task => (
+        {flashTasks.filter(t => t.gps_lat && t.gps_lng).map(task => (
           <Marker
             key={task.id}
             position={{ lat: task.gps_lat, lng: task.gps_lng }}
