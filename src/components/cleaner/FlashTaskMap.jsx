@@ -25,8 +25,14 @@ const mapOptions = {
   gestureHandling: 'greedy',
   clickableIcons: false,
   styles: [
+    // 隐藏餐厅和购物类 POI，保留地标帮助对照地址
     {
       featureType: 'poi',
+      elementType: 'labels',
+      stylers: [{ visibility: 'off' }],
+    },
+    {
+      featureType: 'poi.business',
       stylers: [{ visibility: 'off' }],
     },
   ],
