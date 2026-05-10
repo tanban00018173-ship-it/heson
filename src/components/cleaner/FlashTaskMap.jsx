@@ -37,6 +37,7 @@ function MapInner({ apiKey, flashTasks, onAccept }) {
   const [gpsStatus, setGpsStatus] = useState('loading');
   const [selectedTask, setSelectedTask] = useState(null);
   const [accepting, setAccepting] = useState(false);
+  const [zoom, setZoom] = useState(14);
   const mapRef = useRef(null);
 
   const { isLoaded, loadError } = useLoadScript({
@@ -91,9 +92,14 @@ function MapInner({ apiKey, flashTasks, onAccept }) {
       <GoogleMap
         mapContainerStyle={mapContainerStyle}
         center={userPos}
-        zoom={14}
+        zoom={zoom}
         options={mapOptions}
         onLoad={map => { mapRef.current = map; }}
+        onZoomChanged={() => {
+          if (mapRef.current) {
+            setZoom(mapRef.current.getZoom());
+          }
+        }}
       >
         <Marker
           position={userPos}
@@ -107,7 +113,7 @@ function MapInner({ apiKey, flashTasks, onAccept }) {
           }}
           zIndex={1000}
         />
-        {flashTasks.filter(t => t.gps_lat && t.gps_lng).map(task => (
+        {zoom >= 15 && flashTasks.filter(t => t.gps_lat && t.gps_lng).map(task => (
           <Marker
             key={task.id}
             position={{ lat: task.gps_lat, lng: task.gps_lng }}
