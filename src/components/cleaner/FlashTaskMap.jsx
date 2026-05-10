@@ -158,10 +158,10 @@ export default function FlashTaskMap({ flashTasks = [], onAccept }) {
               <Navigation className="w-3 h-3" />已定位
             </span>
           )}
-          <Button variant="outline" size="sm" className="h-7 text-xs" onClick={requestGPS}>
+          <Button variant="outline" size="sm" className="h-7 text-xs" onClick={requestGPS} disabled={gpsStatus === 'loading'}>
             {gpsStatus === 'loading'
-              ? <Loader2 className="w-3 h-3 animate-spin" />
-              : <><RefreshCw className="w-3 h-3 mr-1" />{gpsStatus === 'idle' ? '開啟地圖' : '重新定位'}</>
+              ? <><Loader2 className="w-3 h-3 animate-spin mr-1" />定位中</>
+              : <><RefreshCw className="w-3 h-3 mr-1" />重新定位</>
             }
           </Button>
         </div>
