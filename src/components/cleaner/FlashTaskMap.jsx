@@ -1,6 +1,5 @@
 /**
- * 閃電任務地圖
- * 顯示附近待確認的閃電任務大頭針，清潔人員可查看需求並接單
+ * 閃電任務地圖（Google Maps 版）
  */
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { Zap, Loader2, MapPin, Navigation, RefreshCw, X, Calendar, Clock, DollarSign, FileText } from 'lucide-react';
@@ -8,134 +7,159 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { zhTW } from 'date-fns/locale';
+import { base44 } from '@/api/base44Client';
 
-function useLeafletCSS() {
-  useEffect(() => {
-    if (document.getElementById('leaflet-css')) return;
-    const link = document.createElement('link');
-    link.id = 'leaflet-css';
-    link.rel = 'stylesheet';
-    link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-    document.head.appendChild(link);
-  }, []);
+let mapsApiPromise = null;
+
+async function loadGoogleMaps() {
+  if (window.google?.maps) return window.google.maps;
+  if (mapsApiPromise) return mapsApiPromise;
+
+  mapsApiPromise = (async () => {
+    // 從後端取 API key
+    const res = await base44.functions.invoke('getGoogleMapsKey', {});
+    const apiKey = res.data?.key;
+    if (!apiKey) throw new Error('No Google Maps API key');
+
+    return new Promise((resolve, reject) => {
+      if (document.getElementById('google-maps-script')) {
+        const check = setInterval(() => {
+          if (window.google?.maps) { clearInterval(check); resolve(window.google.maps); }
+        }, 100);
+        return;
+      }
+      const script = document.createElement('script');
+      script.id = 'google-maps-script';
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}`;
+      script.async = true;
+      script.defer = true;
+      script.onload = () => resolve(window.google.maps);
+      script.onerror = () => { mapsApiPromise = null; reject(new Error('Failed to load Google Maps')); };
+      document.head.appendChild(script);
+    });
+  })();
+
+  return mapsApiPromise;
 }
 
 export default function FlashTaskMap({ flashTasks = [], onAccept }) {
-  useLeafletCSS();
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const markersRef = useRef([]);
-  const [gpsStatus, setGpsStatus] = useState('loading'); // idle | loading | found | denied
-  const [userPos, setUserPos] = useState(null);
+  const userMarkerRef = useRef(null);
+  const [gpsStatus, setGpsStatus] = useState('loading');
   const [selectedTask, setSelectedTask] = useState(null);
 
-  // 初始化地圖
-  const initMap = useCallback(async (lat, lng) => {
-    const L = (await import('leaflet')).default;
-    delete L.Icon.Default.prototype._getIconUrl;
-    L.Icon.Default.mergeOptions({
-      iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-      iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-      shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-    });
-
-    if (!containerRef.current) return;
-
-    if (!mapRef.current) {
-      mapRef.current = L.map(containerRef.current).setView([lat, lng], 13);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap',
-        maxZoom: 19,
-      }).addTo(mapRef.current);
-    } else {
-      mapRef.current.setView([lat, lng], 13);
-    }
-
-    // 用戶位置藍點
-    const userIcon = L.divIcon({
-      html: `<div style="width:16px;height:16px;border-radius:50%;background:#3b82f6;border:3px solid white;box-shadow:0 0 0 3px rgba(59,130,246,0.3)"></div>`,
-      iconSize: [16, 16],
-      iconAnchor: [8, 8],
-      className: '',
-    });
-    L.marker([lat, lng], { icon: userIcon }).addTo(mapRef.current)
-      .bindPopup('您的位置');
-
-    setTimeout(() => mapRef.current?.invalidateSize(), 150);
-    return L;
-  }, []);
-
-  // 在地圖上繪製任務大頭針
-  const renderTaskMarkers = useCallback(async (L) => {
-    if (!mapRef.current || !L) return;
-
-    // 清除舊大頭針
-    markersRef.current.forEach(m => m.remove());
+  const renderTaskMarkers = useCallback((maps) => {
+    if (!mapRef.current) return;
+    markersRef.current.forEach(m => m.setMap(null));
     markersRef.current = [];
 
     flashTasks.forEach(task => {
       if (!task.gps_lat || !task.gps_lng) return;
-
-      const zapIcon = L.divIcon({
-        html: `<div style="
-          background:#f59e0b;
-          border:2px solid white;
-          border-radius:50% 50% 50% 0;
-          transform:rotate(-45deg);
-          width:36px;height:36px;
-          box-shadow:0 2px 8px rgba(0,0,0,0.3);
-          display:flex;align-items:center;justify-content:center;
-        "><span style="transform:rotate(45deg);font-size:16px;">⚡</span></div>`,
-        iconSize: [36, 36],
-        iconAnchor: [18, 36],
-        className: '',
+      const marker = new maps.Marker({
+        position: { lat: task.gps_lat, lng: task.gps_lng },
+        map: mapRef.current,
+        title: task.service_type,
+        icon: {
+          path: maps.SymbolPath.CIRCLE,
+          scale: 18,
+          fillColor: '#f59e0b',
+          fillOpacity: 1,
+          strokeColor: '#ffffff',
+          strokeWeight: 2,
+        },
+        label: { text: '⚡', fontSize: '14px', color: '#fff' },
       });
-
-      const marker = L.marker([task.gps_lat, task.gps_lng], { icon: zapIcon })
-        .addTo(mapRef.current)
-        .on('click', () => setSelectedTask(task));
-
+      marker.addListener('click', () => setSelectedTask(task));
       markersRef.current.push(marker);
     });
   }, [flashTasks]);
 
-  // 請求 GPS
+  const initMap = useCallback(async (lat, lng) => {
+    const maps = await loadGoogleMaps();
+    if (!containerRef.current) return maps;
+
+    if (!mapRef.current) {
+      mapRef.current = new maps.Map(containerRef.current, {
+        center: { lat, lng },
+        zoom: 13,
+        mapTypeControl: false,
+        streetViewControl: false,
+        fullscreenControl: false,
+      });
+    } else {
+      mapRef.current.setCenter({ lat, lng });
+    }
+
+    // 用戶位置藍點
+    if (userMarkerRef.current) userMarkerRef.current.setMap(null);
+    userMarkerRef.current = new maps.Marker({
+      position: { lat, lng },
+      map: mapRef.current,
+      title: '您的位置',
+      icon: {
+        path: maps.SymbolPath.CIRCLE,
+        scale: 8,
+        fillColor: '#3b82f6',
+        fillOpacity: 1,
+        strokeColor: '#ffffff',
+        strokeWeight: 3,
+      },
+    });
+
+    // 修正破圖 Bug
+    maps.event.trigger(mapRef.current, 'resize');
+    mapRef.current.setCenter({ lat, lng });
+
+    renderTaskMarkers(maps);
+    return maps;
+  }, [renderTaskMarkers]);
+
   const requestGPS = useCallback(() => {
     setGpsStatus('loading');
     if (!navigator.geolocation) {
       setGpsStatus('denied');
+      initMap(25.033, 121.565);
       return;
     }
     navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        const { latitude, longitude } = pos.coords;
-        setUserPos({ lat: latitude, lng: longitude });
+      async ({ coords: { latitude, longitude } }) => {
         setGpsStatus('found');
-        const L = await initMap(latitude, longitude);
-        await renderTaskMarkers(L);
+        await initMap(latitude, longitude);
       },
       () => {
         setGpsStatus('denied');
-        // 預設台北
-        initMap(25.033, 121.565).then(L => renderTaskMarkers(L));
+        initMap(25.033, 121.565);
       },
       { enableHighAccuracy: true, timeout: 10000 }
     );
-  }, [initMap, renderTaskMarkers]);
+  }, [initMap]);
 
-  // 當 flashTasks 更新時重繪大頭針
-  useEffect(() => {
-    if (!mapRef.current) return;
-    import('leaflet').then(({ default: L }) => renderTaskMarkers(L));
-  }, [flashTasks, renderTaskMarkers]);
-
-  // 頁面載入時自動請求 GPS（只執行一次）
+  // 頁面載入自動請求 GPS（只執行一次）
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { requestGPS(); }, []);
 
+  // flashTasks 更新時重繪
+  useEffect(() => {
+    if (!mapRef.current || !window.google?.maps) return;
+    renderTaskMarkers(window.google.maps);
+  }, [flashTasks, renderTaskMarkers]);
+
+  // 修正側邊選單開關後的破圖：監聽 resize 事件
+  useEffect(() => {
+    const handleResize = () => {
+      if (mapRef.current && window.google?.maps) {
+        window.google.maps.event.trigger(mapRef.current, 'resize');
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   useEffect(() => {
     return () => {
-      mapRef.current?.remove();
+      markersRef.current.forEach(m => m.setMap(null));
       mapRef.current = null;
     };
   }, []);
@@ -166,16 +190,12 @@ export default function FlashTaskMap({ flashTasks = [], onAccept }) {
         </div>
       </div>
 
-      {/* GPS 請求提示 */}
-      {/* GPS loading spinner before map appears */}
-
       {gpsStatus === 'denied' && (
-        <div className="px-5 py-3 bg-red-50 text-red-600 text-xs text-center">
+        <div className="px-5 py-2 bg-red-50 text-red-600 text-xs text-center">
           無法取得 GPS 定位，地圖以台北為中心顯示
         </div>
       )}
 
-      {/* 地圖 */}
       {gpsStatus === 'loading' && (
         <div className="flex items-center justify-center" style={{ height: 380 }}>
           <div className="flex flex-col items-center gap-3 text-stone-400">
@@ -184,6 +204,7 @@ export default function FlashTaskMap({ flashTasks = [], onAccept }) {
           </div>
         </div>
       )}
+
       <div
         ref={containerRef}
         style={{ height: 380, display: gpsStatus === 'loading' ? 'none' : 'block' }}
