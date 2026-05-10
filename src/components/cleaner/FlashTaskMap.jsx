@@ -1,5 +1,5 @@
 /**
- * 閃電任務地圖（Google Maps 版）
+ * 閃電任務地圖（OpenStreetMap + Leaflet，無需 API Key）
  */
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { Zap, Loader2, MapPin, Navigation, RefreshCw, X, Calendar, Clock, DollarSign, FileText } from 'lucide-react';
@@ -7,39 +7,31 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { zhTW } from 'date-fns/locale';
-import { base44 } from '@/api/base44Client';
 
-let mapsApiPromise = null;
+let leafletPromise = null;
 
-async function loadGoogleMaps() {
-  if (window.google?.maps) return window.google.maps;
-  if (mapsApiPromise) return mapsApiPromise;
+async function loadLeaflet() {
+  if (window.L) return window.L;
+  if (leafletPromise) return leafletPromise;
 
-  mapsApiPromise = (async () => {
-    // 從後端取 API key
-    const res = await base44.functions.invoke('getGoogleMapsKey', {});
-    const apiKey = res.data?.key;
-    if (!apiKey) throw new Error('No Google Maps API key');
+  leafletPromise = new Promise((resolve, reject) => {
+    // CSS
+    if (!document.getElementById('leaflet-css')) {
+      const link = document.createElement('link');
+      link.id = 'leaflet-css';
+      link.rel = 'stylesheet';
+      link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+      document.head.appendChild(link);
+    }
+    // JS
+    const script = document.createElement('script');
+    script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+    script.onload = () => resolve(window.L);
+    script.onerror = () => { leafletPromise = null; reject(new Error('Failed to load Leaflet')); };
+    document.head.appendChild(script);
+  });
 
-    return new Promise((resolve, reject) => {
-      if (document.getElementById('google-maps-script')) {
-        const check = setInterval(() => {
-          if (window.google?.maps) { clearInterval(check); resolve(window.google.maps); }
-        }, 100);
-        return;
-      }
-      const script = document.createElement('script');
-      script.id = 'google-maps-script';
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}`;
-      script.async = true;
-      script.defer = true;
-      script.onload = () => resolve(window.google.maps);
-      script.onerror = () => { mapsApiPromise = null; reject(new Error('Failed to load Google Maps')); };
-      document.head.appendChild(script);
-    });
-  })();
-
-  return mapsApiPromise;
+  return leafletPromise;
 }
 
 export default function FlashTaskMap({ flashTasks = [], onAccept }) {
@@ -50,70 +42,51 @@ export default function FlashTaskMap({ flashTasks = [], onAccept }) {
   const [gpsStatus, setGpsStatus] = useState('loading');
   const [selectedTask, setSelectedTask] = useState(null);
 
-  const renderTaskMarkers = useCallback((maps) => {
+  const renderTaskMarkers = useCallback((L) => {
     if (!mapRef.current) return;
-    markersRef.current.forEach(m => m.setMap(null));
+    markersRef.current.forEach(m => m.remove());
     markersRef.current = [];
 
     flashTasks.forEach(task => {
       if (!task.gps_lat || !task.gps_lng) return;
-      const marker = new maps.Marker({
-        position: { lat: task.gps_lat, lng: task.gps_lng },
-        map: mapRef.current,
-        title: task.service_type,
-        icon: {
-          path: maps.SymbolPath.CIRCLE,
-          scale: 18,
-          fillColor: '#f59e0b',
-          fillOpacity: 1,
-          strokeColor: '#ffffff',
-          strokeWeight: 2,
-        },
-        label: { text: '⚡', fontSize: '14px', color: '#fff' },
+      const icon = L.divIcon({
+        html: `<div style="background:#f59e0b;color:#fff;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-size:16px;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.3)">⚡</div>`,
+        className: '',
+        iconSize: [32, 32],
+        iconAnchor: [16, 16],
       });
-      marker.addListener('click', () => setSelectedTask(task));
+      const marker = L.marker([task.gps_lat, task.gps_lng], { icon })
+        .addTo(mapRef.current)
+        .on('click', () => setSelectedTask(task));
       markersRef.current.push(marker);
     });
   }, [flashTasks]);
 
   const initMap = useCallback(async (lat, lng) => {
-    const maps = await loadGoogleMaps();
-    if (!containerRef.current) return maps;
+    const L = await loadLeaflet();
+    if (!containerRef.current) return;
 
     if (!mapRef.current) {
-      mapRef.current = new maps.Map(containerRef.current, {
-        center: { lat, lng },
-        zoom: 13,
-        mapTypeControl: false,
-        streetViewControl: false,
-        fullscreenControl: false,
-      });
+      mapRef.current = L.map(containerRef.current).setView([lat, lng], 13);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors',
+      }).addTo(mapRef.current);
     } else {
-      mapRef.current.setCenter({ lat, lng });
+      mapRef.current.setView([lat, lng], 13);
     }
 
     // 用戶位置藍點
-    if (userMarkerRef.current) userMarkerRef.current.setMap(null);
-    userMarkerRef.current = new maps.Marker({
-      position: { lat, lng },
-      map: mapRef.current,
-      title: '您的位置',
-      icon: {
-        path: maps.SymbolPath.CIRCLE,
-        scale: 8,
-        fillColor: '#3b82f6',
-        fillOpacity: 1,
-        strokeColor: '#ffffff',
-        strokeWeight: 3,
-      },
+    if (userMarkerRef.current) userMarkerRef.current.remove();
+    const blueIcon = L.divIcon({
+      html: `<div style="background:#3b82f6;border-radius:50%;width:14px;height:14px;border:3px solid #fff;box-shadow:0 2px 6px rgba(59,130,246,0.5)"></div>`,
+      className: '',
+      iconSize: [14, 14],
+      iconAnchor: [7, 7],
     });
+    userMarkerRef.current = L.marker([lat, lng], { icon: blueIcon }).addTo(mapRef.current);
 
-    // 修正破圖 Bug
-    maps.event.trigger(mapRef.current, 'resize');
-    mapRef.current.setCenter({ lat, lng });
-
-    renderTaskMarkers(maps);
-    return maps;
+    setTimeout(() => mapRef.current?.invalidateSize(), 100);
+    renderTaskMarkers(L);
   }, [renderTaskMarkers]);
 
   const requestGPS = useCallback(() => {
@@ -136,31 +109,23 @@ export default function FlashTaskMap({ flashTasks = [], onAccept }) {
     );
   }, [initMap]);
 
-  // 頁面載入自動請求 GPS（只執行一次）
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { requestGPS(); }, []);
 
-  // flashTasks 更新時重繪
   useEffect(() => {
-    if (!mapRef.current || !window.google?.maps) return;
-    renderTaskMarkers(window.google.maps);
+    if (!mapRef.current || !window.L) return;
+    renderTaskMarkers(window.L);
   }, [flashTasks, renderTaskMarkers]);
 
-  // 修正側邊選單開關後的破圖：監聽 resize 事件
   useEffect(() => {
-    const handleResize = () => {
-      if (mapRef.current && window.google?.maps) {
-        window.google.maps.event.trigger(mapRef.current, 'resize');
-      }
-    };
+    const handleResize = () => mapRef.current?.invalidateSize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   useEffect(() => {
     return () => {
-      markersRef.current.forEach(m => m.setMap(null));
-      mapRef.current = null;
+      markersRef.current.forEach(m => m.remove());
+      if (mapRef.current) { mapRef.current.remove(); mapRef.current = null; }
     };
   }, []);
 
