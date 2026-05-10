@@ -24,6 +24,12 @@ const mapOptions = {
   draggable: true,
   gestureHandling: 'greedy',
   clickableIcons: false,
+  styles: [
+    {
+      featureType: 'poi',
+      stylers: [{ visibility: 'off' }],
+    },
+  ],
 };
 
 function openGoogleNavigation(lat, lng, address) {
