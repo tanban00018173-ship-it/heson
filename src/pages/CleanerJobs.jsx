@@ -6,11 +6,12 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Clock, MapPin, User, CheckCircle, ThumbsUp, Loader2 } from "lucide-react";
+import { Calendar, Clock, MapPin, User, CheckCircle, ThumbsUp, Loader2, Zap } from "lucide-react";
 import { motion } from "framer-motion";
 import { format } from "date-fns";
 import { zhTW } from "date-fns/locale";
 import { toast } from "sonner";
+import FlashTaskMap from "@/components/cleaner/FlashTaskMap";
 
 export default function CleanerJobs() {
   const [user, setUser] = useState(null);
@@ -35,6 +36,29 @@ export default function CleanerJobs() {
     };
     loadUser();
   }, []);
+
+  // 閃電任務（is_flash_task=true 且尚未指派）
+  const { data: flashTasks = [], refetch: refetchFlash } = useQuery({
+    queryKey: ['flashTasks'],
+    queryFn: () => base44.entities.Booking.filter({ is_flash_task: true, status: '待確認' }, '-created_date'),
+    refetchInterval: 30000, // 每30秒自動刷新
+  });
+
+  const acceptFlashMutation = useMutation({
+    mutationFn: async (task) => {
+      await base44.entities.Booking.update(task.id, {
+        cleaner_id: cleanerProfile?.id || user?.id,
+        cleaner_name: cleanerProfile?.nickname || user?.full_name,
+        status: '已確認',
+        confirmed_by_cleaner: true,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['flashTasks'] });
+      queryClient.invalidateQueries({ queryKey: ['myAssignedBookings'] });
+      toast.success('🎉 已接受閃電任務！');
+    },
+  });
 
   // 指派給我的案件
   const { data: myBookings } = useQuery({
@@ -83,9 +107,22 @@ export default function CleanerJobs() {
       <main className="flex-1 pt-16 lg:pt-0">
         <div className="p-6 lg:p-8 max-w-5xl mx-auto">
           {/* Header */}
+          <div className="mb-6">
+            <h1 className="text-2xl font-medium text-stone-800">我的任務</h1>
+            <p className="text-stone-500 mt-1">管理員派單與附近閃電任務</p>
+          </div>
+
+          {/* 閃電任務地圖 */}
           <div className="mb-8">
-            <h1 className="text-2xl font-medium text-stone-800">我的派單任務</h1>
-            <p className="text-stone-500 mt-1">管理員已指派給您的案件，請確認上工</p>
+            <FlashTaskMap
+              flashTasks={flashTasks}
+              onAccept={(task) => acceptFlashMutation.mutate(task)}
+            />
+          </div>
+
+          {/* 派單任務 */}
+          <div className="mb-4">
+            <h2 className="text-lg font-medium text-stone-700">📋 管理員派單</h2>
           </div>
 
           {/* Jobs List */}
