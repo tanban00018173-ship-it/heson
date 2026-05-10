@@ -25,10 +25,10 @@ const mapOptions = {
   gestureHandling: 'greedy',
   clickableIcons: false,
   styles: [
-    // 只隱藏 POI 標籤文字，保留圖標，Google Maps 會自動根據 zoom level 限制數量
+    // 只隱藏 POI 文字標籤，保留圖標幫助對照地址
     {
       featureType: 'poi',
-      elementType: 'labels',
+      elementType: 'labels.text',
       stylers: [{ visibility: 'off' }],
     },
   ],
