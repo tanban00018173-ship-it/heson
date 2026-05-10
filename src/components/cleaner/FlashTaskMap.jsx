@@ -25,14 +25,10 @@ const mapOptions = {
   gestureHandling: 'greedy',
   clickableIcons: false,
   styles: [
-    // 隐藏餐厅和购物类 POI，保留地标帮助对照地址
+    // 只隱藏 POI 標籤文字，保留圖標，Google Maps 會自動根據 zoom level 限制數量
     {
       featureType: 'poi',
       elementType: 'labels',
-      stylers: [{ visibility: 'off' }],
-    },
-    {
-      featureType: 'poi.business',
       stylers: [{ visibility: 'off' }],
     },
   ],
