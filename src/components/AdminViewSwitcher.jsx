@@ -17,7 +17,11 @@ export default function AdminViewSwitcher() {
   const location = useLocation();
   const [open, setOpen] = useState(false);
 
-  const current = VIEWS.find(v => location.pathname.startsWith(v.path.split('/')[1] === 'AdminDashboard' ? '/Admin' : v.path.split('/')[1] === 'CleanerJobs' ? '/Cleaner' : '/Client')) || VIEWS[0];
+  const current = VIEWS.find(v => location.pathname === v.path) ||
+    VIEWS.find(v => location.pathname.startsWith('/Admin') && v.path === '/AdminDashboard') ||
+    VIEWS.find(v => location.pathname.startsWith('/Cleaner') && v.path === '/CleanerJobs') ||
+    VIEWS.find(v => location.pathname.startsWith('/Client') && v.path === '/ClientDashboard') ||
+    VIEWS[0];
 
   return (
     <div className="relative">
