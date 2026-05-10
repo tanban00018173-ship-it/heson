@@ -16,11 +16,7 @@ import { base44 } from '@/api/base44Client';
 const mapContainerStyle = { width: '100%', height: '100%' };
 const defaultCenter = { lat: 25.033, lng: 121.565 };
 const mapOptions = {
-  disableDefaultUI: false,
-  zoomControl: false,
-  streetViewControl: false,
-  mapTypeControl: false,
-  fullscreenControl: false,
+  disableDefaultUI: true,
   draggable: true,
   gestureHandling: 'greedy',
   clickableIcons: false,
