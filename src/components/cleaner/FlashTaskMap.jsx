@@ -1,14 +1,15 @@
 /**
- * 閃電任務地圖 - Google Maps 版本
+ * 閃電任務地圖 - Google Maps 版本 with Clustering
  */
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { GoogleMap, useLoadScript, Marker } from '@react-google-maps/api';
 import {
-  Zap, Loader2, Navigation, X,
-  Calendar, Clock, DollarSign, FileText, ExternalLink, CheckCircle2, MapPin
+  Zap, Loader2, Navigation, X, ChevronDown,
+  Calendar, Clock, DollarSign, FileText, ExternalLink, CheckCircle2, MapPin, AlertCircle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { format } from 'date-fns';
 import { zhTW } from 'date-fns/locale';
 import { base44 } from '@/api/base44Client';
@@ -27,13 +28,49 @@ function openGoogleNavigation(lat, lng, address) {
   window.open(`https://www.google.com/maps/dir/?api=1&destination=${dest}&travelmode=driving`, '_blank');
 }
 
+// 簡單的地理位置聚類演算法
+function clusterTasks(tasks, radius = 0.02) {
+  const clusters = [];
+  const visited = new Set();
+
+  tasks.forEach((task, idx) => {
+    if (visited.has(idx)) return;
+    
+    const cluster = [task];
+    visited.add(idx);
+    
+    tasks.forEach((otherTask, otherIdx) => {
+      if (visited.has(otherIdx)) return;
+      const dist = Math.sqrt(
+        Math.pow(task.gps_lat - otherTask.gps_lat, 2) +
+        Math.pow(task.gps_lng - otherTask.gps_lng, 2)
+      );
+      if (dist < radius) {
+        cluster.push(otherTask);
+        visited.add(otherIdx);
+      }
+    });
+    
+    clusters.push(cluster);
+  });
+
+  return clusters;
+}
+
 // 內層元件：只在有真實 apiKey 時才渲染，避免 useLoadScript hook 用假 key 載入
 function MapInner({ apiKey, flashTasks, onAccept }) {
   const [userPos, setUserPos] = useState(defaultCenter);
   const [gpsStatus, setGpsStatus] = useState('loading');
   const [selectedTask, setSelectedTask] = useState(null);
+  const [selectedCluster, setSelectedCluster] = useState(null);
   const [accepting, setAccepting] = useState(false);
   const mapRef = useRef(null);
+
+  // 聚類任務
+  const clusters = useMemo(() => {
+    const validTasks = flashTasks.filter(t => t.gps_lat && t.gps_lng);
+    return clusterTasks(validTasks, 0.015);
+  }, [flashTasks]);
 
   const { isLoaded, loadError } = useLoadScript({
     googleMapsApiKey: apiKey,
@@ -103,25 +140,31 @@ function MapInner({ apiKey, flashTasks, onAccept }) {
           }}
           zIndex={1000}
         />
-        {flashTasks.filter(t => t.gps_lat && t.gps_lng).map(task => (
-          <Marker
-            key={task.id}
-            position={{ lat: task.gps_lat, lng: task.gps_lng }}
-            onClick={() => setSelectedTask(task)}
-            icon={{
-              url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`
-                <svg xmlns="http://www.w3.org/2000/svg" width="44" height="56" viewBox="0 0 44 56">
-                  <circle cx="22" cy="22" r="20" fill="#f59e0b" stroke="#fff" stroke-width="3"/>
-                  <text x="22" y="29" text-anchor="middle" font-size="20">⚡</text>
-                  <polygon points="22,44 14,34 30,34" fill="#f59e0b"/>
-                </svg>
-              `)}`,
-              scaledSize: new window.google.maps.Size(44, 56),
-              anchor: new window.google.maps.Point(22, 56),
-            }}
-            zIndex={500}
-          />
-        ))}
+        
+        {/* 聚類標記 */}
+        {clusters.map((cluster, idx) => {
+          const centerLat = cluster.reduce((sum, t) => sum + t.gps_lat, 0) / cluster.length;
+          const centerLng = cluster.reduce((sum, t) => sum + t.gps_lng, 0) / cluster.length;
+          
+          return (
+            <Marker
+              key={`cluster-${idx}`}
+              position={{ lat: centerLat, lng: centerLng }}
+              onClick={() => setSelectedCluster(cluster.length > 1 ? cluster : null)}
+              icon={{
+                url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`
+                  <svg xmlns="http://www.w3.org/2000/svg" width="56" height="56" viewBox="0 0 56 56">
+                    <circle cx="28" cy="28" r="26" fill="#f59e0b" stroke="#fff" stroke-width="3"/>
+                    <text x="28" y="35" text-anchor="middle" font-size="18" font-weight="bold" fill="#fff">${cluster.length}</text>
+                  </svg>
+                `)}`,
+                scaledSize: new window.google.maps.Size(56, 56),
+                anchor: new window.google.maps.Point(28, 28),
+              }}
+              zIndex={cluster.length > 1 ? 600 : 500}
+            />
+          );
+        })}
       </GoogleMap>
 
       {/* 頂部狀態欄 */}
@@ -144,6 +187,30 @@ function MapInner({ apiKey, flashTasks, onAccept }) {
       {gpsStatus === 'denied' && (
         <div className="absolute top-16 left-4 right-4 z-10 bg-red-500/90 text-white text-xs text-center py-2 px-4 rounded-xl">
           無法取得 GPS，以台北市中心顯示
+        </div>
+      )}
+
+      {/* 底部圓點列表入口 */}
+      {!selectedTask && !selectedCluster && (
+        <div className="absolute bottom-4 left-0 right-0 z-20 flex flex-col items-center gap-2">
+          <div className="flex gap-2">
+            {flashTasks.slice(0, 5).map((_, i) => (
+              <div
+                key={i}
+                className={`w-2.5 h-2.5 rounded-full ${i === 0 ? 'bg-amber-500' : 'bg-stone-300'}`}
+              />
+            ))}
+          </div>
+          {flashTasks.length > 0 && (
+            <button
+              onClick={() => setSelectedCluster(flashTasks)}
+              className="bg-amber-500 text-white text-sm font-semibold px-5 py-2.5 rounded-2xl shadow-lg shadow-amber-200 flex items-center gap-2"
+            >
+              <Zap className="w-4 h-4" />
+              查看全部 {flashTasks.length} 筆任務
+              <ChevronDown className="w-4 h-4" />
+            </button>
+          )}
         </div>
       )}
 
@@ -221,6 +288,57 @@ function MapInner({ apiKey, flashTasks, onAccept }) {
               接單並導航
               <ExternalLink className="w-4 h-4 ml-1 opacity-70" />
             </Button>
+          </div>
+        </div>
+      )}
+
+      {/* 底部任務列表面板（聚類或全部任務） */}
+      {selectedCluster && !selectedTask && (
+        <div className="absolute bottom-0 left-0 right-0 z-20 bg-white rounded-t-3xl shadow-2xl flex flex-col" style={{ maxHeight: '70vh' }}>
+          <div className="px-5 pt-4 pb-3 flex-shrink-0">
+            <div className="w-10 h-1 bg-stone-200 rounded-full mx-auto mb-3" />
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Zap className="w-5 h-5 text-amber-500" />
+                <span className="font-bold text-stone-800">共 {selectedCluster.length} 筆閃電任務</span>
+              </div>
+              <button onClick={() => setSelectedCluster(null)} className="p-1 text-stone-300 hover:text-stone-500">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+          <div className="overflow-y-auto px-4 pb-8 space-y-3">
+            {selectedCluster.map(task => (
+              <div
+                key={task.id}
+                className="bg-stone-50 rounded-2xl p-4 border border-stone-100"
+                onClick={() => { setSelectedTask(task); setSelectedCluster(null); }}
+              >
+                <div className="flex items-start justify-between mb-2">
+                  <Badge className="bg-amber-100 text-amber-700 border-0 text-xs">{task.service_type}</Badge>
+                  {task.amount && (
+                    <span className="text-sm font-bold text-green-700">NT$ {task.amount.toLocaleString()}</span>
+                  )}
+                </div>
+                <div className="flex items-start gap-2 mb-2">
+                  <MapPin className="w-3.5 h-3.5 text-amber-500 mt-0.5 flex-shrink-0" />
+                  <p className="text-sm text-stone-700">{task.address || '地址未提供'}</p>
+                </div>
+                <div className="flex gap-3 text-xs text-stone-400">
+                  <span className="flex items-center gap-1">
+                    <Calendar className="w-3 h-3" />
+                    {task.scheduled_date ? format(new Date(task.scheduled_date), 'M/d (EEE)', { locale: zhTW }) : '-'}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Clock className="w-3 h-3" />
+                    {task.time_slot || '-'}
+                  </span>
+                </div>
+                <div className="mt-2 flex justify-end">
+                  <span className="text-xs text-amber-600 font-medium">點擊查看詳情 →</span>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       )}
