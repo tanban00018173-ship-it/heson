@@ -1,8 +1,8 @@
 /**
  * 閃電任務地圖 - Google Maps 版本
  */
-import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { GoogleMap, useLoadScript, Marker, InfoWindow } from '@react-google-maps/api';
+import React, { useEffect, useRef, useState } from 'react';
+import { GoogleMap, useLoadScript, Marker } from '@react-google-maps/api';
 import {
   Zap, Loader2, Navigation, X,
   Calendar, Clock, DollarSign, FileText, ExternalLink, CheckCircle2, MapPin
@@ -28,45 +28,27 @@ function openGoogleNavigation(lat, lng, address) {
   window.open(`https://www.google.com/maps/dir/?api=1&destination=${dest}&travelmode=driving`, '_blank');
 }
 
-export default function FlashTaskMap({ flashTasks = [], onAccept }) {
-  const [apiKey, setApiKey] = useState('');
-  const [keyLoaded, setKeyLoaded] = useState(false);
+// 內層元件：只在有真實 apiKey 時才渲染，避免 useLoadScript hook 用假 key 載入
+function MapInner({ apiKey, flashTasks, onAccept }) {
   const [userPos, setUserPos] = useState(defaultCenter);
   const [gpsStatus, setGpsStatus] = useState('loading');
   const [selectedTask, setSelectedTask] = useState(null);
   const [accepting, setAccepting] = useState(false);
   const mapRef = useRef(null);
 
-  // 取得 API Key
-  useEffect(() => {
-    base44.functions.invoke('getGoogleMapsKey', {})
-      .then(res => {
-        setApiKey(res.data?.key || '');
-        setKeyLoaded(true);
-      })
-      .catch(() => setKeyLoaded(true));
-  }, []);
+  const { isLoaded, loadError } = useLoadScript({
+    googleMapsApiKey: apiKey,
+    preventGoogleFontsLoading: true,
+  });
 
-  // 取得 GPS
   useEffect(() => {
-    if (!navigator.geolocation) {
-      setGpsStatus('denied');
-      return;
-    }
+    if (!navigator.geolocation) { setGpsStatus('denied'); return; }
     navigator.geolocation.getCurrentPosition(
-      ({ coords }) => {
-        setUserPos({ lat: coords.latitude, lng: coords.longitude });
-        setGpsStatus('found');
-      },
+      ({ coords }) => { setUserPos({ lat: coords.latitude, lng: coords.longitude }); setGpsStatus('found'); },
       () => setGpsStatus('denied'),
       { enableHighAccuracy: true, timeout: 10000 }
     );
   }, []);
-
-  const { isLoaded, loadError } = useLoadScript({
-    googleMapsApiKey: apiKey || 'placeholder',
-    preventGoogleFontsLoading: true,
-  });
 
   const handleAccept = async () => {
     if (!selectedTask) return;
@@ -83,27 +65,6 @@ export default function FlashTaskMap({ flashTasks = [], onAccept }) {
       mapRef.current.setZoom(15);
     }
   };
-
-  // 尚未取得 key
-  if (!keyLoaded) {
-    return (
-      <div className="absolute inset-0 flex flex-col items-center justify-center bg-stone-100">
-        <Loader2 className="w-10 h-10 animate-spin text-amber-400 mb-3" />
-        <span className="text-stone-500 text-sm">載入地圖中...</span>
-      </div>
-    );
-  }
-
-  // 沒有 API Key 時（已確認取得但仍為空）才顯示提示
-  if (keyLoaded && !apiKey) {
-    return (
-      <div className="absolute inset-0 flex flex-col items-center justify-center bg-stone-100 p-6 text-center">
-        <MapPin className="w-12 h-12 text-stone-300 mb-4" />
-        <p className="text-stone-600 font-medium mb-2">尚未設定 Google Maps API Key</p>
-        <p className="text-stone-400 text-sm">請在後台設定 <code className="bg-stone-200 px-1 rounded">GOOGLE_MAPS_API_KEY</code> 環境變數</p>
-      </div>
-    );
-  }
 
   if (loadError) {
     return (
@@ -124,7 +85,6 @@ export default function FlashTaskMap({ flashTasks = [], onAccept }) {
 
   return (
     <div className="relative w-full h-full">
-      {/* Google Map */}
       <GoogleMap
         mapContainerStyle={mapContainerStyle}
         center={userPos}
@@ -132,7 +92,6 @@ export default function FlashTaskMap({ flashTasks = [], onAccept }) {
         options={mapOptions}
         onLoad={map => { mapRef.current = map; }}
       >
-        {/* 用戶位置標記 */}
         <Marker
           position={userPos}
           icon={{
@@ -145,8 +104,6 @@ export default function FlashTaskMap({ flashTasks = [], onAccept }) {
           }}
           zIndex={1000}
         />
-
-        {/* 閃電任務標記 */}
         {flashTasks.filter(t => t.gps_lat && t.gps_lng).map(task => (
           <Marker
             key={task.id}
@@ -177,7 +134,6 @@ export default function FlashTaskMap({ flashTasks = [], onAccept }) {
           </span>
           {flashTasks.length > 0 && <span className="w-2 h-2 bg-amber-400 rounded-full animate-pulse" />}
         </div>
-
         <button
           onClick={centerOnUser}
           className="bg-white/95 backdrop-blur-sm rounded-2xl p-2.5 shadow-lg hover:bg-white transition-colors pointer-events-auto"
@@ -196,7 +152,6 @@ export default function FlashTaskMap({ flashTasks = [], onAccept }) {
       {selectedTask && (
         <div className="absolute bottom-0 left-0 right-0 z-20 bg-white rounded-t-3xl shadow-2xl px-5 pt-4 pb-8">
           <div className="w-10 h-1 bg-stone-200 rounded-full mx-auto mb-4" />
-
           <div className="flex items-start justify-between mb-4">
             <div>
               <div className="flex items-center gap-2 mb-1">
@@ -218,16 +173,13 @@ export default function FlashTaskMap({ flashTasks = [], onAccept }) {
                 <p className="text-sm font-medium text-stone-700">{selectedTask.address || '地址未提供'}</p>
               </div>
             </div>
-
             <div className="grid grid-cols-2 gap-2">
               <div className="flex items-center gap-2 bg-stone-50 rounded-xl p-3">
                 <Calendar className="w-4 h-4 text-stone-400 flex-shrink-0" />
                 <div>
                   <p className="text-xs text-stone-400">日期</p>
                   <p className="text-xs font-medium text-stone-700">
-                    {selectedTask.scheduled_date
-                      ? format(new Date(selectedTask.scheduled_date), 'M/d (EEE)', { locale: zhTW })
-                      : '-'}
+                    {selectedTask.scheduled_date ? format(new Date(selectedTask.scheduled_date), 'M/d (EEE)', { locale: zhTW }) : '-'}
                   </p>
                 </div>
               </div>
@@ -239,7 +191,6 @@ export default function FlashTaskMap({ flashTasks = [], onAccept }) {
                 </div>
               </div>
             </div>
-
             {selectedTask.amount && (
               <div className="flex items-center gap-3 bg-green-50 rounded-xl p-3">
                 <DollarSign className="w-4 h-4 text-green-500 flex-shrink-0" />
@@ -249,7 +200,6 @@ export default function FlashTaskMap({ flashTasks = [], onAccept }) {
                 </div>
               </div>
             )}
-
             {selectedTask.notes && (
               <div className="flex items-start gap-3 bg-stone-50 rounded-xl p-3">
                 <FileText className="w-4 h-4 text-stone-400 mt-0.5 flex-shrink-0" />
@@ -262,18 +212,13 @@ export default function FlashTaskMap({ flashTasks = [], onAccept }) {
           </div>
 
           <div className="flex gap-3">
-            <Button variant="outline" className="flex-1 rounded-2xl h-12" onClick={() => setSelectedTask(null)}>
-              略過
-            </Button>
+            <Button variant="outline" className="flex-1 rounded-2xl h-12" onClick={() => setSelectedTask(null)}>略過</Button>
             <Button
               className="flex-[2] bg-amber-500 hover:bg-amber-600 text-white rounded-2xl h-12 font-semibold text-base shadow-lg shadow-amber-200"
               onClick={handleAccept}
               disabled={accepting}
             >
-              {accepting
-                ? <Loader2 className="w-5 h-5 animate-spin mr-2" />
-                : <CheckCircle2 className="w-5 h-5 mr-2" />
-              }
+              {accepting ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <CheckCircle2 className="w-5 h-5 mr-2" />}
               接單並導航
               <ExternalLink className="w-4 h-4 ml-1 opacity-70" />
             </Button>
@@ -282,4 +227,37 @@ export default function FlashTaskMap({ flashTasks = [], onAccept }) {
       )}
     </div>
   );
+}
+
+// 外層元件：負責取得 API Key，只有取得後才渲染 MapInner
+export default function FlashTaskMap({ flashTasks = [], onAccept }) {
+  const [apiKey, setApiKey] = useState('');
+  const [keyLoaded, setKeyLoaded] = useState(false);
+
+  useEffect(() => {
+    base44.functions.invoke('getGoogleMapsKey', {})
+      .then(res => { setApiKey(res.data?.key || ''); setKeyLoaded(true); })
+      .catch(() => setKeyLoaded(true));
+  }, []);
+
+  if (!keyLoaded) {
+    return (
+      <div className="absolute inset-0 flex flex-col items-center justify-center bg-stone-100">
+        <Loader2 className="w-10 h-10 animate-spin text-amber-400 mb-3" />
+        <span className="text-stone-500 text-sm">載入地圖中...</span>
+      </div>
+    );
+  }
+
+  if (!apiKey) {
+    return (
+      <div className="absolute inset-0 flex flex-col items-center justify-center bg-stone-100 p-6 text-center">
+        <MapPin className="w-12 h-12 text-stone-300 mb-4" />
+        <p className="text-stone-600 font-medium mb-2">尚未設定 Google Maps API Key</p>
+        <p className="text-stone-400 text-sm">請在後台設定 <code className="bg-stone-200 px-1 rounded">GOOGLE_MAPS_API_KEY</code> 環境變數</p>
+      </div>
+    );
+  }
+
+  return <MapInner apiKey={apiKey} flashTasks={flashTasks} onAccept={onAccept} />;
 }
