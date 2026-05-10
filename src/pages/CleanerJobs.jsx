@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Menu, X, ClipboardList, Zap, LogOut, User } from "lucide-react";
@@ -87,11 +88,14 @@ export default function CleanerJobs() {
         />
       </div>
 
-      {/* ── 側拉選單 ── */}
-      {menuOpen && (
+      {/* ── 側拉選單（Portal 渲染到 body，完全跳脫 Leaflet stacking context） ── */}
+      {menuOpen && createPortal(
         <>
-          <div className="fixed inset-0 z-[100] bg-black/30 backdrop-blur-sm" onClick={() => setMenuOpen(false)} />
-          <div className="fixed top-0 right-0 bottom-0 z-[101] w-72 bg-white shadow-2xl flex flex-col">
+          <div
+            style={{ position: 'fixed', inset: 0, zIndex: 99999, background: 'rgba(0,0,0,0.35)' }}
+            onClick={() => setMenuOpen(false)}
+          />
+          <div style={{ position: 'fixed', top: 0, right: 0, bottom: 0, zIndex: 100000, width: '288px', background: '#fff', boxShadow: '-4px 0 24px rgba(0,0,0,0.15)', display: 'flex', flexDirection: 'column' }}>
             {/* 選單頭 */}
             <div className="flex items-center justify-between p-5 border-b border-stone-100">
               <div>
@@ -150,7 +154,8 @@ export default function CleanerJobs() {
               </button>
             </div>
           </div>
-        </>
+        </>,
+        document.body
       )}
     </div>
   );
