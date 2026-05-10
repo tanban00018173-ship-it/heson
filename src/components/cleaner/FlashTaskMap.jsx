@@ -25,7 +25,7 @@ export default function FlashTaskMap({ flashTasks = [], onAccept }) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const markersRef = useRef([]);
-  const [gpsStatus, setGpsStatus] = useState('idle'); // idle | loading | found | denied
+  const [gpsStatus, setGpsStatus] = useState('loading'); // idle | loading | found | denied
   const [userPos, setUserPos] = useState(null);
   const [selectedTask, setSelectedTask] = useState(null);
 
@@ -129,6 +129,11 @@ export default function FlashTaskMap({ flashTasks = [], onAccept }) {
     import('leaflet').then(({ default: L }) => renderTaskMarkers(L));
   }, [flashTasks, renderTaskMarkers]);
 
+  // 頁面載入時自動請求 GPS
+  useEffect(() => {
+    requestGPS();
+  }, []);
+
   useEffect(() => {
     return () => {
       mapRef.current?.remove();
@@ -163,18 +168,7 @@ export default function FlashTaskMap({ flashTasks = [], onAccept }) {
       </div>
 
       {/* GPS 請求提示 */}
-      {gpsStatus === 'idle' && (
-        <div className="flex flex-col items-center justify-center py-16 text-center px-6">
-          <div className="w-16 h-16 bg-amber-50 rounded-full flex items-center justify-center mb-4">
-            <MapPin className="w-8 h-8 text-amber-400" />
-          </div>
-          <p className="text-stone-700 font-medium mb-1">查看附近閃電任務</p>
-          <p className="text-stone-400 text-sm mb-5">點擊「開啟地圖」授權 GPS 定位，系統將顯示附近的即時任務</p>
-          <Button onClick={requestGPS} className="bg-amber-500 hover:bg-amber-600 text-white rounded-full">
-            <Navigation className="w-4 h-4 mr-2" />開啟 GPS 定位
-          </Button>
-        </div>
-      )}
+      {/* GPS loading spinner before map appears */}
 
       {gpsStatus === 'denied' && (
         <div className="px-5 py-3 bg-red-50 text-red-600 text-xs text-center">
