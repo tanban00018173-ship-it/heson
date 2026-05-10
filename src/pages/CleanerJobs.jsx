@@ -85,6 +85,8 @@ export default function CleanerJobs() {
           flashTasks={flashTasks}
           onAccept={(task) => acceptFlashMutation.mutateAsync(task)}
         />
+        {/* 選單開啟時阻擋地圖互動 */}
+        {menuOpen && <div className="absolute inset-0 z-[99]" />}
       </div>
 
       {/* ── 側拉選單 ── */}
