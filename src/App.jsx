@@ -24,10 +24,12 @@ import SheetSyncLog from './pages/SheetSyncLog'
 import ServiceCaseManager from './pages/ServiceCaseManager'
 import InternalSpreadsheet from './pages/InternalSpreadsheet'
 import PartTimeSchedule from './pages/PartTimeSchedule'
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import React from 'react';
+import { BrowserRouter as Router, Route, Routes, useNavigate, useLocation } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
+import { getRoleHome } from '@/lib/roleRouter';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -36,6 +38,22 @@ const MainPage = mainPageKey ? Pages[mainPageKey] : <></>;
 const LayoutWrapper = ({ children, currentPageName }) => Layout ?
   <Layout currentPageName={currentPageName}>{children}</Layout>
   : <>{children}</>;
+
+const RoleRedirector = () => {
+  const { user, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  React.useEffect(() => {
+    if (!isAuthenticated || !user) return;
+    // 只在根路徑 or 未分配入口時才導向
+    if (location.pathname !== '/') return;
+    const dest = getRoleHome(user.role);
+    navigate(dest, { replace: true });
+  }, [isAuthenticated, user, location.pathname]);
+
+  return null;
+};
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, isAuthenticated, appPublicSettings } = useAuth();
@@ -78,9 +96,7 @@ const AuthenticatedApp = () => {
   return (
     <Routes>
       <Route path="/" element={
-        <LayoutWrapper currentPageName={mainPageKey}>
-          <MainPage />
-        </LayoutWrapper>
+        <><RoleRedirector /><LayoutWrapper currentPageName={mainPageKey}><MainPage /></LayoutWrapper></>
       } />
       {Object.entries(Pages).map(([path, Page]) => (
         <Route
