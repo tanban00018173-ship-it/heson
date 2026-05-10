@@ -180,7 +180,7 @@ export default function FlashTaskMap({ flashTasks = [], onAccept }) {
   };
 
   return (
-    <div className="relative w-full h-full" style={{ minHeight: '100vh' }}>
+    <div className="relative w-full h-full">
       {/* ── 地圖容器（全屏） ── */}
       {gpsStatus === 'loading' && (
         <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-stone-100">

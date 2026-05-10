@@ -57,41 +57,41 @@ export default function CleanerJobs() {
   const displayName = cleanerProfile?.nickname || user?.full_name;
 
   return (
-    <div className="fixed inset-0 overflow-hidden">
-      {/* ── 全屏地圖 ── */}
-      <FlashTaskMap
-        flashTasks={flashTasks}
-        onAccept={(task) => acceptFlashMutation.mutateAsync(task)}
-      />
-
-      {/* ── 頂部選單欄（疊在地圖上） ── */}
-      <div className="absolute top-0 left-0 right-0 z-40 pointer-events-none">
-        <div className="flex items-center justify-between px-4 pt-4 pb-2 pointer-events-auto">
-          {/* Logo / 品牌 */}
-          <div className="bg-white/95 backdrop-blur-sm rounded-2xl px-4 py-2 shadow-lg flex items-center gap-2">
-            <img
-              src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/user_6945eb37fb67abb9152e42a5/b0c86a022_557043631_1369298458531323_7985963993755754895_n.jpg"
-              alt="HESON"
-              className="h-6 w-auto"
-            />
-            <span className="text-xs font-semibold text-stone-600">{displayName}</span>
-          </div>
-
-          {/* 漢堡選單 */}
-          <button
-            onClick={() => setMenuOpen(true)}
-            className="bg-white/95 backdrop-blur-sm rounded-2xl p-2.5 shadow-lg hover:bg-white transition-colors"
-          >
-            <Menu className="w-5 h-5 text-stone-600" />
-          </button>
+    <div className="fixed inset-0 flex flex-col overflow-hidden">
+      {/* ── 頂部選單欄（固定高度，不被地圖覆蓋） ── */}
+      <div className="relative z-50 bg-white border-b border-stone-200 flex items-center justify-between px-4 py-3 flex-shrink-0 shadow-sm">
+        {/* Logo / 品牌 */}
+        <div className="flex items-center gap-2">
+          <img
+            src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/user_6945eb37fb67abb9152e42a5/b0c86a022_557043631_1369298458531323_7985963993755754895_n.jpg"
+            alt="HESON"
+            className="h-7 w-auto"
+          />
+          <span className="text-sm font-semibold text-stone-700">{displayName}</span>
         </div>
+
+        {/* 漢堡選單 */}
+        <button
+          onClick={() => setMenuOpen(true)}
+          className="p-2 rounded-xl hover:bg-stone-100 transition-colors"
+        >
+          <Menu className="w-5 h-5 text-stone-600" />
+        </button>
+      </div>
+
+      {/* ── 地圖區（佔剩餘空間，不會超出） ── */}
+      <div className="relative flex-1 overflow-hidden">
+        <FlashTaskMap
+          flashTasks={flashTasks}
+          onAccept={(task) => acceptFlashMutation.mutateAsync(task)}
+        />
       </div>
 
       {/* ── 側拉選單 ── */}
       {menuOpen && (
         <>
-          <div className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm" onClick={() => setMenuOpen(false)} />
-          <div className="fixed top-0 right-0 bottom-0 z-50 w-72 bg-white shadow-2xl flex flex-col">
+          <div className="fixed inset-0 z-[100] bg-black/30 backdrop-blur-sm" onClick={() => setMenuOpen(false)} />
+          <div className="fixed top-0 right-0 bottom-0 z-[101] w-72 bg-white shadow-2xl flex flex-col">
             {/* 選單頭 */}
             <div className="flex items-center justify-between p-5 border-b border-stone-100">
               <div>
