@@ -199,9 +199,9 @@ function MapInner({ apiKey, flashTasks, onAccept }) {
         </div>
       )}
 
-      {/* 底部圓點列表入口 */}
+      {/* 底部圓點列表入口（僅桌面版） */}
       {!selectedTask && !selectedCluster && (
-        <div className="absolute bottom-4 left-0 right-0 z-20 flex flex-col items-center gap-2">
+        <div className="absolute bottom-4 left-0 right-0 z-20 hidden lg:flex flex-col items-center gap-2">
           <div className="flex gap-2">
             {flashTasks.slice(0, 5).map((_, i) => (
               <div
@@ -303,24 +303,24 @@ function MapInner({ apiKey, flashTasks, onAccept }) {
 
       {/* 底部任務列表面板（聚類或全部任務） */}
       {selectedCluster && !selectedTask && (
-        <div className="absolute bottom-0 left-0 right-0 z-20 bg-white rounded-t-3xl shadow-2xl flex flex-col" style={{ maxHeight: '70vh' }}>
-          <div className="px-5 pt-4 pb-3 flex-shrink-0">
+        <div className="absolute bottom-0 left-0 right-0 z-20 bg-white rounded-t-3xl lg:rounded-none shadow-2xl flex flex-col" style={{ maxHeight: '70vh', height: 'auto' }}>
+          <div className="px-5 pt-4 pb-3 flex-shrink-0 lg:hidden">
             <div className="w-10 h-1 bg-stone-200 rounded-full mx-auto mb-3" />
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Zap className="w-5 h-5 text-amber-500" />
-                <span className="font-bold text-stone-800">共 {selectedCluster.length} 筆閃電任務</span>
-              </div>
-              <button onClick={() => setSelectedCluster(null)} className="p-1 text-stone-300 hover:text-stone-500">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
           </div>
-          <div className="overflow-y-auto px-4 pb-8 space-y-3">
+          <div className="px-5 py-4 flex-shrink-0 flex items-center justify-between border-b border-stone-100 lg:border-0">
+            <div className="flex items-center gap-2">
+              <Zap className="w-5 h-5 text-amber-500" />
+              <span className="font-bold text-stone-800">共 {selectedCluster.length} 筆閃電任務</span>
+            </div>
+            <button onClick={() => setSelectedCluster(null)} className="p-1 text-stone-300 hover:text-stone-500">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          <div className="overflow-y-auto px-4 pb-8 lg:pb-4 space-y-3 flex-1">
             {selectedCluster.map(task => (
               <div
                 key={task.id}
-                className="bg-stone-50 rounded-2xl p-4 border border-stone-100"
+                className="bg-stone-50 rounded-2xl p-4 border border-stone-100 cursor-pointer hover:bg-stone-100 transition-colors"
                 onClick={() => { setSelectedTask(task); setSelectedCluster(null); }}
               >
                 <div className="flex items-start justify-between mb-2">
