@@ -23,6 +23,7 @@ const mapOptions = {
   fullscreenControl: false,
   draggable: true,
   gestureHandling: 'greedy',
+  clickableIcons: false,
 };
 
 function openGoogleNavigation(lat, lng, address) {
