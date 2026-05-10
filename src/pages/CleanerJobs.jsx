@@ -1,49 +1,34 @@
 import React, { useState, useEffect } from 'react';
-import Sidebar from "@/components/dashboard/Sidebar";
-import MobileNav from "@/components/dashboard/MobileNav";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Calendar, Clock, MapPin, User, CheckCircle, ThumbsUp, Loader2, Zap } from "lucide-react";
-import { motion } from "framer-motion";
-import { format } from "date-fns";
-import { zhTW } from "date-fns/locale";
+import { Menu, X, ClipboardList, Zap, LogOut, User } from "lucide-react";
 import { toast } from "sonner";
+import { Link } from "react-router-dom";
+import { createPageUrl } from "@/utils";
 import FlashTaskMap from "@/components/cleaner/FlashTaskMap";
 
 export default function CleanerJobs() {
   const [user, setUser] = useState(null);
   const [cleanerProfile, setCleanerProfile] = useState(null);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const queryClient = useQueryClient();
 
   useEffect(() => {
     const loadUser = async () => {
       const isAuth = await base44.auth.isAuthenticated();
-      if (!isAuth) {
-        base44.auth.redirectToLogin();
-        return;
-      }
+      if (!isAuth) { base44.auth.redirectToLogin(); return; }
       const userData = await base44.auth.me();
       setUser(userData);
-      if (userData.role === 'admin') setIsAdmin(true);
-      
-      // Load cleaner profile
       const profiles = await base44.entities.CleanerProfile.filter({ user_id: userData.id });
-      if (profiles?.[0]) {
-        setCleanerProfile(profiles[0]);
-      }
+      if (profiles?.[0]) setCleanerProfile(profiles[0]);
     };
     loadUser();
   }, []);
 
-  // 閃電任務（is_flash_task=true 且尚未指派）
   const { data: flashTasks = [], refetch: refetchFlash } = useQuery({
     queryKey: ['flashTasks'],
     queryFn: () => base44.entities.Booking.filter({ is_flash_task: true, status: '待確認' }, '-created_date'),
-    refetchInterval: 30000, // 每30秒自動刷新
+    refetchInterval: 30000,
   });
 
   const acceptFlashMutation = useMutation({
@@ -57,158 +42,116 @@ export default function CleanerJobs() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['flashTasks'] });
-      queryClient.invalidateQueries({ queryKey: ['myAssignedBookings'] });
-      toast.success('🎉 已接受閃電任務！');
-    },
-  });
-
-  // 指派給我的案件
-  const { data: myBookings } = useQuery({
-    queryKey: ['myAssignedBookings', user?.id],
-    queryFn: () => cleanerProfile
-      ? base44.entities.Booking.filter({ cleaner_id: cleanerProfile.id, status: '已確認' }, '-scheduled_date')
-      : [],
-    enabled: !!cleanerProfile,
-    initialData: [],
-  });
-
-  const confirmJobMutation = useMutation({
-    mutationFn: async (bookingId) => {
-      // 確認上工 = 建立出勤記錄
-      await base44.entities.Attendance.create({
-        cleaner_id: cleanerProfile?.id || user?.id,
-        cleaner_name: cleanerProfile?.nickname || user?.full_name,
-        date: myBookings.find(b => b.id === bookingId)?.scheduled_date,
-        status: '出勤',
-        booking_id: bookingId,
-        notes: '管理師已確認上工',
-      });
-      return bookingId;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['myAssignedBookings'] });
-      toast.success('已確認上工！謝謝您的確認。');
+      toast.success('🎉 已接受閃電任務！正在開啟導航...');
     },
   });
 
   if (!user) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="fixed inset-0 flex items-center justify-center bg-stone-100">
         <div className="animate-spin w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full" />
       </div>
     );
   }
 
+  const displayName = cleanerProfile?.nickname || user?.full_name;
+
   return (
-    <div className="min-h-screen bg-stone-50 flex">
-      <div className="hidden lg:block">
-        <Sidebar userRole={isAdmin ? 'admin' : 'cleaner'} userName={cleanerProfile?.nickname || user?.full_name} />
-      </div>
-      <MobileNav userRole={isAdmin ? 'admin' : 'cleaner'} userName={cleanerProfile?.nickname || user?.full_name} />
-      
-      <main className="flex-1 pt-16 lg:pt-0">
-        <div className="p-6 lg:p-8 max-w-5xl mx-auto">
-          {/* Header */}
-          <div className="mb-6">
-            <h1 className="text-2xl font-medium text-stone-800">我的任務</h1>
-            <p className="text-stone-500 mt-1">管理員派單與附近閃電任務</p>
-          </div>
+    <div className="fixed inset-0 overflow-hidden">
+      {/* ── 全屏地圖 ── */}
+      <FlashTaskMap
+        flashTasks={flashTasks}
+        onAccept={(task) => acceptFlashMutation.mutateAsync(task)}
+      />
 
-          {/* 閃電任務地圖 */}
-          <div className="mb-8">
-            <FlashTaskMap
-              flashTasks={flashTasks}
-              onAccept={(task) => acceptFlashMutation.mutate(task)}
+      {/* ── 頂部選單欄（疊在地圖上） ── */}
+      <div className="absolute top-0 left-0 right-0 z-40 pointer-events-none">
+        <div className="flex items-center justify-between px-4 pt-4 pb-2 pointer-events-auto">
+          {/* Logo / 品牌 */}
+          <div className="bg-white/95 backdrop-blur-sm rounded-2xl px-4 py-2 shadow-lg flex items-center gap-2">
+            <img
+              src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/user_6945eb37fb67abb9152e42a5/b0c86a022_557043631_1369298458531323_7985963993755754895_n.jpg"
+              alt="HESON"
+              className="h-6 w-auto"
             />
+            <span className="text-xs font-semibold text-stone-600">{displayName}</span>
           </div>
 
-          {/* 派單任務 */}
-          <div className="mb-4">
-            <h2 className="text-lg font-medium text-stone-700">📋 管理員派單</h2>
-          </div>
-
-          {/* Jobs List */}
-          {!myBookings || myBookings.length === 0 ? (
-            <Card className="border-dashed">
-              <CardContent className="py-12 text-center">
-                <Calendar className="w-12 h-12 text-stone-300 mx-auto mb-4" />
-                <p className="text-stone-500">目前沒有指派給您的案件</p>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="space-y-4">
-              {myBookings.map((job, index) => {
-                const confirmed = job.confirmed_by_cleaner;
-                return (
-                  <motion.div
-                    key={job.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3, delay: index * 0.05 }}
-                  >
-                    <Card className={`hover:shadow-md transition-shadow ${confirmed ? 'border-green-200' : 'border-amber-200'}`}>
-                      <CardContent className="p-5">
-                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-3 mb-3">
-                              <Badge className="bg-blue-100 text-blue-700">{job.service_type}</Badge>
-                              {confirmed && <Badge className="bg-green-100 text-green-700">已確認上工</Badge>}
-                            </div>
-                            <div className="grid sm:grid-cols-2 gap-2">
-                              <div className="flex items-center gap-2 text-sm text-stone-600">
-                                <Calendar className="w-4 h-4 text-stone-400" />
-                                {job.scheduled_date && format(new Date(job.scheduled_date), 'PPP', { locale: zhTW })}
-                              </div>
-                              <div className="flex items-center gap-2 text-sm text-stone-600">
-                                <Clock className="w-4 h-4 text-stone-400" />
-                                {job.time_slot}
-                              </div>
-                              {job.address && (
-                                <div className="flex items-center gap-2 text-sm text-stone-600 col-span-2">
-                                  <MapPin className="w-4 h-4 text-stone-400" />
-                                  {job.address}
-                                </div>
-                              )}
-                              {job.client_name && (
-                                <div className="flex items-center gap-2 text-sm text-stone-600">
-                                  <User className="w-4 h-4 text-stone-400" />
-                                  客戶：{job.client_name}
-                                </div>
-                              )}
-                            </div>
-                            {job.notes && (
-                              <p className="text-sm text-stone-500 mt-3 bg-stone-50 p-3 rounded-lg">備註：{job.notes}</p>
-                            )}
-                          </div>
-                          
-                          {confirmed ? (
-                            <div className="flex items-center gap-2 text-green-600 text-sm font-medium">
-                              <CheckCircle className="w-5 h-5" />
-                              已確認
-                            </div>
-                          ) : (
-                            <Button
-                              onClick={() => confirmJobMutation.mutate(job.id)}
-                              disabled={confirmJobMutation.isPending}
-                              className="bg-green-600 hover:bg-green-700 text-white rounded-full"
-                            >
-                              {confirmJobMutation.isPending ? (
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                              ) : (
-                                <><ThumbsUp className="w-4 h-4 mr-2" />確認上工</>
-                              )}
-                            </Button>
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </motion.div>
-                );
-              })}
-            </div>
-          )}
+          {/* 漢堡選單 */}
+          <button
+            onClick={() => setMenuOpen(true)}
+            className="bg-white/95 backdrop-blur-sm rounded-2xl p-2.5 shadow-lg hover:bg-white transition-colors"
+          >
+            <Menu className="w-5 h-5 text-stone-600" />
+          </button>
         </div>
-      </main>
+      </div>
+
+      {/* ── 側拉選單 ── */}
+      {menuOpen && (
+        <>
+          <div className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm" onClick={() => setMenuOpen(false)} />
+          <div className="fixed top-0 right-0 bottom-0 z-50 w-72 bg-white shadow-2xl flex flex-col">
+            {/* 選單頭 */}
+            <div className="flex items-center justify-between p-5 border-b border-stone-100">
+              <div>
+                <p className="font-semibold text-stone-800">{displayName}</p>
+                <p className="text-xs text-stone-400 mt-0.5">{user?.email}</p>
+              </div>
+              <button onClick={() => setMenuOpen(false)} className="text-stone-400 hover:text-stone-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* 選單項目 */}
+            <nav className="flex-1 p-4 space-y-1">
+              <Link
+                to={createPageUrl('CleanerJobs')}
+                onClick={() => setMenuOpen(false)}
+                className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium bg-amber-50 text-amber-700"
+              >
+                <Zap className="w-5 h-5 text-amber-500" />
+                閃電任務地圖
+              </Link>
+              <Link
+                to={createPageUrl('CleanerSchedule')}
+                onClick={() => setMenuOpen(false)}
+                className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-stone-600 hover:bg-stone-50"
+              >
+                <ClipboardList className="w-5 h-5 text-stone-400" />
+                我的行程
+              </Link>
+              <Link
+                to={createPageUrl('CleanerProfile')}
+                onClick={() => setMenuOpen(false)}
+                className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-stone-600 hover:bg-stone-50"
+              >
+                <User className="w-5 h-5 text-stone-400" />
+                個人資料
+              </Link>
+              <Link
+                to={createPageUrl('ClientDashboard')}
+                onClick={() => setMenuOpen(false)}
+                className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-stone-600 hover:bg-stone-50"
+              >
+                <ClipboardList className="w-5 h-5 text-stone-400" />
+                前台（客戶視角）
+              </Link>
+            </nav>
+
+            {/* 登出 */}
+            <div className="p-4 border-t border-stone-100">
+              <button
+                onClick={() => base44.auth.logout()}
+                className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-stone-500 hover:bg-stone-50 w-full"
+              >
+                <LogOut className="w-5 h-5" />
+                登出
+              </button>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
