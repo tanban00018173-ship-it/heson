@@ -80,13 +80,11 @@ export default function CleanerJobs() {
       </div>
 
       {/* ── 地圖區（佔剩餘空間，不會超出） ── */}
-      <div className="relative flex-1 overflow-hidden">
+      <div className="relative flex-1 overflow-hidden" style={{ visibility: menuOpen ? 'hidden' : 'visible' }}>
         <FlashTaskMap
           flashTasks={flashTasks}
           onAccept={(task) => acceptFlashMutation.mutateAsync(task)}
         />
-        {/* 選單開啟時阻擋地圖互動 */}
-        {menuOpen && <div className="absolute inset-0 z-[99]" />}
       </div>
 
       {/* ── 側拉選單 ── */}
