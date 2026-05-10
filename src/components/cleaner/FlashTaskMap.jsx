@@ -176,8 +176,8 @@ function MapInner({ apiKey, flashTasks, onAccept }) {
         })}
       </GoogleMap>
 
-      {/* 頂部狀態欄 */}
-      <div className="absolute top-4 left-4 right-4 z-10 flex items-center justify-between gap-3 pointer-events-none">
+      {/* 頂部狀態欄（僅桌面版） */}
+      <div className="absolute top-4 left-4 right-4 z-10 hidden lg:flex items-center justify-between gap-3 pointer-events-none">
         <div className="flex items-center gap-2 bg-white/95 backdrop-blur-sm rounded-2xl px-4 py-2.5 shadow-lg pointer-events-auto">
           <Zap className="w-4 h-4 text-amber-500" />
           <span className="text-sm font-semibold text-stone-800">
@@ -194,7 +194,7 @@ function MapInner({ apiKey, flashTasks, onAccept }) {
       </div>
 
       {gpsStatus === 'denied' && (
-        <div className="absolute top-16 left-4 right-4 z-10 bg-red-500/90 text-white text-xs text-center py-2 px-4 rounded-xl">
+        <div className="absolute top-4 left-4 right-4 z-10 hidden lg:block bg-red-500/90 text-white text-xs text-center py-2 px-4 rounded-xl">
           無法取得 GPS，以台北市中心顯示
         </div>
       )}
