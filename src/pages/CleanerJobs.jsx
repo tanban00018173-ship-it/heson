@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Menu, X, ClipboardList, Zap, LogOut, User, BarChart3, Home } from "lucide-react";
+import { Menu, X, ClipboardList, Zap, LogOut, User } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
@@ -138,16 +138,8 @@ export default function CleanerJobs() {
                 onClick={() => setMenuOpen(false)}
                 className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-stone-600 hover:bg-stone-50"
               >
-                <Home className="w-5 h-5 text-stone-400" />
+                <ClipboardList className="w-5 h-5 text-stone-400" />
                 前台（客戶視角）
-              </Link>
-              <Link
-                to={createPageUrl('AdminDashboard')}
-                onClick={() => setMenuOpen(false)}
-                className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-stone-600 hover:bg-stone-50"
-              >
-                <BarChart3 className="w-5 h-5 text-stone-400" />
-                後台（管理員）
               </Link>
             </nav>
 
