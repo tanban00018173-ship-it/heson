@@ -75,15 +75,15 @@ export default function Sidebar({ userRole = 'client', userName = '' }) {
             className="h-8 w-auto"
           />
         </Link>
-        {userName && (
-          <p className="text-sm text-stone-500 mt-3">
-            您好，{userName}
-          </p>
-        )}
         {userRole === 'admin' && (
           <div className="mt-3">
             <AdminViewSwitcher />
           </div>
+        )}
+        {userName && (
+          <p className="text-sm text-stone-500 mt-3">
+            您好，{userName}
+          </p>
         )}
       </div>
 

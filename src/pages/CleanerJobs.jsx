@@ -110,6 +110,14 @@ export default function CleanerJobs() {
 
             {/* 選單項目 */}
             <nav className="flex-1 p-4 space-y-1">
+              {/* 管理員視角切換 */}
+              {user?.role === 'admin' && (
+                <div className="pb-3 mb-2 border-b border-stone-100">
+                  <p className="text-xs text-stone-400 font-medium mb-2 px-1">切換視角</p>
+                  <AdminViewSwitcher />
+                </div>
+              )}
+
               <Link
                 to={createPageUrl('CleanerJobs')}
                 onClick={() => setMenuOpen(false)}
@@ -142,14 +150,6 @@ export default function CleanerJobs() {
                 <Home className="w-5 h-5 text-stone-400" />
                 前台（客戶視角）
               </Link>
-
-              {/* 管理員視角切換 */}
-              {user?.role === 'admin' && (
-                <div className="pt-2 pb-1 px-4">
-                  <p className="text-xs text-stone-400 font-medium mb-2">切換視角</p>
-                  <AdminViewSwitcher />
-                </div>
-              )}
             </nav>
 
             {/* 登出 */}
