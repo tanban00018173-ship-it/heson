@@ -20,7 +20,16 @@ const mapOptions = {
   disableDefaultUI: true,
   draggable: true,
   gestureHandling: 'greedy',
-  clickableIcons: false,
+  styles: [
+    {
+      featureType: "poi",
+      stylers: [{ visibility: "off" }]
+    },
+    {
+      featureType: "poi.park",
+      stylers: [{ visibility: "on" }]
+    }
+  ]
 };
 
 function openGoogleNavigation(lat, lng, address) {
