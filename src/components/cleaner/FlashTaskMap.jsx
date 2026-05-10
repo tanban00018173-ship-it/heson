@@ -64,8 +64,7 @@ export default function FlashTaskMap({ flashTasks = [], onAccept }) {
   }, []);
 
   const { isLoaded, loadError } = useLoadScript({
-    googleMapsApiKey: apiKey,
-    // 只在有 key 時才載入
+    googleMapsApiKey: apiKey || 'placeholder',
     preventGoogleFontsLoading: true,
   });
 
@@ -95,8 +94,8 @@ export default function FlashTaskMap({ flashTasks = [], onAccept }) {
     );
   }
 
-  // 沒有 API Key 時顯示提示
-  if (!apiKey) {
+  // 沒有 API Key 時（已確認取得但仍為空）才顯示提示
+  if (keyLoaded && !apiKey) {
     return (
       <div className="absolute inset-0 flex flex-col items-center justify-center bg-stone-100 p-6 text-center">
         <MapPin className="w-12 h-12 text-stone-300 mb-4" />

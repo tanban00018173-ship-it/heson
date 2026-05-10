@@ -37,6 +37,16 @@
       ],
       "description": "\u9810\u7d04\u72c0\u614b"
     },
+    "is_flash_task": {
+      "type": "boolean",
+      "description": "\u662f\u5426\u70ba\u9583\u96fb\u4efb\u52d9\uff08\u5ba2\u6236\u5373\u6642\u767c\u8d77\uff0c\u7b49\u5f85\u6e05\u6f54\u5e2b\u63a5\u55ae\uff09",
+      "default": false
+    },
+    "flash_expires_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "\u9583\u96fb\u4efb\u52d9\u904e\u671f\u6642\u9593\uff08\u901a\u5e38\u767c\u8d77\u5f8c2\u5c0f\u6642\uff09"
+    },
     "hold_status": {
       "type": "string",
       "enum": [
@@ -140,6 +150,9 @@
         },
         {
           "data.cleaner_id": "{{user.id}}"
+        },
+        {
+          "data.is_flash_task": true
         },
         {
           "user_condition": {

@@ -1,0 +1,58 @@
+{
+  "name": "PartTimeWorker",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "\u59d3\u540d"
+    },
+    "gender": {
+      "type": "string",
+      "enum": [
+        "\u7537\u751f",
+        "\u5973\u751f"
+      ],
+      "description": "\u6027\u5225"
+    },
+    "phone": {
+      "type": "string",
+      "description": "\u806f\u7d61\u96fb\u8a71"
+    },
+    "address": {
+      "type": "string",
+      "description": "\u5c45\u4f4f\u5730\u5740"
+    },
+    "email": {
+      "type": "string",
+      "description": "\u96fb\u5b50\u90f5\u4ef6"
+    },
+    "emergency_contact": {
+      "type": "string",
+      "description": "\u7dca\u6025\u806f\u7d61\u4eba"
+    },
+    "education": {
+      "type": "string",
+      "description": "\u6700\u9ad8\u5b78\u6b77"
+    },
+    "work_experience": {
+      "type": "string",
+      "description": "\u5de5\u4f5c\u7d93\u9a57"
+    },
+    "specialties": {
+      "type": "string",
+      "description": "\u7279\u6b8a\u5c08\u9577"
+    },
+    "notes": {
+      "type": "string",
+      "description": "\u5099\u8a3b"
+    },
+    "is_active": {
+      "type": "boolean",
+      "description": "\u662f\u5426\u555f\u7528"
+    }
+  },
+  "required": [
+    "name",
+    "phone"
+  ]
+}
