@@ -17,7 +17,7 @@ const mapContainerStyle = { width: '100%', height: '100%' };
 const defaultCenter = { lat: 25.033, lng: 121.565 };
 const mapOptions = {
   disableDefaultUI: false,
-  zoomControl: true,
+  zoomControl: false,
   streetViewControl: false,
   mapTypeControl: false,
   fullscreenControl: false,
