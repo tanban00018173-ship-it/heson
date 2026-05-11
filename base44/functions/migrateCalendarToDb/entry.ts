@@ -52,9 +52,38 @@ async function clearSheet(accessToken, sheetTitle) {
   return await res.json();
 }
 
+// 驗證工作表標題行
+async function validateSheetHeaders(accessToken, sheetTitle) {
+  const range = encodeURIComponent(`${sheetTitle}!A1:H1`);
+  const res = await fetch(
+    `https://sheets.googleapis.com/v4/spreadsheets/${DB_ID}/values/${range}`,
+    { headers: { Authorization: `Bearer ${accessToken}` } }
+  );
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(`讀取標題失敗 "${sheetTitle}": ${err.error?.message}`);
+  }
+  const data = await res.json();
+  const headers = (data.values?.[0] || []).map(h => (h || '').trim());
+  
+  // 檢查必要欄位（至少前6列）
+  const required = ['編號', '清掃時間', '姓名', '電話', '需要服務地址', '地址連結'];
+  const headerStr = headers.slice(0, 6).join('|');
+  console.log(`"${sheetTitle}" 標題: [${headerStr}]`);
+  
+  // 寬鬆檢查：至少A、B、C、D、E、F欄有內容（名稱可能略異）
+  if (headers.length < 6 || !headers[0] || !headers[2] || !headers[4]) {
+    throw new Error(`"${sheetTitle}" 標題不完整或格式錯誤，無法安全寫入`);
+  }
+  return true;
+}
+
 // 寫入資料（values.append API，追加方式，避免保護範圍問題）
 async function writeRows(accessToken, sheetTitle, sheetId, rows) {
   if (!rows || rows.length === 0) return { updatedCells: 0 };
+
+  // 先驗證標題
+  await validateSheetHeaders(accessToken, sheetTitle);
 
   // Step 1: 用 values.append 寫入資料
   const appendRange = encodeURIComponent(`${sheetTitle}!A2`);
