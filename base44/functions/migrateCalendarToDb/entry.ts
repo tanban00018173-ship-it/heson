@@ -3,7 +3,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 // 月曆排程試算表（來源）
 const CALENDAR_ID = '1U0V5hXjrBo8Qh51vpPb6TfF2LOp05pKXTgtakz_YZvQ';
 // 訂單資料庫試算表（目的地）
-const DB_ID = '1U0V5hXjrBo8Qh51vpPb6TfF2LOp05pKXTgtakz_YZvQ';
+const DB_ID = '10UDfGk4AZsC1Q_esUn2dO5PPfZ8m6ToSfeDk3mHzXG4';
 
 // 取得試算表的所有工作表資訊
 async function getSpreadsheetSheets(accessToken, spreadsheetId) {
@@ -189,10 +189,18 @@ Deno.serve(async (req) => {
     const { accessToken } = await base44.asServiceRole.connectors.getConnection('googlesheets');
 
     // 取得訂單資料庫所有工作表
-    let dbSheets = await getSpreadsheetSheets(accessToken, DB_ID);
+    let allSheets = await getSpreadsheetSheets(accessToken, DB_ID);
+    console.log('所有工作表:', JSON.stringify(allSheets.map(s => s.title)));
+    
     // 只保留有 "/" 或 "／" 的工作表（排除表單回應等）
-    dbSheets = dbSheets.filter(s => s.title.includes('／') || s.title.includes('/'));
-    console.log('DB工作表:', JSON.stringify(dbSheets.map(s => s.title)));
+    let dbSheets = allSheets.filter(s => s.title.includes('／') || s.title.includes('/'));
+    console.log('篩選後DB工作表:', JSON.stringify(dbSheets.map(s => s.title)));
+    
+    // 若無合格工作表，顯示完整列表供調試
+    if (dbSheets.length === 0) {
+      console.warn('警告：沒有找到符合條件的工作表（應包含 / 或 ／）。完整列表:', allSheets.map(s => s.title).join(', '));
+      dbSheets = allSheets; // 暫用全部工作表作為備選
+    }
 
     // --- mode: debug_read（讀回 DB 驗證） ---
     if (mode === 'debug_read') {
