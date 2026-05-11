@@ -47,9 +47,10 @@ Deno.serve(async (req) => {
       `https://sheets.googleapis.com/v4/spreadsheets/${DB_SHEET_ID}?fields=sheets.properties`,
       { headers: { 'Authorization': `Bearer ${accessToken}` } }
     );
-    if (!infoRes.ok) throw new Error(`取得試算表資訊失敗: ${await infoRes.text()}`);
+    if (!infoRes.ok) throw new Error(`取得試算表資訊失敗 (ID:${DB_SHEET_ID}): ${await infoRes.text()}`);
     const info = await infoRes.json();
     const allSheets = info.sheets || [];
+    console.log('可用工作表:', allSheets.map(s => s.properties.title).join(', '));
 
     const targetSheet = allSheets.find(s => s.properties.title === sheetName);
     if (!targetSheet) {
