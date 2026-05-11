@@ -40,19 +40,21 @@ async function getNextIndex(accessToken, dbSheetName, prefix) {
   return max + 1;
 }
 
-// 批次 append（避免 quota 問題，一次寫多列）
-async function appendRows(accessToken, dbSheetName, rows) {
+// 直接寫入固定範圍（從 A2 開始，不使用 INSERT_ROWS 避免空行）
+async function writeRows(accessToken, dbSheetName, startRow, rows) {
+  const endRow = startRow + rows.length - 1;
+  const range = `${dbSheetName}!A${startRow}:G${endRow}`;
   const res = await fetch(
-    `https://sheets.googleapis.com/v4/spreadsheets/${DB_ID}/values/${encodeURIComponent(dbSheetName + '!A1')}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`,
+    `https://sheets.googleapis.com/v4/spreadsheets/${DB_ID}/values/${encodeURIComponent(range)}?valueInputOption=USER_ENTERED`,
     {
-      method: 'POST',
+      method: 'PUT',
       headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ values: rows }),
     }
   );
   if (!res.ok) {
     const err = await res.json();
-    throw new Error(`批次寫入失敗: ${err.error?.message}`);
+    throw new Error(`寫入失敗: ${err.error?.message}`);
   }
   return await res.json();
 }
@@ -220,8 +222,8 @@ Deno.serve(async (req) => {
         nextIdx++;
       }
 
-      // 批次寫入（一次 API 呼叫，避免超過 quota）
-      await appendRows(accessToken, targetSheet, outputRows);
+      // 直接從 A2 開始覆寫（不產生空行）
+      await writeRows(accessToken, targetSheet, 2, outputRows);
       allResults.push({ sheet: targetSheet, inserted: outputRows.length });
       console.log(`${targetSheet}: 寫入 ${outputRows.length} 列`);
     }
