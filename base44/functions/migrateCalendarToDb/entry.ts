@@ -119,18 +119,23 @@ function findSheetByPrefix(dbSheets, prefix) {
 function resolveTargetSheet(dbSheets, plan, name) {
   const p = (plan || '');
   const n = (name || '');
-  if (p.includes('民宿') || p.includes('旅宿') || p.includes('退租') || n.includes('民宿') || n.includes('旅宿')) {
+  // 民宿/旅宿類 → H
+  if (p.includes('民宿') || p.includes('旅宿') || p.includes('退租') || n.includes('民宿') || n.includes('旅宿') || n.includes('旅行')) {
     return findSheetByPrefix(dbSheets, 'H');
   }
+  // 毛坯/裝潢後 → P
   if (p.includes('毛坯') || p.includes('裝潢後') || p.includes('新成屋')) {
     return findSheetByPrefix(dbSheets, 'P');
   }
+  // 細清/大掃除 → D
   if (p.includes('大掃除') || p.includes('細清') || p.includes('深層') || p.includes('精緻')) {
     return findSheetByPrefix(dbSheets, 'D');
   }
-  if (p.includes('每月') || p.includes('月') || p.includes('訂閱') || p.includes('次')) {
+  // 定期訂閱（每月N次格式）→ R
+  if (p.includes('訂閱') || p.match(/每月\s*\d+\s*次/) || p.match(/\d+\s*小時\s*[×x]\s*每月/) || p.includes('每月')) {
     return findSheetByPrefix(dbSheets, 'R');
   }
+  // 輕量 → L（單次、輕量、或其他）
   return findSheetByPrefix(dbSheets, 'L');
 }
 
@@ -186,12 +191,17 @@ Deno.serve(async (req) => {
     const idxAddress = calHeaders.indexOf('需要服務地址');
     const idxMapsUrl = calHeaders.indexOf('地址連結');
     const idxPlan    = calHeaders.findIndex(h => h.includes('時長') || h.includes('訂閱'));
-    console.log(`欄位索引 → 時間:${idxTime} 姓名:${idxName} 地址:${idxAddress} 連結:${idxMapsUrl} 方案:${idxPlan}`);
+    const idxCleaner = calHeaders.findIndex(h => h.includes('清潔人員') || h.includes('清掃人員'));
+    const idxIdNum   = calHeaders.indexOf('編號');
+    console.log(`欄位索引 → 時間:${idxTime} 姓名:${idxName} 地址:${idxAddress} 連結:${idxMapsUrl} 方案:${idxPlan} 清潔人員:${idxCleaner}`);
 
-    // 過濾有效資料列（需有姓名且有清掃時間）
+    // 過濾有效資料列（需有清掃時間，姓名可能在「編號」欄）
     const dataRows = calRows.slice(1).filter(r => {
       if (!r || !r.some(c => c)) return false;
-      const hasName = idxName >= 0 ? !!(r[idxName] || '').trim() : true;
+      // 姓名可能在 idxName 或 idxIdNum（當編號欄填的是名稱時）
+      const nameFromName = idxName >= 0 ? (r[idxName] || '').trim() : '';
+      const nameFromId   = idxIdNum >= 0 ? (r[idxIdNum] || '').trim() : '';
+      const hasName = !!(nameFromName || nameFromId);
       const hasTime = idxTime >= 0 ? !!(r[idxTime] || '').trim() : true;
       return hasName && hasTime;
     });
@@ -199,12 +209,15 @@ Deno.serve(async (req) => {
 
     // --- mode: preview ---
     if (mode === 'preview') {
+      const offset = body.offset || 0;
+      const limit = body.limit || 10;
       return Response.json({
         mode: 'preview',
         source_sheet: SOURCE_SHEET,
         headers: calHeaders,
-        sample_rows: dataRows.slice(0, 5),
-        total_rows: dataRows.length,
+        total_raw: calRows.length - 1,
+        total_valid: dataRows.length,
+        raw_rows: calRows.slice(1 + offset, 1 + offset + limit),
         db_sheets: dbSheets.map(s => s.title),
       });
     }
@@ -253,10 +266,16 @@ Deno.serve(async (req) => {
     const grouped = {};
     for (const row of dataRows) {
       const plan    = idxPlan    >= 0 ? (row[idxPlan]    || '') : '';
-      const name    = idxName    >= 0 ? (row[idxName]    || '').trim() : '';
+      // 姓名：優先取姓名欄，否則取編號欄（民宿客戶名稱有時填在編號欄）
+      const nameFromName = idxName  >= 0 ? (row[idxName]  || '').trim() : '';
+      const nameFromId   = idxIdNum >= 0 ? (row[idxIdNum] || '').trim() : '';
+      const name    = nameFromName || nameFromId;
       const address = idxAddress >= 0 ? (row[idxAddress] || '').trim() : '';
       const mapsUrl = idxMapsUrl >= 0 ? (row[idxMapsUrl] || '') : '';
       const timeRaw = idxTime    >= 0 ? (row[idxTime]    || '') : '';
+      const cleanerRaw = idxCleaner >= 0 ? (row[idxCleaner] || '') : '';
+      // 清潔人員可能多位（換行分隔），統一成逗號分隔
+      const cleaner = cleanerRaw.split(/\n|,|、/).map(s => s.trim()).filter(Boolean).join('、');
       const timeSlot = extractTimeSlot(timeRaw);
 
       const sheetObj = resolveTargetSheet(dbSheets, plan, name);
@@ -271,15 +290,23 @@ Deno.serve(async (req) => {
       // 案場唯一 key = 姓名 + 地址（不同地址 = 不同案場）
       const caseKey = `${name}||${address}`;
       if (!grouped[sheetKey].cases.has(caseKey)) {
-        grouped[sheetKey].cases.set(caseKey, { name, address, mapsUrl, plan, timeSlots: new Set() });
+        grouped[sheetKey].cases.set(caseKey, { name, address, mapsUrl, plan, timeSlots: new Set(), cleaners: new Set() });
       }
       const c = grouped[sheetKey].cases.get(caseKey);
       if (timeSlot) c.timeSlots.add(timeSlot);
+      if (cleaner) cleaner.split('、').forEach(cl => c.cleaners.add(cl));
       // 保留非空的方案/地址連結
       if (!c.mapsUrl && mapsUrl) c.mapsUrl = mapsUrl;
       if (!c.plan && plan) c.plan = plan;
     }
 
+    // 詳細 log 每筆被分到哪個工作表
+    for (const row of dataRows) {
+      const pl = idxPlan >= 0 ? (row[idxPlan] || '') : '';
+      const nm = idxName >= 0 ? (row[idxName] || '').trim() || (idxIdNum >= 0 ? (row[idxIdNum] || '').trim() : '') : '';
+      const sh = resolveTargetSheet(dbSheets, pl, nm);
+      console.log(`分類: "${nm}" | 方案="${pl.slice(0,20)}" → ${sh?.title || '找不到'}`);
+    }
     console.log('分組結果:', JSON.stringify(Object.entries(grouped).map(([k, v]) => ({ sheet: k, cases: v.cases.size }))));
 
     // 先清除目標工作表
@@ -298,8 +325,9 @@ Deno.serve(async (req) => {
         const dbId = `${prefix}${idx++}`;
         // 清掃時間：將所有時間段合併（去重後以 / 分隔）
         const timeStr = [...c.timeSlots].join(' / ') || '';
-        // 格式：A編號 B清掃時間 C姓名 D電話(空) E地址 F地址連結 G方案/費用
-        outputRows.push([dbId, timeStr, c.name, '', c.address, c.mapsUrl, c.plan]);
+        const cleanerStr = [...c.cleaners].join('、');
+        // 格式：A編號 B清掃時間 C姓名 D電話(空) E地址 F地址連結 G方案/費用 H清潔人員
+        outputRows.push([dbId, timeStr, c.name, '', c.address, c.mapsUrl, c.plan, cleanerStr]);
       }
 
       const result = await writeRows(accessToken, sheetObj.title, sheetObj.sheetId, outputRows);
@@ -307,7 +335,14 @@ Deno.serve(async (req) => {
       allResults.push({ sheet: sheetObj.title, cases: outputRows.length, updatedCells: result?.updatedCells });
     }
 
-    return Response.json({ success: true, source: SOURCE_SHEET, results: allResults });
+    // 回傳每筆分類細節供驗證
+    const classifyDetail = dataRows.map(row => {
+      const pl = idxPlan >= 0 ? (row[idxPlan] || '') : '';
+      const nm = idxName >= 0 ? (row[idxName] || '').trim() || (idxIdNum >= 0 ? (row[idxIdNum] || '').trim() : '') : '';
+      const sh = resolveTargetSheet(dbSheets, pl, nm);
+      return { name: nm, plan: pl.slice(0, 30), sheet: sh?.title || '找不到' };
+    });
+    return Response.json({ success: true, source: SOURCE_SHEET, results: allResults, classify: classifyDetail });
 
   } catch (error) {
     console.error('migrateCalendarToDb error:', error.message);
