@@ -210,20 +210,40 @@ Deno.serve(async (req) => {
     }
 
     // --- mode: migrate ---
-    // 從清掃時間字串中抽取時間段（如 "4/10(五)1:00-5:00" → "01:00-05:00"）
+    // 從清掃時間字串中抽取時間段，修正12小時制問題
+    // 例：「4/10(五)1:00-5:00」→ 下午 → "13:00-17:00"
+    // 例：「4/12(日) 上午11:00」→ "11:00"
+    function toHour24(h, isPM) {
+      let n = parseInt(h, 10);
+      if (isPM && n < 12) n += 12;
+      if (!isPM && n === 12) n = 0;
+      return String(n).padStart(2, '0');
+    }
     function extractTimeSlot(raw) {
       if (!raw) return '';
-      // 嘗試抓取 HH:mm-HH:mm 或 H:mm-H:mm 或只有 HH:mm
-      const match = raw.match(/(\d{1,2}:\d{2})\s*[-~～至到]\s*(\d{1,2}:\d{2})/);
+      const isAM = /上午|AM/i.test(raw);
+      const isPM = /下午|PM/i.test(raw);
+
+      const match = raw.match(/(\d{1,2}):(\d{2})\s*[-~～至到]\s*(\d{1,2}):(\d{2})/);
       if (match) {
-        const pad = t => t.replace(/^(\d):/, '0$1:');
-        return `${pad(match[1])}-${pad(match[2])}`;
+        const [, h1, m1, h2, m2] = match;
+        const n1 = parseInt(h1, 10);
+        const n2 = parseInt(h2, 10);
+        // 無 AM/PM 標示時：若起始小時 < 8 判定為下午（台灣清潔班次慣例）
+        const assumePM = !isAM && !isPM && n1 < 8;
+        const start = `${toHour24(n1, isPM || assumePM)}:${m1}`;
+        // 結束時間：若結束 < 開始（補12小時）或同樣判定
+        const endN = n2 < n1 ? n2 + 12 : (isPM || assumePM ? (n2 < 12 ? n2 + 12 : n2) : n2);
+        const end = `${String(endN).padStart(2, '0')}:${m2}`;
+        return `${start}-${end}`;
       }
-      // 只有單一時間（如 "上午11:00"）
-      const single = raw.match(/(\d{1,2}:\d{2})/);
+      // 只有單一時間
+      const single = raw.match(/(\d{1,2}):(\d{2})/);
       if (single) {
-        const pad = t => t.replace(/^(\d):/, '0$1:');
-        return pad(single[1]);
+        const [, h, m] = single;
+        const n = parseInt(h, 10);
+        const assumePM = !isAM && !isPM && n < 8;
+        return `${toHour24(n, isPM || assumePM)}:${m}`;
       }
       return raw.trim();
     }
