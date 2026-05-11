@@ -61,12 +61,16 @@ async function clearSheetById(accessToken, sheetId) {
   }
 }
 
-// 用 sheetId 寫入資料（使用 batchUpdate + updateCells）
+// 用 values.batchUpdate 寫入資料（A1 notation，用 sheetTitle 繞過斜線問題 → 改用 sheetId gid trick）
+// 實際上 values API 用 title 讀沒問題，用 title 寫也 OK（只要正確 encode）
+// 這裡改成直接用 spreadsheets.batchUpdate + updateCells，明確指定 endRowIndex/endColumnIndex
 async function writeRowsById(accessToken, sheetId, startRow, rows) {
-  // 把 rows 轉換成 CellData 格式
+  if (rows.length === 0) return;
+  const colCount = rows[0].length;
+
   const rowData = rows.map(row => ({
     values: row.map(cell => ({
-      userEnteredValue: { stringValue: String(cell || '') }
+      userEnteredValue: { stringValue: String(cell ?? '') }
     }))
   }));
 
@@ -80,8 +84,10 @@ async function writeRowsById(accessToken, sheetId, startRow, rows) {
           updateCells: {
             range: {
               sheetId,
-              startRowIndex: startRow - 1, // 0-indexed（startRow=2 → index=1）
+              startRowIndex: startRow - 1,       // 0-indexed
+              endRowIndex:   startRow - 1 + rows.length,
               startColumnIndex: 0,
+              endColumnIndex:   colCount,
             },
             rows: rowData,
             fields: 'userEnteredValue',
