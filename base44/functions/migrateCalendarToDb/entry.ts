@@ -330,7 +330,12 @@ Deno.serve(async (req) => {
       return raw.trim();
     }
 
-    // 以「姓名 + 地址」為 key 合併同案場，並收集所有出現的時間段
+    // 標準化地址函數（去空格、標點，方便比對）
+    function normalizeAddress(addr) {
+    return (addr || '').replace(/\s+/g, '').replace(/[^\u4e00-\u9fff0-9a-zA-Z]/g, '');
+    }
+
+    // 以「姓名 + 標準化地址」為 key 合併同案場，並收集所有出現的時間段
     // grouped: sheetTitle → { sheetObj, cases: Map<caseKey, caseData> }
     const grouped = {};
     for (const row of dataRows) {
@@ -357,8 +362,9 @@ Deno.serve(async (req) => {
       const sheetKey = sheetObj.title;
       if (!grouped[sheetKey]) grouped[sheetKey] = { sheetObj, cases: new Map() };
 
-      // 案場唯一 key = 姓名 + 地址（不同地址 = 不同案場）
-      const caseKey = `${name}||${address}`;
+      // 案場唯一 key = 姓名 + 標準化地址（相同地址儘管格式略異也會合併）
+      const normalizedAddr = normalizeAddress(address);
+      const caseKey = `${name}||${normalizedAddr}`;
       if (!grouped[sheetKey].cases.has(caseKey)) {
         grouped[sheetKey].cases.set(caseKey, { name, address, mapsUrl, plan, timeSlots: new Set(), cleaners: new Set() });
       }
