@@ -22,6 +22,7 @@ import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import AddressMap from "@/components/AddressMap";
+import BookingSummary from "@/components/booking/BookingSummary";
 
 const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL || 'service@heson.tw';
 
@@ -208,6 +209,7 @@ export default function BookingForm() {
   const [photoFiles, setPhotoFiles] = useState([]);
   const [policyAgreed, setPolicyAgreed] = useState(false);
   const [savedProfile, setSavedProfile] = useState(null); // 已儲存的會員資料
+  const [summaryOpen, setSummaryOpen] = useState(false);
 
   // 訂購人（付款人）
   const [orderer, setOrderer] = useState({ name: '', phone: '', email: '' });
@@ -327,6 +329,24 @@ export default function BookingForm() {
     if (servicePlan.includes('精緻裝潢')) return 10000;
     if (servicePlan.includes('民宿單次')) return 1200;
     return 2000;
+  };
+
+  const formData = {
+    orderer,
+    fullAddress,
+    cleaningType,
+    servicePlan,
+    date,
+    timeSlot,
+    housingType,
+    squareFootage,
+    hasPet,
+    enhanceAreas,
+    notes,
+  };
+
+  const handleConfirmSummary = async () => {
+    await handleSubmit({ preventDefault: () => {} });
   };
 
   const handleSubmit = async (e) => {
@@ -828,6 +848,17 @@ export default function BookingForm() {
                 </div>
               </CardContent>
             </Card>
+          )}
+
+          {/* 訂單摘要驗證 */}
+          {servicePlan && (
+            <BookingSummary
+              formData={formData}
+              isOpen={summaryOpen}
+              onToggle={() => setSummaryOpen(!summaryOpen)}
+              onConfirm={handleConfirmSummary}
+              isSubmitting={isSubmitting}
+            />
           )}
 
           {/* 取消政策 + 送出 */}
