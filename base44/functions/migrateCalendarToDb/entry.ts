@@ -52,8 +52,8 @@ async function clearSheet(accessToken, sheetTitle) {
   return await res.json();
 }
 
-// 驗證工作表標題行
-async function validateSheetHeaders(accessToken, sheetTitle) {
+// 驗證工作表標題行並返回欄位索引
+async function getSheetHeaderIndices(accessToken, sheetTitle) {
   const range = encodeURIComponent(`${sheetTitle}!A1:H1`);
   const res = await fetch(
     `https://sheets.googleapis.com/v4/spreadsheets/${DB_ID}/values/${range}`,
@@ -66,24 +66,47 @@ async function validateSheetHeaders(accessToken, sheetTitle) {
   const data = await res.json();
   const headers = (data.values?.[0] || []).map(h => (h || '').trim());
   
-  // 檢查必要欄位（至少前6列）
-  const required = ['編號', '清掃時間', '姓名', '電話', '需要服務地址', '地址連結'];
-  const headerStr = headers.slice(0, 6).join('|');
-  console.log(`"${sheetTitle}" 標題: [${headerStr}]`);
+  console.log(`"${sheetTitle}" 標題: [${headers.join('|')}]`);
   
-  // 寬鬆檢查：至少A、B、C、D、E、F欄有內容（名稱可能略異）
-  if (headers.length < 6 || !headers[0] || !headers[2] || !headers[4]) {
-    throw new Error(`"${sheetTitle}" 標題不完整或格式錯誤，無法安全寫入`);
+  // 查找各欄位索引（模糊匹配）
+  const idxNum = headers.findIndex(h => h.includes('編號'));
+  const idxTime = headers.findIndex(h => h.includes('清掃時間') || h.includes('時間'));
+  const idxName = headers.findIndex(h => h.includes('姓名'));
+  const idxPhone = headers.findIndex(h => h.includes('電話') || h.includes('聯繫'));
+  const idxAddr = headers.findIndex(h => h.includes('需要服務地址') || h.includes('地址'));
+  const idxMap = headers.findIndex(h => h.includes('地址連結') || h.includes('地圖'));
+  
+  if (idxNum < 0 || idxName < 0 || idxAddr < 0) {
+    throw new Error(`"${sheetTitle}" 缺少必要欄位（編號、姓名、地址）`);
   }
-  return true;
+  
+  return { idxNum, idxTime, idxName, idxPhone, idxAddr, idxMap, headerCount: headers.length };
 }
 
-// 寫入資料（values.append API，追加方式，避免保護範圍問題）
+// 寫入資料（values.append API，依據表格標題動態調整欄位）
 async function writeRows(accessToken, sheetTitle, sheetId, rows) {
   if (!rows || rows.length === 0) return { updatedCells: 0 };
 
-  // 先驗證標題
-  await validateSheetHeaders(accessToken, sheetTitle);
+  // 讀取標題並獲得欄位索引
+  const indices = await getSheetHeaderIndices(accessToken, sheetTitle);
+  const { idxNum, idxTime, idxName, idxPhone, idxAddr, idxMap } = indices;
+  
+  // 根據表格的實際欄位結構，重新整理資料行
+  // rows 的格式是 [編號, 清掃時間, 姓名, 空, 地址, 地址連結]
+  // 但表格可能沒有清掃時間欄，需要動態對應
+  const adjustedRows = rows.map(row => {
+    const adjustedRow = new Array(indices.headerCount).fill('');
+    
+    // 對應欄位值（row 格式：[編號, 清掃時間, 姓名, 電話, 地址, 地址連結]）
+    adjustedRow[idxNum] = row[0] || ''; // 編號
+    if (idxTime >= 0) adjustedRow[idxTime] = row[1] || ''; // 清掃時間（如果存在）
+    adjustedRow[idxName] = row[2] || ''; // 姓名
+    if (idxPhone >= 0) adjustedRow[idxPhone] = row[3] || ''; // 電話（如果存在）
+    adjustedRow[idxAddr] = row[4] || ''; // 地址
+    if (idxMap >= 0) adjustedRow[idxMap] = row[5] || ''; // 地址連結（如果存在）
+    
+    return adjustedRow.slice(0, indices.headerCount);
+  });
 
   // Step 1: 用 values.append 寫入資料
   const appendRange = encodeURIComponent(`${sheetTitle}!A2`);
@@ -92,7 +115,7 @@ async function writeRows(accessToken, sheetTitle, sheetId, rows) {
     {
       method: 'POST',
       headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ values: rows }),
+      body: JSON.stringify({ values: adjustedRows }),
     }
   );
   if (!res.ok) {
@@ -102,8 +125,8 @@ async function writeRows(accessToken, sheetTitle, sheetId, rows) {
   const appendResult = await res.json();
 
   // Step 2: 用 batchUpdate 強制設定字體為黑色（避免白字問題）
-  const numRows = rows.length;
-  const numCols = rows[0].length;
+  const numRows = adjustedRows.length;
+  const numCols = Math.min(6, indices.headerCount);
   const formatRes = await fetch(
     `https://sheets.googleapis.com/v4/spreadsheets/${DB_ID}:batchUpdate`,
     {
