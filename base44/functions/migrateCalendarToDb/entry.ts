@@ -89,23 +89,36 @@ async function writeRows(accessToken, sheetTitle, sheetId, rows) {
 
   // 讀取標題並獲得欄位索引
   const indices = await getSheetHeaderIndices(accessToken, sheetTitle);
-  const { idxNum, idxTime, idxName, idxPhone, idxAddr, idxMap } = indices;
+  const { idxNum, idxTime, idxName, idxPhone, idxAddr, idxMap, headerCount } = indices;
+  
+  // 找方案/費用欄位（可能名稱包含「方案」、「費用」、「時長」等）
+  const range = encodeURIComponent(`${sheetTitle}!A1:Z1`);
+  const headerRes = await fetch(
+    `https://sheets.googleapis.com/v4/spreadsheets/${DB_ID}/values/${range}`,
+    { headers: { Authorization: `Bearer ${accessToken}` } }
+  );
+  if (!headerRes.ok) throw new Error(`讀取標題失敗: ${sheetTitle}`);
+  const headerData = await headerRes.json();
+  const headers = (headerData.values?.[0] || []).map(h => (h || '').trim());
+  const idxPlan = headers.findIndex(h => h.includes('方案') || h.includes('費用') || h.includes('時長'));
+  
+  console.log(`"${sheetTitle}" 標題: [${headers.join('|')}], 方案欄位索引: ${idxPlan}`);
   
   // 根據表格的實際欄位結構，重新整理資料行
-  // rows 的格式是 [編號, 清掃時間, 姓名, 空, 地址, 地址連結]
-  // 但表格可能沒有清掃時間欄，需要動態對應
+  // rows 的格式是 [編號, 清掃時間, 姓名, 電話, 地址, 地址連結, 方案/費用]
   const adjustedRows = rows.map(row => {
-    const adjustedRow = new Array(indices.headerCount).fill('');
+    const adjustedRow = new Array(headerCount).fill('');
     
-    // 對應欄位值（row 格式：[編號, 清掃時間, 姓名, 電話, 地址, 地址連結]）
+    // 對應欄位值
     adjustedRow[idxNum] = row[0] || ''; // 編號
-    if (idxTime >= 0) adjustedRow[idxTime] = row[1] || ''; // 清掃時間（如果存在）
+    if (idxTime >= 0) adjustedRow[idxTime] = row[1] || ''; // 清掃時間
     adjustedRow[idxName] = row[2] || ''; // 姓名
-    if (idxPhone >= 0) adjustedRow[idxPhone] = row[3] || ''; // 電話（如果存在）
+    if (idxPhone >= 0) adjustedRow[idxPhone] = row[3] || ''; // 電話
     adjustedRow[idxAddr] = row[4] || ''; // 地址
-    if (idxMap >= 0) adjustedRow[idxMap] = row[5] || ''; // 地址連結（如果存在）
+    if (idxMap >= 0) adjustedRow[idxMap] = row[5] || ''; // 地址連結
+    if (idxPlan >= 0 && row[6]) adjustedRow[idxPlan] = row[6]; // 方案/費用
     
-    return adjustedRow.slice(0, indices.headerCount);
+    return adjustedRow.slice(0, headerCount);
   });
 
   // Step 1: 用 values.append 寫入資料
