@@ -52,17 +52,16 @@ async function clearSheet(accessToken, sheetTitle) {
   return await res.json();
 }
 
-// 寫入資料（values.update API，PUT，從第2列開始）
-async function writeRows(accessToken, sheetTitle, rows) {
-  if (!rows || rows.length === 0) return;
-  const endRow = rows.length + 1; // +1 for header row offset
-  const endCol = String.fromCharCode(65 + rows[0].length - 1); // A=65
-  const range = encodeURIComponent(`${sheetTitle}!A2:${endCol}${endRow}`);
+// 寫入資料（values.append API，追加方式，避免保護範圍問題）
+async function writeRows(accessToken, sheetTitle, sheetId, rows) {
+  if (!rows || rows.length === 0) return { updatedCells: 0 };
 
+  // Step 1: 用 values.append 寫入資料
+  const appendRange = encodeURIComponent(`${sheetTitle}!A2`);
   const res = await fetch(
-    `https://sheets.googleapis.com/v4/spreadsheets/${DB_ID}/values/${range}?valueInputOption=USER_ENTERED`,
+    `https://sheets.googleapis.com/v4/spreadsheets/${DB_ID}/values/${appendRange}:append?valueInputOption=RAW&insertDataOption=OVERWRITE`,
     {
-      method: 'PUT',
+      method: 'POST',
       headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ values: rows }),
     }
@@ -71,7 +70,44 @@ async function writeRows(accessToken, sheetTitle, rows) {
     const err = await res.json();
     throw new Error(`寫入失敗 "${sheetTitle}": ${err.error?.message}`);
   }
-  return await res.json();
+  const appendResult = await res.json();
+
+  // Step 2: 用 batchUpdate 強制設定字體為黑色（避免白字問題）
+  const numRows = rows.length;
+  const numCols = rows[0].length;
+  const formatRes = await fetch(
+    `https://sheets.googleapis.com/v4/spreadsheets/${DB_ID}:batchUpdate`,
+    {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        requests: [{
+          repeatCell: {
+            range: {
+              sheetId: sheetId,
+              startRowIndex: 1,
+              endRowIndex: 1 + numRows,
+              startColumnIndex: 0,
+              endColumnIndex: numCols,
+            },
+            cell: {
+              userEnteredFormat: {
+                textFormat: { foregroundColor: { red: 0, green: 0, blue: 0 }, bold: false },
+                backgroundColor: { red: 1, green: 1, blue: 1 },
+              }
+            },
+            fields: 'userEnteredFormat(textFormat,backgroundColor)',
+          }
+        }]
+      }),
+    }
+  );
+  if (!formatRes.ok) {
+    const err = await formatRes.json();
+    console.warn(`格式設定失敗（非關鍵）: ${err.error?.message}`);
+  }
+
+  return { updatedCells: appendResult.updates?.updatedCells };
 }
 
 // 用前綴字母找工作表
@@ -212,7 +248,7 @@ Deno.serve(async (req) => {
         return [dbId, timeStr, name, '', address, mapsUrl, plan];
       });
 
-      const result = await writeRows(accessToken, sheetObj.title, outputRows);
+      const result = await writeRows(accessToken, sheetObj.title, sheetObj.sheetId, outputRows);
       console.log(`"${sheetObj.title}" 寫入 ${outputRows.length} 列，更新格數: ${result?.updatedCells}`);
       allResults.push({ sheet: sheetObj.title, inserted: outputRows.length, updatedCells: result?.updatedCells });
     }
