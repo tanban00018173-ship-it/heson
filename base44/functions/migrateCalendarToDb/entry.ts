@@ -366,11 +366,12 @@ Deno.serve(async (req) => {
       const normalizedAddr = normalizeAddress(address);
       const caseKey = `${name}||${normalizedAddr}`;
       if (!grouped[sheetKey].cases.has(caseKey)) {
-        grouped[sheetKey].cases.set(caseKey, { name, address, mapsUrl, plan, timeSlots: new Set(), cleaners: new Set() });
+        grouped[sheetKey].cases.set(caseKey, { name, address, mapsUrl, plan, timeSlots: new Set(), cleaners: new Set(), plans: new Set() });
       }
       const c = grouped[sheetKey].cases.get(caseKey);
       if (timeSlot) c.timeSlots.add(timeSlot);
       if (cleaner) cleaner.split('、').forEach(cl => c.cleaners.add(cl));
+      if (plan) c.plans.add(plan);
       // 保留非空的方案/地址連結
       if (!c.mapsUrl && mapsUrl) c.mapsUrl = mapsUrl;
       if (!c.plan && plan) c.plan = plan;
@@ -407,9 +408,11 @@ Deno.serve(async (req) => {
         // 清掃時間：將所有時間段合併（去重後以 / 分隔）
         const timeStr = [...c.timeSlots].join(' / ') || '';
         const cleanerStr = [...c.cleaners].join('、');
-        // 格式：A編號 B清掃時間(時段) C姓名 D電話(空) E地址 F地址連結
-        // 只寫前6列，對齊資料庫結構
-        outputRows.push([dbId, timeStr, c.name, '', c.address, c.mapsUrl]);
+        // 方案/費用：將所有不同方案合併（去重後以 / 分隔）
+        const planStr = [...c.plans].join(' / ') || '';
+        // 格式：A編號 B清掃時間(時段) C姓名 D電話(空) E地址 F地址連結 G方案/費用
+        // 根據表格結構寫入，最後一列放方案/費用
+        outputRows.push([dbId, timeStr, c.name, '', c.address, c.mapsUrl, planStr]);
       }
 
       const result = await writeRows(accessToken, sheetObj.title, sheetObj.sheetId, outputRows);
