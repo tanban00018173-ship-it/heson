@@ -1,9 +1,9 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
 // 月曆排程試算表（來源）
-const CALENDAR_ID = '1AgmwQLTTtslxU8Fn5GNdF9IjDAf4ih7ea5zmCUbuWWs';
+const CALENDAR_ID = '1U0V5hXjrBo8Qh51vpPb6TfF2LOp05pKXTgtakz_YZvQ';
 // 訂單資料庫試算表（目的地）
-const DB_ID = '10UDfGk4AZsC1Q_esUn2dO5PPfZ8m6ToSfeDk3mHzXG4';
+const DB_ID = '1U0V5hXjrBo8Qh51vpPb6TfF2LOp05pKXTgtakz_YZvQ';
 
 // 取得試算表的所有工作表資訊
 async function getSpreadsheetSheets(accessToken, spreadsheetId) {
@@ -112,7 +112,9 @@ async function writeRows(accessToken, sheetTitle, sheetId, rows) {
 
 // 用前綴字母找工作表
 function findSheetByPrefix(dbSheets, prefix) {
-  return dbSheets.find(s => s.title.startsWith(prefix));
+  const result = dbSheets.find(s => s.title.charAt(0) === prefix);
+  console.log(`findSheetByPrefix("${prefix}") from [${dbSheets.map(s => s.title).join(', ')}] → ${result?.title || 'null'}`);
+  return result;
 }
 
 // 根據方案/姓名/編號決定目標工作表
@@ -158,7 +160,9 @@ Deno.serve(async (req) => {
     const { accessToken } = await base44.asServiceRole.connectors.getConnection('googlesheets');
 
     // 取得訂單資料庫所有工作表
-    const dbSheets = await getSpreadsheetSheets(accessToken, DB_ID);
+    let dbSheets = await getSpreadsheetSheets(accessToken, DB_ID);
+    // 只保留有 "/" 或 "／" 的工作表（排除表單回應等）
+    dbSheets = dbSheets.filter(s => s.title.includes('／') || s.title.includes('/'));
     console.log('DB工作表:', JSON.stringify(dbSheets.map(s => s.title)));
 
     // --- mode: debug_read（讀回 DB 驗證） ---
