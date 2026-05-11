@@ -115,6 +115,13 @@ Deno.serve(async (req) => {
     const dbSheets = await getSpreadsheetSheets(accessToken, DB_ID);
     console.log('DB工作表:', JSON.stringify(dbSheets.map(s => s.title)));
 
+    // --- mode: debug_read（讀回 DB 驗證） ---
+    if (mode === 'debug_read') {
+      const sheetTitle = body.sheet || 'H／民宿清潔';
+      const rows = await readSheet(accessToken, DB_ID, sheetTitle);
+      return Response.json({ sheet: sheetTitle, row_count: rows.length, rows: rows.slice(0, 10) });
+    }
+
     // --- mode: clear_all ---
     if (mode === 'clear_all') {
       const skip = ['表單回應 1'];
