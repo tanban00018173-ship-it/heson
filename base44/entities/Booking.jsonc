@@ -15,7 +15,7 @@
       "enum": [
         "\u57fa\u790e\u6708\u8b77-4\u6b21",
         "\u9032\u968e\u6708\u5b89-8\u6b21",
-        "\u5c0a\u7dbb\u6708\u7dbb-12\u6b21",
+        "\u5c0a\u69ae\u6708\u6046-12\u6b21",
         "\u55ae\u6b21\u6e05\u6f54",
         "\u8f15\u91cf\u6e05\u6f54",
         "\u5927\u6383\u9664",
@@ -23,16 +23,6 @@
         "\u6c11\u5bbf\u6e05\u6f54"
       ],
       "description": "\u670d\u52d9\u985e\u578b"
-    },
-    "business_type": {
-      "type": "string",
-      "enum": [
-        "\u5e73\u53f0\u6d3e\u6848",
-        "\u8d6b\u980c\u5ee0\u5546",
-        "\u8d6b\u980c\u76f4\u71df"
-      ],
-      "default": "\u5e73\u53f0\u6d3e\u6848",
-      "description": "\u696d\u52d9\u985e\u578b\uff1a\u5e73\u53f0\u6d3e\u6848(\u54e1\u5de570%)\u3001\u8d6b\u980c\u5ee0\u5546(\u5ee0\u554680%)\u3001\u8d6b\u980c\u76f4\u71df(\u56fa\u5b9a\u85aa\u6c34)"
     },
     "status": {
       "type": "string",
@@ -143,53 +133,6 @@
     "amount": {
       "type": "number",
       "description": "\u8a02\u55ae\u91d1\u984d"
-    },
-    "db_sheet_code": {
-      "type": "string",
-      "description": "\u8a02\u55ae\u8cc7\u6599\u5eab\u7de8\u865f\uff0c\u5982 R1, H5, D16\uff08\u9996\u6b21\u5beb\u5165\u8cc7\u6599\u5eab\u8a66\u7b97\u8868\u6642\u81ea\u52d5\u7522\u751f\uff09"
-    },
-    "db_synced": {
-      "type": "boolean",
-      "description": "\u662f\u5426\u5df2\u5beb\u5165\u8a02\u55ae\u8cc7\u6599\u5eab\u8a66\u7b97\u8868\uff08\u6bcf\u500b\u5730\u5740\u53ea\u5beb\u4e00\u6b21\uff09",
-      "default": false
-    },
-    "housing_type": {
-      "type": "string",
-      "description": "\u7a7a\u9593\u578b\u614b\uff08\u900f\u5929/\u516c\u5bd3/\u5927\u6a13\u7b49\uff09"
-    },
-    "square_footage": {
-      "type": "number",
-      "description": "\u576a\u6578"
-    },
-    "service_area": {
-      "type": "string",
-      "description": "\u5834\u52d8\u5340\u57df"
-    },
-    "cleaning_tools": {
-      "type": "string",
-      "description": "\u6383\u5177\u6578\u8a2d"
-    },
-    "enhance_areas": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      },
-      "description": "\u52a0\u5f37\u6e05\u6f54\u5340\u57df"
-    },
-    "preferred_weekdays": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      },
-      "description": "\u504f\u597d\u661f\u671f"
-    },
-    "referral_source": {
-      "type": "string",
-      "description": "\u5f97\u77e5\u4f86\u6e90"
-    },
-    "referrer": {
-      "type": "string",
-      "description": "\u63a8\u85a6\u4eba"
     }
   },
   "required": [

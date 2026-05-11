@@ -1,144 +1,160 @@
-/**
- * syncBookingToSheet
- * 將訂單寫入「訂單資料庫」試算表（每個客戶/地址只寫一次）
- * 試算表 ID: 13vZMhKh0ljJB4oiD_6I-ccYeO33xAevHHaIGUSaDy50
- * 子工作表: R／定清, H／民宿, L／輕量, D／細清, P／毛坯
- */
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
-const DB_SHEET_ID = '13vZMhKh0ljJB4oiD_6I-ccYeO33xAevHHaIGUSaDy50';
+const SHEET_ID = '1lQc70QbKE0U_BvG7LNa_iR9AymWzO4y5g4SkDo0LtHY';
 
-// 服務類型 → 子工作表前綴 & 名稱
-function resolveSheetPrefix(serviceType, businessType) {
+// 服務類型 → 子工作表名稱對應（使用試算表實際名稱）
+function resolveSheetName(serviceType) {
   const s = (serviceType || '').toLowerCase();
-  const b = (businessType || '').toLowerCase();
 
-  if (s.includes('民宿')) return { prefix: 'H', sheetName: 'H／民宿' };
-  if (s.includes('裝潢') || s.includes('毛坯')) return { prefix: 'P', sheetName: 'P／毛坯' };
-  if (s.includes('大掃除') || b.includes('廠商') || b.includes('直營')) return { prefix: 'D', sheetName: 'D／細清' };
-  if (s.includes('定期') || s.includes('月護') || s.includes('月安') || s.includes('月綻') ||
-      s.includes('4次') || s.includes('8次') || s.includes('12次')) return { prefix: 'R', sheetName: 'R／定清' };
-  return { prefix: 'L', sheetName: 'L／輕量' };
+  if (s.includes('民宿') || s.includes('退租') || s.includes('空屋') || s.includes('旅宿')) {
+    return 'H／民宿清潔';
+  }
+  if (s.includes('毛坯') || s.includes('新成屋') || s.includes('裝潢後')) {
+    return 'P／毛坯案件';
+  }
+  if (s.includes('大掃除') || s.includes('細清') || s.includes('深層') || s.includes('精緻')) {
+    return 'D／細清案件';
+  }
+  if (
+    s.includes('定期') || s.includes('月護') || s.includes('月安') || s.includes('月綻') ||
+    s.includes('基礎月') || s.includes('進階月') || s.includes('尊綻') ||
+    s.includes('4次') || s.includes('8次') || s.includes('12次')
+  ) {
+    return 'R／定清案件';
+  }
+  // 預設：單次清潔 / 居家清潔
+  return 'L／輕量案件';
 }
 
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
-    if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+
+    if (!user) {
+      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
     const body = await req.json();
     const { bookingId, bookingData } = body;
-    if (!bookingId || !bookingData) {
-      return Response.json({ error: 'Missing bookingId or bookingData' }, { status: 400 });
-    }
 
-    // 若已建檔，跳過
-    if (bookingData.db_synced) {
-      return Response.json({ success: true, skipped: true, reason: '已建檔，跳過' });
+    if (!bookingId || !bookingData) {
+      return Response.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
     const { accessToken } = await base44.asServiceRole.connectors.getConnection('googlesheets');
 
-    const { prefix, sheetName } = resolveSheetPrefix(bookingData.service_type, bookingData.business_type);
+    // 決定目標子工作表
+    const targetSheetName = resolveSheetName(bookingData.service_type);
+    console.log(`Service type: "${bookingData.service_type}" → Sheet: "${targetSheetName}"`);
 
-    // 取得試算表 sheet 資訊
-    const infoRes = await fetch(
-      `https://sheets.googleapis.com/v4/spreadsheets/${DB_SHEET_ID}?fields=sheets.properties`,
+    // 取得 spreadsheet 所有 sheet 資訊，找到目標 sheet 的數字 ID
+    const spreadsheetInfoRes = await fetch(
+      `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}?fields=sheets.properties`,
       { headers: { 'Authorization': `Bearer ${accessToken}` } }
     );
-    if (!infoRes.ok) throw new Error(`取得試算表資訊失敗 (ID:${DB_SHEET_ID}): ${await infoRes.text()}`);
-    const info = await infoRes.json();
-    const allSheets = info.sheets || [];
-    console.log('可用工作表:', allSheets.map(s => s.properties.title).join(', '));
+    if (!spreadsheetInfoRes.ok) {
+      const err = await spreadsheetInfoRes.text();
+      throw new Error(`Failed to fetch spreadsheet info: ${err}`);
+    }
+    const spreadsheetInfo = await spreadsheetInfoRes.json();
 
-    const targetSheet = allSheets.find(s => s.properties.title === sheetName);
+    const allSheets = spreadsheetInfo.sheets || [];
+    console.log('Available sheets:', allSheets.map(s => s.properties.title).join(', '));
+
+    const targetSheet = allSheets.find(s => s.properties.title === targetSheetName);
     if (!targetSheet) {
       const available = allSheets.map(s => s.properties.title).join(', ');
-      throw new Error(`找不到工作表 "${sheetName}"。可用: ${available}`);
+      throw new Error(`Sheet "${targetSheetName}" not found. Available: ${available}`);
     }
     const sheetNumericId = targetSheet.properties.sheetId;
+    console.log(`Found sheet "${targetSheetName}" with sheetId: ${sheetNumericId}`);
 
-    // 計算此分類的下一個流水號
-    const dataRes = await fetch(
-      `https://sheets.googleapis.com/v4/spreadsheets/${DB_SHEET_ID}/values/${encodeURIComponent(sheetName)}!A:A`,
-      { headers: { 'Authorization': `Bearer ${accessToken}` } }
-    );
-    const dataJson = await dataRes.json();
-    const existingRows = (dataJson.values || []).length;
-    // 第1行是標題，所以流水號 = existingRows（已有資料行數，不含標題）
-    const seqNumber = existingRows > 0 ? existingRows : 1;
-    const dbCode = `${prefix}${seqNumber}`;
-
-    // 組裝欄位（對應資料庫試算表格式）
-    // A:編號, B:客戶姓名, C:電話, D:服務地址, E:空間型態, F:坪數,
-    // G:服務類型, H:業務類型, I:偏好時段, J:加強清潔, K:偏好星期,
-    // L:備註, M:得知來源, N:推薦人, O:訂閱方案/次數, P:建檔日期, Q:訂單ID
+    // 組裝列資料（T欄）
     const rowValues = [
-      dbCode,                                                    // A: 編號
-      bookingData.client_name || '',                             // B: 客戶姓名
-      bookingData.phone || '',                                   // C: 電話
-      bookingData.address || '',                                 // D: 服務地址
-      bookingData.housing_type || '',                            // E: 空間型態
-      String(bookingData.square_footage || ''),                  // F: 坪數
-      bookingData.service_type || '',                            // G: 服務類型
-      bookingData.business_type || '平台派案',                   // H: 業務類型
-      bookingData.time_slot || '',                               // I: 偏好時段
-      Array.isArray(bookingData.enhance_areas)
-        ? bookingData.enhance_areas.join(', ')
-        : (bookingData.enhance_areas || ''),                    // J: 加強清潔
-      Array.isArray(bookingData.preferred_weekdays)
-        ? bookingData.preferred_weekdays.join(', ')
-        : (bookingData.preferred_weekdays || ''),               // K: 偏好星期
-      bookingData.notes || '',                                   // L: 備註
-      bookingData.referral_source || '',                         // M: 得知來源
-      bookingData.referrer || '',                                // N: 推薦人
-      bookingData.service_area || '',                            // O: 場勘區域
-      new Date().toLocaleDateString('zh-TW', { timeZone: 'Asia/Taipei' }), // P: 建檔日期
-      bookingId,                                                 // Q: 訂單ID
+      '',                                         // A: 編號（手動）
+      '',                                         // B: 清潔人員（手動派）
+      '',                                         // C: 清掃時間（手動）
+      bookingData.client_name || '',              // D: 姓名
+      bookingData.phone || '',                    // E: 電話
+      bookingData.service_area || bookingData.address || '', // F: 場勘區域
+      bookingData.cleaning_tools || '',           // G: 掃具數設
+      bookingData.address || '',                  // H: 服務地址
+      bookingData.housing_type || '',             // I: 空間型態
+      String(bookingData.square_footage || ''),   // J: 坪數
+      bookingData.service_type || '',             // K: 服務類型
+      bookingData.scheduled_date || '',           // L: 預計日期
+      bookingData.time_slot || '',                // M: 時段
+      (bookingData.enhance_areas || []).join ? (bookingData.enhance_areas || []).join(', ') : (bookingData.enhance_areas || ''), // N: 加強清潔
+      (bookingData.preferred_weekdays || []).join ? (bookingData.preferred_weekdays || []).join(', ') : (bookingData.preferred_weekdays || ''), // O: 偏好星期
+      bookingData.notes || '',                    // P: 備註
+      bookingData.referral_source || '',          // Q: 得知來源
+      bookingData.referrer || '',                 // R: 推薦人
+      new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }), // S: 建立時間
+      bookingId,                                  // T: 訂單ID
     ];
 
-    // 寫入試算表
-    const appendRes = await fetch(
-      `https://sheets.googleapis.com/v4/spreadsheets/${DB_SHEET_ID}:batchUpdate`,
+    // 使用 batchUpdate + appendCells（透過 sheetId 數字，不受中文名稱解析限制）
+    const batchRes = await fetch(
+      `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}:batchUpdate`,
       {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        },
         body: JSON.stringify({
           requests: [{
             appendCells: {
               sheetId: sheetNumericId,
-              rows: [{ values: rowValues.map(v => ({ userEnteredValue: { stringValue: String(v) } })) }],
+              rows: [{
+                values: rowValues.map(v => ({
+                  userEnteredValue: { stringValue: String(v) }
+                }))
+              }],
               fields: 'userEnteredValue'
             }
           }]
         })
       }
     );
-    if (!appendRes.ok) throw new Error(`寫入失敗: ${JSON.stringify(await appendRes.json())}`);
 
-    // 回寫 db_sheet_code 與 db_synced 到 Booking entity
-    await base44.asServiceRole.entities.Booking.update(bookingId, {
-      db_sheet_code: dbCode,
-      db_synced: true,
-    });
+    if (!batchRes.ok) {
+      const errBody = await batchRes.json();
+      throw new Error(`Sheets batchUpdate error: ${JSON.stringify(errBody)}`);
+    }
+
+    const batchData = await batchRes.json();
+    console.log('Appended successfully to:', targetSheetName);
 
     // 記錄 log
     try {
-      await base44.asServiceRole.entities.GoogleSheetLog.create({
-        spreadsheet_id: DB_SHEET_ID,
-        spreadsheet_name: '訂單資料庫',
-        sheet_name: sheetName,
+      await base44.entities.GoogleSheetLog.create({
+        spreadsheet_id: SHEET_ID,
+        spreadsheet_name: '內部試算表',
+        sheet_name: targetSheetName,
         operation_type: 'ai_fill',
         status: 'success',
-        data_filled: { booking_id: bookingId, db_code: dbCode, client_name: bookingData.client_name },
-        notes: `客戶建檔 ${dbCode} → ${sheetName}`,
+        data_filled: {
+          booking_id: bookingId,
+          client_name: bookingData.client_name,
+          service_type: bookingData.service_type,
+          target_sheet: targetSheetName,
+        },
+        cells_affected: [],
+        notes: `新訂單 append → ${targetSheetName}`,
       });
-    } catch (_) { /* log 失敗不影響主流程 */ }
+    } catch (logErr) {
+      console.warn('Log failed (non-critical):', logErr);
+    }
 
-    return Response.json({ success: true, db_code: dbCode, sheet: sheetName });
+    return Response.json({
+      success: true,
+      target_sheet: targetSheetName,
+      booking_id: bookingId,
+    });
   } catch (error) {
-    console.error('syncBookingToSheet error:', error);
+    console.error('Sync error:', error);
     return Response.json({ error: error.message }, { status: 500 });
   }
 });
