@@ -210,22 +210,57 @@ Deno.serve(async (req) => {
     }
 
     // --- mode: migrate ---
-    // 分組：依方案/姓名判斷目標工作表
-    const grouped = {}; // sheetTitle → { sheetObj, rows[] }
+    // 從清掃時間字串中抽取時間段（如 "4/10(五)1:00-5:00" → "01:00-05:00"）
+    function extractTimeSlot(raw) {
+      if (!raw) return '';
+      // 嘗試抓取 HH:mm-HH:mm 或 H:mm-H:mm 或只有 HH:mm
+      const match = raw.match(/(\d{1,2}:\d{2})\s*[-~～至到]\s*(\d{1,2}:\d{2})/);
+      if (match) {
+        const pad = t => t.replace(/^(\d):/, '0$1:');
+        return `${pad(match[1])}-${pad(match[2])}`;
+      }
+      // 只有單一時間（如 "上午11:00"）
+      const single = raw.match(/(\d{1,2}:\d{2})/);
+      if (single) {
+        const pad = t => t.replace(/^(\d):/, '0$1:');
+        return pad(single[1]);
+      }
+      return raw.trim();
+    }
+
+    // 以「姓名 + 地址」為 key 合併同案場，並收集所有出現的時間段
+    // grouped: sheetTitle → { sheetObj, cases: Map<caseKey, caseData> }
+    const grouped = {};
     for (const row of dataRows) {
-      const plan = idxPlan >= 0 ? (row[idxPlan] || '') : '';
-      const name = idxName >= 0 ? (row[idxName] || '') : '';
+      const plan    = idxPlan    >= 0 ? (row[idxPlan]    || '') : '';
+      const name    = idxName    >= 0 ? (row[idxName]    || '').trim() : '';
+      const address = idxAddress >= 0 ? (row[idxAddress] || '').trim() : '';
+      const mapsUrl = idxMapsUrl >= 0 ? (row[idxMapsUrl] || '') : '';
+      const timeRaw = idxTime    >= 0 ? (row[idxTime]    || '') : '';
+      const timeSlot = extractTimeSlot(timeRaw);
+
       const sheetObj = resolveTargetSheet(dbSheets, plan, name);
       if (!sheetObj) {
         console.warn(`找不到對應工作表，跳過: plan="${plan}" name="${name}"`);
         continue;
       }
-      const key = sheetObj.title;
-      if (!grouped[key]) grouped[key] = { sheetObj, rows: [] };
-      grouped[key].rows.push(row);
+
+      const sheetKey = sheetObj.title;
+      if (!grouped[sheetKey]) grouped[sheetKey] = { sheetObj, cases: new Map() };
+
+      // 案場唯一 key = 姓名 + 地址（不同地址 = 不同案場）
+      const caseKey = `${name}||${address}`;
+      if (!grouped[sheetKey].cases.has(caseKey)) {
+        grouped[sheetKey].cases.set(caseKey, { name, address, mapsUrl, plan, timeSlots: new Set() });
+      }
+      const c = grouped[sheetKey].cases.get(caseKey);
+      if (timeSlot) c.timeSlots.add(timeSlot);
+      // 保留非空的方案/地址連結
+      if (!c.mapsUrl && mapsUrl) c.mapsUrl = mapsUrl;
+      if (!c.plan && plan) c.plan = plan;
     }
 
-    console.log('分組結果:', JSON.stringify(Object.entries(grouped).map(([k, v]) => ({ sheet: k, count: v.rows.length }))));
+    console.log('分組結果:', JSON.stringify(Object.entries(grouped).map(([k, v]) => ({ sheet: k, cases: v.cases.size }))));
 
     // 先清除目標工作表
     for (const { sheetObj } of Object.values(grouped)) {
@@ -233,24 +268,23 @@ Deno.serve(async (req) => {
       console.log(`已清除 "${sheetObj.title}"`);
     }
 
-    // 寫入各工作表
+    // 寫入各工作表（每個唯一案場一列）
     const allResults = [];
-    for (const { sheetObj, rows } of Object.values(grouped)) {
+    for (const { sheetObj, cases } of Object.values(grouped)) {
       const prefix = sheetObj.title.charAt(0);
-      const outputRows = rows.map((row, i) => {
-        const dbId    = `${prefix}${i + 1}`;
-        const timeStr = idxTime    >= 0 ? (row[idxTime]    || '') : '';
-        const name    = idxName    >= 0 ? (row[idxName]    || '') : '';
-        const address = idxAddress >= 0 ? (row[idxAddress] || '') : '';
-        const mapsUrl = idxMapsUrl >= 0 ? (row[idxMapsUrl] || '') : '';
-        const plan    = idxPlan    >= 0 ? (row[idxPlan]    || '') : '';
+      const outputRows = [];
+      let idx = 1;
+      for (const c of cases.values()) {
+        const dbId = `${prefix}${idx++}`;
+        // 清掃時間：將所有時間段合併（去重後以 / 分隔）
+        const timeStr = [...c.timeSlots].join(' / ') || '';
         // 格式：A編號 B清掃時間 C姓名 D電話(空) E地址 F地址連結 G方案/費用
-        return [dbId, timeStr, name, '', address, mapsUrl, plan];
-      });
+        outputRows.push([dbId, timeStr, c.name, '', c.address, c.mapsUrl, c.plan]);
+      }
 
       const result = await writeRows(accessToken, sheetObj.title, sheetObj.sheetId, outputRows);
-      console.log(`"${sheetObj.title}" 寫入 ${outputRows.length} 列，更新格數: ${result?.updatedCells}`);
-      allResults.push({ sheet: sheetObj.title, inserted: outputRows.length, updatedCells: result?.updatedCells });
+      console.log(`"${sheetObj.title}" 寫入 ${outputRows.length} 筆案場，更新格數: ${result?.updatedCells}`);
+      allResults.push({ sheet: sheetObj.title, cases: outputRows.length, updatedCells: result?.updatedCells });
     }
 
     return Response.json({ success: true, source: SOURCE_SHEET, results: allResults });
