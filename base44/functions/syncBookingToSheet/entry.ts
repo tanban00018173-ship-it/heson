@@ -1,7 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
 // 訂單資料庫試算表 ID
-const DB_SHEET_ID = '10UDfGk4AZsC1Q_esUn2dO5PPfZ8m6ToSfeDk3mHzXG4';
+const DB_SHEET_ID = '1lQc70QbKE0U_BvG7LNa_iR9AymWzO4y5g4SkDo0LtHY';
 
 // 服務類型 → 子工作表名稱 + 前綴
 function resolveSheet(serviceType) {
