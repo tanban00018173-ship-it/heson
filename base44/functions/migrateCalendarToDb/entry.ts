@@ -110,7 +110,16 @@ Deno.serve(async (req) => {
     }
 
     const calHeaders = calRows[0].map(h => (h || '').trim());
-    const dataRows = calRows.slice(1).filter(r => r && r.some(c => c));
+    // 嚴格過濾：姓名欄(idxName)和清掃時間欄(idxTime)都要有值才算有效列
+    // 先算欄位索引
+    const _idxName = calHeaders.indexOf('姓名');
+    const _idxTime = calHeaders.indexOf('清掃時間');
+    const dataRows = calRows.slice(1).filter(r => {
+      if (!r || !r.some(c => c)) return false;
+      const hasName = _idxName >= 0 ? !!(r[_idxName] || '').trim() : true;
+      const hasTime = _idxTime >= 0 ? !!(r[_idxTime] || '').trim() : true;
+      return hasName && hasTime;
+    });
 
     console.log('月曆欄位:', calHeaders.join(' | '));
     console.log(`共 ${dataRows.length} 列資料`);
