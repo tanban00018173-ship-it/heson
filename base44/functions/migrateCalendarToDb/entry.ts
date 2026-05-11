@@ -1,55 +1,93 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
-// 月曆排程試算表
+// 月曆排程試算表（來源）
 const CALENDAR_ID = '1AgmwQLTTtslxU8Fn5GNdF9IjDAf4ih7ea5zmCUbuWWs';
-// 訂單資料庫試算表
+// 訂單資料庫試算表（目的地）
 const DB_ID = '10UDfGk4AZsC1Q_esUn2dO5PPfZ8m6ToSfeDk3mHzXG4';
 
-async function readSheet(accessToken, spreadsheetId, sheetName) {
-  const range = `${sheetName}!A1:Z2000`;
+// 取得試算表的所有工作表資訊（含 sheetId）
+async function getSpreadsheetSheets(accessToken, spreadsheetId) {
   const res = await fetch(
-    `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(range)}`,
+    `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}?fields=sheets.properties`,
+    { headers: { Authorization: `Bearer ${accessToken}` } }
+  );
+  if (!res.ok) throw new Error(`無法取得試算表資訊`);
+  const data = await res.json();
+  return data.sheets.map(s => ({ title: s.properties.title, sheetId: s.properties.sheetId }));
+}
+
+// 讀取工作表資料（用 sheetId 方式存取）
+async function readSheetById(accessToken, spreadsheetId, sheetId, sheetTitle) {
+  // 用 sheetId 方式讀取需要用 spreadsheets.get，較複雜
+  // 改用 title + 直接 values API（讀取通常不會有斜線問題，只有寫入有問題）
+  const encodedRange = encodeURIComponent(`${sheetTitle}!A1:Z2000`);
+  const res = await fetch(
+    `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodedRange}`,
     { headers: { Authorization: `Bearer ${accessToken}` } }
   );
   if (!res.ok) {
     const err = await res.json();
-    throw new Error(`讀取 "${sheetName}" 失敗: ${err.error?.message}`);
+    throw new Error(`讀取失敗: ${err.error?.message}`);
   }
   const data = await res.json();
   return data.values || [];
 }
 
-async function getNextIndex(accessToken, dbSheetName, prefix) {
-  const range = `${dbSheetName}!A2:A1000`;
+// 用 sheetId 清除資料（使用 batchUpdate + deleteRange）
+async function clearSheetById(accessToken, sheetId) {
   const res = await fetch(
-    `https://sheets.googleapis.com/v4/spreadsheets/${DB_ID}/values/${encodeURIComponent(range)}`,
-    { headers: { Authorization: `Bearer ${accessToken}` } }
-  );
-  if (!res.ok) return 1;
-  const data = await res.json();
-  const rows = data.values || [];
-  let max = 0;
-  for (const row of rows) {
-    const cell = (row[0] || '').toString();
-    // 只計算同前綴的（如 R1, R2...）
-    if (cell.startsWith(prefix)) {
-      const num = parseInt(cell.slice(prefix.length), 10);
-      if (!isNaN(num) && num > max) max = num;
+    `https://sheets.googleapis.com/v4/spreadsheets/${DB_ID}:batchUpdate`,
+    {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        requests: [{
+          updateCells: {
+            range: {
+              sheetId,
+              startRowIndex: 1, // 從第 2 列開始（0-indexed）
+              startColumnIndex: 0,
+              endColumnIndex: 26,
+            },
+            fields: 'userEnteredValue',
+          }
+        }]
+      }),
     }
+  );
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(`清除失敗: ${err.error?.message}`);
   }
-  return max + 1;
 }
 
-// 直接寫入固定範圍（從 A2 開始，不使用 INSERT_ROWS 避免空行）
-async function writeRows(accessToken, dbSheetName, startRow, rows) {
-  const endRow = startRow + rows.length - 1;
-  const range = `${dbSheetName}!A${startRow}:G${endRow}`;
+// 用 sheetId 寫入資料（使用 batchUpdate + updateCells）
+async function writeRowsById(accessToken, sheetId, startRow, rows) {
+  // 把 rows 轉換成 CellData 格式
+  const rowData = rows.map(row => ({
+    values: row.map(cell => ({
+      userEnteredValue: { stringValue: String(cell || '') }
+    }))
+  }));
+
   const res = await fetch(
-    `https://sheets.googleapis.com/v4/spreadsheets/${DB_ID}/values/${encodeURIComponent(range)}?valueInputOption=USER_ENTERED`,
+    `https://sheets.googleapis.com/v4/spreadsheets/${DB_ID}:batchUpdate`,
     {
-      method: 'PUT',
+      method: 'POST',
       headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ values: rows }),
+      body: JSON.stringify({
+        requests: [{
+          updateCells: {
+            range: {
+              sheetId,
+              startRowIndex: startRow - 1, // 0-indexed（startRow=2 → index=1）
+              startColumnIndex: 0,
+            },
+            rows: rowData,
+            fields: 'userEnteredValue',
+          }
+        }]
+      }),
     }
   );
   if (!res.ok) {
@@ -59,20 +97,18 @@ async function writeRows(accessToken, dbSheetName, startRow, rows) {
   return await res.json();
 }
 
-// 清除某工作表 A2 以下的所有資料
-async function clearSheet(accessToken, dbSheetName) {
-  const res = await fetch(
-    `https://sheets.googleapis.com/v4/spreadsheets/${DB_ID}/values/${encodeURIComponent(dbSheetName + '!A2:Z2000')}:clear`,
-    {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({}),
+// 取得某工作表目前的最大流水號
+async function getNextIndex(accessToken, sheetId, sheetTitle, prefix) {
+  const rows = await readSheetById(accessToken, DB_ID, sheetId, sheetTitle);
+  let max = 0;
+  for (const row of rows.slice(1)) {
+    const cell = (row[0] || '').toString();
+    if (cell.startsWith(prefix)) {
+      const num = parseInt(cell.slice(prefix.length), 10);
+      if (!isNaN(num) && num > max) max = num;
     }
-  );
-  if (!res.ok) {
-    const err = await res.json();
-    throw new Error(`清除失敗: ${err.error?.message}`);
   }
+  return max + 1;
 }
 
 Deno.serve(async (req) => {
@@ -84,36 +120,37 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json().catch(() => ({}));
-    const mode = body.mode || 'preview'; // preview | migrate | clear_all
+    const mode = body.mode || 'preview';
 
     const { accessToken } = await base44.asServiceRole.connectors.getConnection('googlesheets');
 
+    // 取得訂單資料庫所有工作表（含 sheetId）
+    const dbSheets = await getSpreadsheetSheets(accessToken, DB_ID);
+    const dbSheetMap = {}; // title → sheetId
+    for (const s of dbSheets) dbSheetMap[s.title] = s.sheetId;
+
     // --- mode: clear_all ---
-    // 清除訂單資料庫所有工作表的資料列（保留表頭）
     if (mode === 'clear_all') {
-      const dbInfoRes = await fetch(
-        `https://sheets.googleapis.com/v4/spreadsheets/${DB_ID}?fields=sheets.properties`,
-        { headers: { Authorization: `Bearer ${accessToken}` } }
-      );
-      const dbInfo = await dbInfoRes.json();
-      const dbSheets = (dbInfo.sheets || []).map(s => s.properties.title).filter(t => t !== '表單回應 1');
+      const skip = ['表單回應 1'];
+      const cleared = [];
       for (const s of dbSheets) {
-        await clearSheet(accessToken, s);
-        console.log(`已清除 ${s}`);
+        if (skip.includes(s.title)) continue;
+        await clearSheetById(accessToken, s.sheetId);
+        cleared.push(s.title);
+        console.log(`已清除 ${s.title}`);
       }
-      return Response.json({ success: true, cleared: dbSheets });
+      return Response.json({ success: true, cleared });
     }
 
-    // 讀取月曆「4月排序」工作表
+    // 取得月曆來源工作表資料
     const SOURCE_SHEET = '4月排序（26_4/10-5/9）';
-    const calRows = await readSheet(accessToken, CALENDAR_ID, SOURCE_SHEET);
+    const calRows = await readSheetById(accessToken, CALENDAR_ID, null, SOURCE_SHEET);
     if (calRows.length < 2) {
       return Response.json({ error: `"${SOURCE_SHEET}" 沒有資料` }, { status: 400 });
     }
 
     const calHeaders = calRows[0].map(h => (h || '').trim());
-    // 嚴格過濾：姓名欄(idxName)和清掃時間欄(idxTime)都要有值才算有效列
-    // 先算欄位索引
+
     const _idxName = calHeaders.indexOf('姓名');
     const _idxTime = calHeaders.indexOf('清掃時間');
     const dataRows = calRows.slice(1).filter(r => {
@@ -123,11 +160,11 @@ Deno.serve(async (req) => {
       return hasName && hasTime;
     });
 
+    console.log('DB工作表:', JSON.stringify(Object.keys(dbSheetMap)));
     console.log('月曆欄位:', calHeaders.join(' | '));
     console.log(`共 ${dataRows.length} 列資料`);
 
     // --- mode: preview ---
-    // 只回傳前5列讓你確認欄位對應，不寫入
     if (mode === 'preview') {
       return Response.json({
         mode: 'preview',
@@ -135,71 +172,66 @@ Deno.serve(async (req) => {
         headers: calHeaders,
         sample_rows: dataRows.slice(0, 5),
         total_rows: dataRows.length,
+        db_sheets: dbSheets.map(s => ({ title: s.title, sheetId: s.sheetId, chars: [...s.title].map(c => c.charCodeAt(0).toString(16)) })),
       });
     }
 
     // --- mode: migrate ---
-    // 必須先傳入 fieldMap：{ dbColIndex: calColIndex | 'fixed:值' }
-    // 或使用 autoMap 模式（依欄位名稱自動對應）
-    // 讀取訂單資料庫的表頭
-    const dbHeaders = (await readSheet(accessToken, DB_ID, 'R／定清案件'))[0] || [];
-    const dbColCount = dbHeaders.length;
-    console.log('訂單資料庫欄位:', dbHeaders.join(' | '));
-
-    // 月曆欄位索引（依 preview 確認的實際欄位）
-    // 編號(0), 清潔人員(1), 清掃時間(2), 姓名(3), 進行狀況(4), 進帳(5), 支出(6),
-    // 需要服務地址(7), 地址連結(8), 想要的時長×次數/訂閱制(9)
-    const idxTime     = calHeaders.indexOf('清掃時間');
-    const idxName     = calHeaders.indexOf('姓名');
-    const idxAddress  = calHeaders.indexOf('需要服務地址');
-    const idxMapsUrl  = calHeaders.indexOf('地址連結');
-    const idxPlan     = calHeaders.findIndex(h => h.includes('時長') || h.includes('訂閱'));
+    const idxTime    = calHeaders.indexOf('清掃時間');
+    const idxName    = calHeaders.indexOf('姓名');
+    const idxAddress = calHeaders.indexOf('需要服務地址');
+    const idxMapsUrl = calHeaders.indexOf('地址連結');
+    const idxPlan    = calHeaders.findIndex(h => h.includes('時長') || h.includes('訂閱'));
 
     console.log(`欄位對應 → 時間:${idxTime} 姓名:${idxName} 地址:${idxAddress} 地址連結:${idxMapsUrl} 方案:${idxPlan}`);
 
-    // 依方案內容分類到對應工作表
-    function resolveTargetSheet(plan, name) {
+    // 用工作表前綴字母找出實際工作表 title（避免斜線字元不一致）
+    function findSheetByPrefix(prefix) {
+      return dbSheets.find(s => s.title.startsWith(prefix));
+    }
+
+    function resolveTargetSheetObj(plan, name) {
       const p = (plan || '').toLowerCase();
       const n = (name || '').toLowerCase();
       if (p.includes('民宿') || p.includes('旅宿') || p.includes('退租') || n.includes('民宿') || n.includes('旅宿')) {
-        return 'H／民宿清潔';
+        return findSheetByPrefix('H');
       }
       if (p.includes('毛坯') || p.includes('裝潢後') || p.includes('新成屋')) {
-        return 'P／毛坯案件';
+        return findSheetByPrefix('P');
       }
       if (p.includes('大掃除') || p.includes('細清') || p.includes('深層') || p.includes('精緻')) {
-        return 'D／細清案件';
+        return findSheetByPrefix('D');
       }
       if (p.includes('每月') || p.includes('月') || p.includes('訂閱') || p.includes('次')) {
-        return 'R／定清案件';
+        return findSheetByPrefix('R');
       }
-      return 'L／輕量案件';
+      return findSheetByPrefix('L');
     }
 
-    // 依目標工作表分組
-    const grouped = {}; // { sheetName: [row, ...] }
-    const sheetNextIdx = {}; // { sheetName: nextIdx }
-
+    // 分組（key: sheetId）
+    const grouped = {}; // sheetId → { sheetObj, rows[] }
     for (const row of dataRows) {
-      const plan    = idxPlan    >= 0 ? (row[idxPlan]    || '') : '';
-      const name    = idxName    >= 0 ? (row[idxName]    || '') : '';
-      const target  = resolveTargetSheet(plan, name);
-      if (!grouped[target]) grouped[target] = [];
-      grouped[target].push(row);
+      const plan   = idxPlan >= 0 ? (row[idxPlan] || '') : '';
+      const name   = idxName >= 0 ? (row[idxName] || '') : '';
+      const sheetObj = resolveTargetSheetObj(plan, name);
+      if (!sheetObj) continue;
+      const key = sheetObj.sheetId;
+      if (!grouped[key]) grouped[key] = { sheetObj, rows: [] };
+      grouped[key].rows.push(row);
     }
 
-    // 為每個目標工作表取流水號起點
-    for (const sheetName of Object.keys(grouped)) {
-      const p = sheetName.charAt(0);
-      sheetNextIdx[sheetName] = await getNextIndex(accessToken, sheetName, p);
+    // 先清除目標工作表
+    for (const { sheetObj } of Object.values(grouped)) {
+      await clearSheetById(accessToken, sheetObj.sheetId);
+      console.log(`已清除 ${sheetObj.title}`);
     }
 
     const allResults = [];
 
-    for (const [targetSheet, rows] of Object.entries(grouped)) {
-      const prefix = targetSheet.charAt(0);
-      let nextIdx = sheetNextIdx[targetSheet];
+    for (const { sheetObj, rows } of Object.values(grouped)) {
+      const prefix = sheetObj.title.charAt(0);
       const outputRows = [];
+      let nextIdx = 1;
 
       for (const row of rows) {
         const timeStr = idxTime    >= 0 ? (row[idxTime]    || '') : '';
@@ -209,23 +241,13 @@ Deno.serve(async (req) => {
         const plan    = idxPlan    >= 0 ? (row[idxPlan]    || '') : '';
 
         const dbId = `${prefix}${nextIdx}`;
-        const outputRow = new Array(dbColCount).fill('');
-        outputRow[0] = dbId;
-        if (dbColCount > 1) outputRow[1] = timeStr;
-        if (dbColCount > 2) outputRow[2] = name;
-        if (dbColCount > 3) outputRow[3] = '';
-        if (dbColCount > 4) outputRow[4] = address;
-        if (dbColCount > 5) outputRow[5] = mapsUrl;
-        if (dbColCount > 6) outputRow[6] = plan;
-
-        outputRows.push(outputRow);
+        outputRows.push([dbId, timeStr, name, '', address, mapsUrl, plan]);
         nextIdx++;
       }
 
-      // 直接從 A2 開始覆寫（不產生空行）
-      await writeRows(accessToken, targetSheet, 2, outputRows);
-      allResults.push({ sheet: targetSheet, inserted: outputRows.length });
-      console.log(`${targetSheet}: 寫入 ${outputRows.length} 列`);
+      await writeRowsById(accessToken, sheetObj.sheetId, 2, outputRows);
+      allResults.push({ sheet: sheetObj.title, inserted: outputRows.length });
+      console.log(`${sheetObj.title}: 寫入 ${outputRows.length} 列`);
     }
 
     return Response.json({ success: true, source: SOURCE_SHEET, results: allResults });
