@@ -2,17 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Menu, X, ClipboardList, Zap, LogOut, User, Home } from "lucide-react";
+import { X, ClipboardList, Zap, LogOut, User, Home, Navigation, RefreshCw } from "lucide-react";
 import AdminViewSwitcher from "@/components/AdminViewSwitcher";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import FlashTaskMap from "@/components/cleaner/FlashTaskMap";
+import TaskBottomPanel from "@/components/cleaner/TaskBottomPanel";
 
 export default function CleanerJobs() {
   const [user, setUser] = useState(null);
   const [cleanerProfile, setCleanerProfile] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [selectedTask, setSelectedTask] = useState(null);
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -27,7 +29,7 @@ export default function CleanerJobs() {
     loadUser();
   }, []);
 
-  const { data: flashTasks = [], refetch: refetchFlash } = useQuery({
+  const { data: flashTasks = [], refetch: refetchFlash, isFetching } = useQuery({
     queryKey: ['flashTasks'],
     queryFn: () => base44.entities.Booking.filter({ is_flash_task: true, status: '待確認' }, '-created_date'),
     refetchInterval: 30000,
@@ -57,61 +59,95 @@ export default function CleanerJobs() {
   }
 
   const displayName = cleanerProfile?.nickname || user?.full_name;
+  const avatarLetter = displayName?.[0]?.toUpperCase() || 'U';
 
   return (
-    <div className="fixed inset-0 flex flex-col overflow-hidden">
-      {/* ── 地圖區（全屏） ── */}
+    <div className="fixed inset-0 flex flex-col overflow-hidden bg-stone-100">
+
+      {/* ── 地圖區 ── */}
       <div className="relative flex-1 overflow-hidden">
         <FlashTaskMap
           flashTasks={flashTasks}
           onAccept={(task) => acceptFlashMutation.mutateAsync(task)}
+          selectedTask={selectedTask}
+          onSelectTask={setSelectedTask}
         />
-        
 
-      </div>
+        {/* ── 右上角浮動控制區 ── */}
+        <div className="absolute top-4 right-4 z-30 flex flex-col items-center gap-3">
+          {/* 頭像選單按鈕 */}
+          <button
+            onClick={() => setMenuOpen(true)}
+            className="w-11 h-11 rounded-full bg-white shadow-lg border-2 border-white flex items-center justify-center overflow-hidden hover:shadow-xl transition-shadow"
+          >
+            {cleanerProfile?.profile_photo ? (
+              <img src={cleanerProfile.profile_photo} alt={displayName} className="w-full h-full object-cover" />
+            ) : (
+              <span className="text-base font-bold text-amber-600">{avatarLetter}</span>
+            )}
+          </button>
 
-      {/* ── 底部導航欄（手機版） ── */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-stone-200 flex items-center justify-between px-4 py-3">
-        {/* Logo / 品牌 */}
-        <div className="flex items-center gap-2">
-          <img
-            src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/user_6945eb37fb67abb9152e42a5/b0c86a022_557043631_1369298458531323_7985963993755754895_n.jpg"
-            alt="HESON"
-            className="h-7 w-auto"
-          />
+          {/* 重新整理按鈕 */}
+          <button
+            onClick={() => refetchFlash()}
+            className="w-11 h-11 rounded-full bg-white/90 backdrop-blur-sm shadow-md flex items-center justify-center hover:bg-white transition-colors"
+          >
+            <RefreshCw className={`w-4 h-4 text-stone-500 ${isFetching ? 'animate-spin' : ''}`} />
+          </button>
         </div>
 
-        {/* 漢堡選單 */}
-        <button
-          onClick={() => setMenuOpen(true)}
-          className="p-2 rounded-xl hover:bg-stone-100 transition-colors"
-        >
-          <Menu className="w-5 h-5 text-stone-600" />
-        </button>
+        {/* ── 左上角任務數量 ── */}
+        <div className="absolute top-4 left-4 z-30 flex items-center gap-2 bg-white/90 backdrop-blur-sm rounded-2xl px-3.5 py-2 shadow-md">
+          <Zap className="w-4 h-4 text-amber-500" />
+          <span className="text-sm font-semibold text-stone-800">
+            {flashTasks.length > 0 ? `${flashTasks.length} 個閃電任務` : '暫無任務'}
+          </span>
+          {flashTasks.length > 0 && <span className="w-2 h-2 bg-amber-400 rounded-full animate-pulse" />}
+        </div>
       </div>
 
-      {/* ── 側拉選單（Portal 渲染到 body，完全跳脫 Leaflet stacking context） ── */}
+      {/* ── 底部訂單資訊面板 ── */}
+      <TaskBottomPanel
+        flashTasks={flashTasks}
+        selectedTask={selectedTask}
+        onSelectTask={setSelectedTask}
+        onAccept={(task) => acceptFlashMutation.mutateAsync(task)}
+        accepting={acceptFlashMutation.isPending}
+      />
+
+      {/* ── 右側抽屜選單（Portal） ── */}
       {menuOpen && createPortal(
         <>
           <div
             style={{ position: 'fixed', inset: 0, zIndex: 99999, background: 'rgba(0,0,0,0.35)' }}
             onClick={() => setMenuOpen(false)}
           />
-          <div style={{ position: 'fixed', top: 0, right: 0, bottom: 0, zIndex: 100000, width: '288px', background: '#fff', boxShadow: '-4px 0 24px rgba(0,0,0,0.15)', display: 'flex', flexDirection: 'column' }}>
-            {/* 選單頭 */}
-            <div className="flex items-center justify-between p-5 border-b border-stone-100">
-              <div>
-                <p className="font-semibold text-stone-800">{displayName}</p>
-                <p className="text-xs text-stone-400 mt-0.5">{user?.email}</p>
+          <div style={{
+            position: 'fixed', top: 0, right: 0, bottom: 0, zIndex: 100000,
+            width: '280px', background: '#fff',
+            boxShadow: '-4px 0 32px rgba(0,0,0,0.15)',
+            display: 'flex', flexDirection: 'column'
+          }}>
+            {/* 頭像區 */}
+            <div className="flex items-center gap-4 p-6 bg-gradient-to-br from-amber-50 to-orange-50 border-b border-stone-100">
+              <div className="w-14 h-14 rounded-full bg-amber-100 border-2 border-amber-200 flex items-center justify-center overflow-hidden flex-shrink-0">
+                {cleanerProfile?.profile_photo ? (
+                  <img src={cleanerProfile.profile_photo} alt={displayName} className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-xl font-bold text-amber-600">{avatarLetter}</span>
+                )}
               </div>
-              <button onClick={() => setMenuOpen(false)} className="text-stone-400 hover:text-stone-600">
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-stone-800 truncate">{displayName}</p>
+                <p className="text-xs text-stone-400 mt-0.5 truncate">{user?.email}</p>
+              </div>
+              <button onClick={() => setMenuOpen(false)} className="text-stone-400 hover:text-stone-600 flex-shrink-0">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             {/* 選單項目 */}
             <nav className="flex-1 p-4 space-y-1">
-              {/* 管理員視角切換 */}
               {user?.role === 'admin' && (
                 <div className="pb-3 mb-2 border-b border-stone-100">
                   <p className="text-xs text-stone-400 font-medium mb-2 px-1">切換視角</p>
@@ -119,47 +155,37 @@ export default function CleanerJobs() {
                 </div>
               )}
 
-              <Link
-                to={createPageUrl('CleanerJobs')}
-                onClick={() => setMenuOpen(false)}
-                className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium bg-amber-50 text-amber-700"
-              >
-                <Zap className="w-5 h-5 text-amber-500" />
-                閃電任務地圖
-              </Link>
-              <Link
-                to={createPageUrl('CleanerSchedule')}
-                onClick={() => setMenuOpen(false)}
-                className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-stone-600 hover:bg-stone-50"
-              >
-                <ClipboardList className="w-5 h-5 text-stone-400" />
-                我的行程
-              </Link>
-              <Link
-                to={createPageUrl('CleanerProfile')}
-                onClick={() => setMenuOpen(false)}
-                className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-stone-600 hover:bg-stone-50"
-              >
-                <User className="w-5 h-5 text-stone-400" />
-                個人資料
-              </Link>
-              <Link
-                to={createPageUrl('ClientDashboard')}
-                onClick={() => setMenuOpen(false)}
-                className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-stone-600 hover:bg-stone-50"
-              >
-                <Home className="w-5 h-5 text-stone-400" />
-                前台（客戶視角）
-              </Link>
+              {[
+                { to: 'CleanerJobs', icon: Zap, label: '閃電任務地圖', active: true },
+                { to: 'CleanerSchedule', icon: ClipboardList, label: '我的行程' },
+                { to: 'CleanerProfile', icon: User, label: '個人資料' },
+                { to: 'ClientDashboard', icon: Home, label: '前台（客戶視角）' },
+              ].map(({ to, icon: Icon, label, active }) => (
+                <Link
+                  key={to}
+                  to={createPageUrl(to)}
+                  onClick={() => setMenuOpen(false)}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium transition-colors ${
+                    active ? 'bg-amber-50 text-amber-700' : 'text-stone-600 hover:bg-stone-50'
+                  }`}
+                >
+                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${active ? 'bg-amber-100' : 'bg-stone-100'}`}>
+                    <Icon className={`w-4 h-4 ${active ? 'text-amber-600' : 'text-stone-500'}`} />
+                  </div>
+                  {label}
+                </Link>
+              ))}
             </nav>
 
             {/* 登出 */}
             <div className="p-4 border-t border-stone-100">
               <button
                 onClick={() => base44.auth.logout()}
-                className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-stone-500 hover:bg-stone-50 w-full"
+                className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium text-stone-500 hover:bg-stone-50 w-full transition-colors"
               >
-                <LogOut className="w-5 h-5" />
+                <div className="w-8 h-8 rounded-xl bg-stone-100 flex items-center justify-center">
+                  <LogOut className="w-4 h-4 text-stone-500" />
+                </div>
                 登出
               </button>
             </div>
