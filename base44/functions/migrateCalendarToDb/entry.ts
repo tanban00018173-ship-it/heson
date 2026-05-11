@@ -320,10 +320,14 @@ Deno.serve(async (req) => {
     }
     console.log('分組結果:', JSON.stringify(Object.entries(grouped).map(([k, v]) => ({ sheet: k, cases: v.cases.size }))));
 
-    // 先清除目標工作表
+    // 先清除目標工作表（如果有資料）
     for (const { sheetObj } of Object.values(grouped)) {
-      await clearSheet(accessToken, sheetObj.title);
-      console.log(`已清除 "${sheetObj.title}"`);
+      try {
+        await clearSheet(accessToken, sheetObj.title);
+        console.log(`已清除 "${sheetObj.title}"`);
+      } catch (e) {
+        console.warn(`清除 "${sheetObj.title}" 失敗（非關鍵）: ${e.message}`);
+      }
     }
 
     // 寫入各工作表（每個唯一案場一列）
@@ -337,8 +341,9 @@ Deno.serve(async (req) => {
         // 清掃時間：將所有時間段合併（去重後以 / 分隔）
         const timeStr = [...c.timeSlots].join(' / ') || '';
         const cleanerStr = [...c.cleaners].join('、');
-        // 格式：A編號 B清掃時間 C姓名 D電話(空) E地址 F地址連結 G方案/費用 H清潔人員
-        outputRows.push([dbId, timeStr, c.name, '', c.address, c.mapsUrl, c.plan, cleanerStr]);
+        // 格式：A編號 B清掃時間(時段) C姓名 D電話(空) E地址 F地址連結
+        // 只寫前6列，對齊資料庫結構
+        outputRows.push([dbId, timeStr, c.name, '', c.address, c.mapsUrl]);
       }
 
       const result = await writeRows(accessToken, sheetObj.title, sheetObj.sheetId, outputRows);
