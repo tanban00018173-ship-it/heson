@@ -5,116 +5,97 @@ const CALENDAR_ID = '1AgmwQLTTtslxU8Fn5GNdF9IjDAf4ih7ea5zmCUbuWWs';
 // 訂單資料庫試算表（目的地）
 const DB_ID = '10UDfGk4AZsC1Q_esUn2dO5PPfZ8m6ToSfeDk3mHzXG4';
 
-// 取得試算表的所有工作表資訊（含 sheetId）
+// 取得試算表的所有工作表資訊
 async function getSpreadsheetSheets(accessToken, spreadsheetId) {
   const res = await fetch(
     `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}?fields=sheets.properties`,
     { headers: { Authorization: `Bearer ${accessToken}` } }
   );
-  if (!res.ok) throw new Error(`無法取得試算表資訊`);
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(`無法取得試算表資訊: ${err.error?.message}`);
+  }
   const data = await res.json();
   return data.sheets.map(s => ({ title: s.properties.title, sheetId: s.properties.sheetId }));
 }
 
-// 讀取工作表資料（用 sheetId 方式存取）
-async function readSheetById(accessToken, spreadsheetId, sheetId, sheetTitle) {
-  // 用 sheetId 方式讀取需要用 spreadsheets.get，較複雜
-  // 改用 title + 直接 values API（讀取通常不會有斜線問題，只有寫入有問題）
-  const encodedRange = encodeURIComponent(`${sheetTitle}!A1:Z2000`);
+// 讀取工作表資料（values API，用 title encode）
+async function readSheet(accessToken, spreadsheetId, sheetTitle) {
+  const range = encodeURIComponent(`${sheetTitle}!A1:Z2000`);
   const res = await fetch(
-    `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodedRange}`,
+    `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}`,
     { headers: { Authorization: `Bearer ${accessToken}` } }
   );
   if (!res.ok) {
     const err = await res.json();
-    throw new Error(`讀取失敗: ${err.error?.message}`);
+    throw new Error(`讀取失敗 "${sheetTitle}": ${err.error?.message}`);
   }
   const data = await res.json();
   return data.values || [];
 }
 
-// 用 sheetId 清除資料（使用 batchUpdate + deleteRange）
-async function clearSheetById(accessToken, sheetId) {
+// 清除工作表資料（values.clear API，從第2列開始）
+async function clearSheet(accessToken, sheetTitle) {
+  const range = encodeURIComponent(`${sheetTitle}!A2:Z2000`);
   const res = await fetch(
-    `https://sheets.googleapis.com/v4/spreadsheets/${DB_ID}:batchUpdate`,
+    `https://sheets.googleapis.com/v4/spreadsheets/${DB_ID}/values/${range}:clear`,
     {
       method: 'POST',
       headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        requests: [{
-          updateCells: {
-            range: {
-              sheetId,
-              startRowIndex: 1, // 從第 2 列開始（0-indexed）
-              startColumnIndex: 0,
-              endColumnIndex: 26,
-            },
-            fields: 'userEnteredValue',
-          }
-        }]
-      }),
+      body: JSON.stringify({}),
     }
   );
   if (!res.ok) {
     const err = await res.json();
-    throw new Error(`清除失敗: ${err.error?.message}`);
-  }
-}
-
-// 用 values.batchUpdate 寫入資料（A1 notation，用 sheetTitle 繞過斜線問題 → 改用 sheetId gid trick）
-// 實際上 values API 用 title 讀沒問題，用 title 寫也 OK（只要正確 encode）
-// 這裡改成直接用 spreadsheets.batchUpdate + updateCells，明確指定 endRowIndex/endColumnIndex
-async function writeRowsById(accessToken, sheetId, startRow, rows) {
-  if (rows.length === 0) return;
-  const colCount = rows[0].length;
-
-  const rowData = rows.map(row => ({
-    values: row.map(cell => ({
-      userEnteredValue: { stringValue: String(cell ?? '') }
-    }))
-  }));
-
-  const res = await fetch(
-    `https://sheets.googleapis.com/v4/spreadsheets/${DB_ID}:batchUpdate`,
-    {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        requests: [{
-          updateCells: {
-            range: {
-              sheetId,
-              startRowIndex: startRow - 1,       // 0-indexed
-              endRowIndex:   startRow - 1 + rows.length,
-              startColumnIndex: 0,
-              endColumnIndex:   colCount,
-            },
-            rows: rowData,
-            fields: 'userEnteredValue',
-          }
-        }]
-      }),
-    }
-  );
-  if (!res.ok) {
-    const err = await res.json();
-    throw new Error(`寫入失敗: ${err.error?.message}`);
+    throw new Error(`清除失敗 "${sheetTitle}": ${err.error?.message}`);
   }
   return await res.json();
 }
 
-// 取得某工作表目前的最大流水號
-async function getNextIndex(accessToken, sheetId, sheetTitle, prefix) {
-  const rows = await readSheetById(accessToken, DB_ID, sheetId, sheetTitle);
-  let max = 0;
-  for (const row of rows.slice(1)) {
-    const cell = (row[0] || '').toString();
-    if (cell.startsWith(prefix)) {
-      const num = parseInt(cell.slice(prefix.length), 10);
-      if (!isNaN(num) && num > max) max = num;
+// 寫入資料（values.update API，PUT，從第2列開始）
+async function writeRows(accessToken, sheetTitle, rows) {
+  if (!rows || rows.length === 0) return;
+  const endRow = rows.length + 1; // +1 for header row offset
+  const endCol = String.fromCharCode(65 + rows[0].length - 1); // A=65
+  const range = encodeURIComponent(`${sheetTitle}!A2:${endCol}${endRow}`);
+
+  const res = await fetch(
+    `https://sheets.googleapis.com/v4/spreadsheets/${DB_ID}/values/${range}?valueInputOption=USER_ENTERED`,
+    {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ values: rows }),
     }
+  );
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(`寫入失敗 "${sheetTitle}": ${err.error?.message}`);
   }
-  return max + 1;
+  return await res.json();
+}
+
+// 用前綴字母找工作表
+function findSheetByPrefix(dbSheets, prefix) {
+  return dbSheets.find(s => s.title.startsWith(prefix));
+}
+
+// 根據方案/姓名決定目標工作表
+function resolveTargetSheet(dbSheets, plan, name) {
+  const p = (plan || '');
+  const n = (name || '');
+  if (p.includes('民宿') || p.includes('旅宿') || p.includes('退租') || n.includes('民宿') || n.includes('旅宿')) {
+    return findSheetByPrefix(dbSheets, 'H');
+  }
+  if (p.includes('毛坯') || p.includes('裝潢後') || p.includes('新成屋')) {
+    return findSheetByPrefix(dbSheets, 'P');
+  }
+  if (p.includes('大掃除') || p.includes('細清') || p.includes('深層') || p.includes('精緻')) {
+    return findSheetByPrefix(dbSheets, 'D');
+  }
+  if (p.includes('每月') || p.includes('月') || p.includes('訂閱') || p.includes('次')) {
+    return findSheetByPrefix(dbSheets, 'R');
+  }
+  return findSheetByPrefix(dbSheets, 'L');
 }
 
 Deno.serve(async (req) => {
@@ -130,10 +111,9 @@ Deno.serve(async (req) => {
 
     const { accessToken } = await base44.asServiceRole.connectors.getConnection('googlesheets');
 
-    // 取得訂單資料庫所有工作表（含 sheetId）
+    // 取得訂單資料庫所有工作表
     const dbSheets = await getSpreadsheetSheets(accessToken, DB_ID);
-    const dbSheetMap = {}; // title → sheetId
-    for (const s of dbSheets) dbSheetMap[s.title] = s.sheetId;
+    console.log('DB工作表:', JSON.stringify(dbSheets.map(s => s.title)));
 
     // --- mode: clear_all ---
     if (mode === 'clear_all') {
@@ -141,34 +121,38 @@ Deno.serve(async (req) => {
       const cleared = [];
       for (const s of dbSheets) {
         if (skip.includes(s.title)) continue;
-        await clearSheetById(accessToken, s.sheetId);
+        await clearSheet(accessToken, s.title);
         cleared.push(s.title);
         console.log(`已清除 ${s.title}`);
       }
       return Response.json({ success: true, cleared });
     }
 
-    // 取得月曆來源工作表資料
+    // 讀取月曆來源工作表
     const SOURCE_SHEET = '4月排序（26_4/10-5/9）';
-    const calRows = await readSheetById(accessToken, CALENDAR_ID, null, SOURCE_SHEET);
+    const calRows = await readSheet(accessToken, CALENDAR_ID, SOURCE_SHEET);
     if (calRows.length < 2) {
       return Response.json({ error: `"${SOURCE_SHEET}" 沒有資料` }, { status: 400 });
     }
 
     const calHeaders = calRows[0].map(h => (h || '').trim());
+    console.log('月曆欄位:', calHeaders.join(' | '));
 
-    const _idxName = calHeaders.indexOf('姓名');
-    const _idxTime = calHeaders.indexOf('清掃時間');
+    const idxTime    = calHeaders.indexOf('清掃時間');
+    const idxName    = calHeaders.indexOf('姓名');
+    const idxAddress = calHeaders.indexOf('需要服務地址');
+    const idxMapsUrl = calHeaders.indexOf('地址連結');
+    const idxPlan    = calHeaders.findIndex(h => h.includes('時長') || h.includes('訂閱'));
+    console.log(`欄位索引 → 時間:${idxTime} 姓名:${idxName} 地址:${idxAddress} 連結:${idxMapsUrl} 方案:${idxPlan}`);
+
+    // 過濾有效資料列（需有姓名且有清掃時間）
     const dataRows = calRows.slice(1).filter(r => {
       if (!r || !r.some(c => c)) return false;
-      const hasName = _idxName >= 0 ? !!(r[_idxName] || '').trim() : true;
-      const hasTime = _idxTime >= 0 ? !!(r[_idxTime] || '').trim() : true;
+      const hasName = idxName >= 0 ? !!(r[idxName] || '').trim() : true;
+      const hasTime = idxTime >= 0 ? !!(r[idxTime] || '').trim() : true;
       return hasName && hasTime;
     });
-
-    console.log('DB工作表:', JSON.stringify(Object.keys(dbSheetMap)));
-    console.log('月曆欄位:', calHeaders.join(' | '));
-    console.log(`共 ${dataRows.length} 列資料`);
+    console.log(`有效資料列: ${dataRows.length}`);
 
     // --- mode: preview ---
     if (mode === 'preview') {
@@ -178,88 +162,58 @@ Deno.serve(async (req) => {
         headers: calHeaders,
         sample_rows: dataRows.slice(0, 5),
         total_rows: dataRows.length,
-        db_sheets: dbSheets.map(s => ({ title: s.title, sheetId: s.sheetId, chars: [...s.title].map(c => c.charCodeAt(0).toString(16)) })),
+        db_sheets: dbSheets.map(s => s.title),
       });
     }
 
     // --- mode: migrate ---
-    const idxTime    = calHeaders.indexOf('清掃時間');
-    const idxName    = calHeaders.indexOf('姓名');
-    const idxAddress = calHeaders.indexOf('需要服務地址');
-    const idxMapsUrl = calHeaders.indexOf('地址連結');
-    const idxPlan    = calHeaders.findIndex(h => h.includes('時長') || h.includes('訂閱'));
-
-    console.log(`欄位對應 → 時間:${idxTime} 姓名:${idxName} 地址:${idxAddress} 地址連結:${idxMapsUrl} 方案:${idxPlan}`);
-
-    // 用工作表前綴字母找出實際工作表 title（避免斜線字元不一致）
-    function findSheetByPrefix(prefix) {
-      return dbSheets.find(s => s.title.startsWith(prefix));
-    }
-
-    function resolveTargetSheetObj(plan, name) {
-      const p = (plan || '').toLowerCase();
-      const n = (name || '').toLowerCase();
-      if (p.includes('民宿') || p.includes('旅宿') || p.includes('退租') || n.includes('民宿') || n.includes('旅宿')) {
-        return findSheetByPrefix('H');
-      }
-      if (p.includes('毛坯') || p.includes('裝潢後') || p.includes('新成屋')) {
-        return findSheetByPrefix('P');
-      }
-      if (p.includes('大掃除') || p.includes('細清') || p.includes('深層') || p.includes('精緻')) {
-        return findSheetByPrefix('D');
-      }
-      if (p.includes('每月') || p.includes('月') || p.includes('訂閱') || p.includes('次')) {
-        return findSheetByPrefix('R');
-      }
-      return findSheetByPrefix('L');
-    }
-
-    // 分組（key: sheetId）
-    const grouped = {}; // sheetId → { sheetObj, rows[] }
+    // 分組：依方案/姓名判斷目標工作表
+    const grouped = {}; // sheetTitle → { sheetObj, rows[] }
     for (const row of dataRows) {
-      const plan   = idxPlan >= 0 ? (row[idxPlan] || '') : '';
-      const name   = idxName >= 0 ? (row[idxName] || '') : '';
-      const sheetObj = resolveTargetSheetObj(plan, name);
-      if (!sheetObj) continue;
-      const key = sheetObj.sheetId;
+      const plan = idxPlan >= 0 ? (row[idxPlan] || '') : '';
+      const name = idxName >= 0 ? (row[idxName] || '') : '';
+      const sheetObj = resolveTargetSheet(dbSheets, plan, name);
+      if (!sheetObj) {
+        console.warn(`找不到對應工作表，跳過: plan="${plan}" name="${name}"`);
+        continue;
+      }
+      const key = sheetObj.title;
       if (!grouped[key]) grouped[key] = { sheetObj, rows: [] };
       grouped[key].rows.push(row);
     }
 
+    console.log('分組結果:', JSON.stringify(Object.entries(grouped).map(([k, v]) => ({ sheet: k, count: v.rows.length }))));
+
     // 先清除目標工作表
     for (const { sheetObj } of Object.values(grouped)) {
-      await clearSheetById(accessToken, sheetObj.sheetId);
-      console.log(`已清除 ${sheetObj.title}`);
+      await clearSheet(accessToken, sheetObj.title);
+      console.log(`已清除 "${sheetObj.title}"`);
     }
 
+    // 寫入各工作表
     const allResults = [];
-
     for (const { sheetObj, rows } of Object.values(grouped)) {
       const prefix = sheetObj.title.charAt(0);
-      const outputRows = [];
-      let nextIdx = 1;
-
-      for (const row of rows) {
+      const outputRows = rows.map((row, i) => {
+        const dbId    = `${prefix}${i + 1}`;
         const timeStr = idxTime    >= 0 ? (row[idxTime]    || '') : '';
         const name    = idxName    >= 0 ? (row[idxName]    || '') : '';
         const address = idxAddress >= 0 ? (row[idxAddress] || '') : '';
         const mapsUrl = idxMapsUrl >= 0 ? (row[idxMapsUrl] || '') : '';
         const plan    = idxPlan    >= 0 ? (row[idxPlan]    || '') : '';
+        // 格式：A編號 B清掃時間 C姓名 D電話(空) E地址 F地址連結 G方案/費用
+        return [dbId, timeStr, name, '', address, mapsUrl, plan];
+      });
 
-        const dbId = `${prefix}${nextIdx}`;
-        outputRows.push([dbId, timeStr, name, '', address, mapsUrl, plan]);
-        nextIdx++;
-      }
-
-      await writeRowsById(accessToken, sheetObj.sheetId, 2, outputRows);
-      allResults.push({ sheet: sheetObj.title, inserted: outputRows.length });
-      console.log(`${sheetObj.title}: 寫入 ${outputRows.length} 列`);
+      const result = await writeRows(accessToken, sheetObj.title, outputRows);
+      console.log(`"${sheetObj.title}" 寫入 ${outputRows.length} 列，更新格數: ${result?.updatedCells}`);
+      allResults.push({ sheet: sheetObj.title, inserted: outputRows.length, updatedCells: result?.updatedCells });
     }
 
     return Response.json({ success: true, source: SOURCE_SHEET, results: allResults });
 
   } catch (error) {
-    console.error('migrateCalendarToDb error:', error);
+    console.error('migrateCalendarToDb error:', error.message);
     return Response.json({ error: error.message }, { status: 500 });
   }
 });
