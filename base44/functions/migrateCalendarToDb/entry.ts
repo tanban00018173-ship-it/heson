@@ -115,8 +115,13 @@ function findSheetByPrefix(dbSheets, prefix) {
   return dbSheets.find(s => s.title.startsWith(prefix));
 }
 
-// 根據方案/姓名決定目標工作表
-function resolveTargetSheet(dbSheets, plan, name) {
+// 根據方案/姓名/編號決定目標工作表
+function resolveTargetSheet(dbSheets, plan, name, idNum) {
+  // 最高優先：編號欄若以 H/R/L/D/P 開頭，直接按前綴分類
+  const idPrefix = (idNum || '').trim().toUpperCase().charAt(0);
+  if (['H', 'R', 'L', 'D', 'P'].includes(idPrefix)) {
+    return findSheetByPrefix(dbSheets, idPrefix);
+  }
   const p = (plan || '');
   const n = (name || '');
   // 民宿/旅宿類 → H
@@ -278,7 +283,8 @@ Deno.serve(async (req) => {
       const cleaner = cleanerRaw.split(/\n|,|、/).map(s => s.trim()).filter(Boolean).join('、');
       const timeSlot = extractTimeSlot(timeRaw);
 
-      const sheetObj = resolveTargetSheet(dbSheets, plan, name);
+      const idNum = idxIdNum >= 0 ? (row[idxIdNum] || '') : '';
+      const sheetObj = resolveTargetSheet(dbSheets, plan, name, idNum);
       if (!sheetObj) {
         console.warn(`找不到對應工作表，跳過: plan="${plan}" name="${name}"`);
         continue;
@@ -303,9 +309,10 @@ Deno.serve(async (req) => {
     // 詳細 log 每筆被分到哪個工作表
     for (const row of dataRows) {
       const pl = idxPlan >= 0 ? (row[idxPlan] || '') : '';
-      const nm = idxName >= 0 ? (row[idxName] || '').trim() || (idxIdNum >= 0 ? (row[idxIdNum] || '').trim() : '') : '';
-      const sh = resolveTargetSheet(dbSheets, pl, nm);
-      console.log(`分類: "${nm}" | 方案="${pl.slice(0,20)}" → ${sh?.title || '找不到'}`);
+      const idN = idxIdNum >= 0 ? (row[idxIdNum] || '') : '';
+      const nm = idxName >= 0 ? (row[idxName] || '').trim() || idN.trim() : '';
+      const sh = resolveTargetSheet(dbSheets, pl, nm, idN);
+      console.log(`分類: "${nm}" | 編號="${idN}" | 方案="${pl.slice(0,20)}" → ${sh?.title || '找不到'}`);
     }
     console.log('分組結果:', JSON.stringify(Object.entries(grouped).map(([k, v]) => ({ sheet: k, cases: v.cases.size }))));
 
@@ -338,9 +345,10 @@ Deno.serve(async (req) => {
     // 回傳每筆分類細節供驗證
     const classifyDetail = dataRows.map(row => {
       const pl = idxPlan >= 0 ? (row[idxPlan] || '') : '';
-      const nm = idxName >= 0 ? (row[idxName] || '').trim() || (idxIdNum >= 0 ? (row[idxIdNum] || '').trim() : '') : '';
-      const sh = resolveTargetSheet(dbSheets, pl, nm);
-      return { name: nm, plan: pl.slice(0, 30), sheet: sh?.title || '找不到' };
+      const idN = idxIdNum >= 0 ? (row[idxIdNum] || '') : '';
+      const nm = idxName >= 0 ? (row[idxName] || '').trim() || idN.trim() : '';
+      const sh = resolveTargetSheet(dbSheets, pl, nm, idN);
+      return { name: nm, idNum: idN, plan: pl.slice(0, 30), sheet: sh?.title || '找不到' };
     });
     return Response.json({ success: true, source: SOURCE_SHEET, results: allResults, classify: classifyDetail });
 
