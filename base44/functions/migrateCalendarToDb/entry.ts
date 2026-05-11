@@ -115,15 +115,8 @@ function findSheetByPrefix(dbSheets, prefix) {
   return dbSheets.find(s => s.title.startsWith(prefix));
 }
 
-// 根據編號前綴（優先）或方案/姓名決定目標工作表
-function resolveTargetSheet(dbSheets, plan, name, idNum) {
-  // 第一優先：編號欄前綴字母（如 L1→L、D13→D、R1→R、H5→H、P2→P）
-  const prefix = (idNum || '').trim().match(/^([A-Za-z]+)/)?.[1]?.toUpperCase();
-  if (prefix && ['H', 'L', 'R', 'D', 'P'].includes(prefix)) {
-    return findSheetByPrefix(dbSheets, prefix);
-  }
-
-  // 第二優先：方案欄關鍵字
+// 根據方案/姓名決定目標工作表
+function resolveTargetSheet(dbSheets, plan, name) {
   const p = (plan || '');
   const n = (name || '');
   // 民宿/旅宿類 → H
@@ -142,11 +135,7 @@ function resolveTargetSheet(dbSheets, plan, name, idNum) {
   if (p.includes('訂閱') || p.match(/每月\s*\d+\s*次/) || p.match(/\d+\s*小時\s*[×x]\s*每月/) || p.includes('每月')) {
     return findSheetByPrefix(dbSheets, 'R');
   }
-  // 輕量 → L（單次、輕量、論件或其他）
-  if (p.includes('輕量') || p.includes('論件') || p.includes('單次')) {
-    return findSheetByPrefix(dbSheets, 'L');
-  }
-  // 預設 → L
+  // 輕量 → L（單次、輕量、或其他）
   return findSheetByPrefix(dbSheets, 'L');
 }
 
@@ -289,10 +278,9 @@ Deno.serve(async (req) => {
       const cleaner = cleanerRaw.split(/\n|,|、/).map(s => s.trim()).filter(Boolean).join('、');
       const timeSlot = extractTimeSlot(timeRaw);
 
-      const idNum = idxIdNum >= 0 ? (row[idxIdNum] || '').trim() : '';
-      const sheetObj = resolveTargetSheet(dbSheets, plan, name, idNum);
+      const sheetObj = resolveTargetSheet(dbSheets, plan, name);
       if (!sheetObj) {
-        console.warn(`找不到對應工作表，跳過: plan="${plan}" name="${name}" idNum="${idNum}"`);
+        console.warn(`找不到對應工作表，跳過: plan="${plan}" name="${name}"`);
         continue;
       }
 
@@ -313,6 +301,12 @@ Deno.serve(async (req) => {
     }
 
     // 詳細 log 每筆被分到哪個工作表
+    for (const row of dataRows) {
+      const pl = idxPlan >= 0 ? (row[idxPlan] || '') : '';
+      const nm = idxName >= 0 ? (row[idxName] || '').trim() || (idxIdNum >= 0 ? (row[idxIdNum] || '').trim() : '') : '';
+      const sh = resolveTargetSheet(dbSheets, pl, nm);
+      console.log(`分類: "${nm}" | 方案="${pl.slice(0,20)}" → ${sh?.title || '找不到'}`);
+    }
     console.log('分組結果:', JSON.stringify(Object.entries(grouped).map(([k, v]) => ({ sheet: k, cases: v.cases.size }))));
 
     // 先清除目標工作表
@@ -345,9 +339,8 @@ Deno.serve(async (req) => {
     const classifyDetail = dataRows.map(row => {
       const pl = idxPlan >= 0 ? (row[idxPlan] || '') : '';
       const nm = idxName >= 0 ? (row[idxName] || '').trim() || (idxIdNum >= 0 ? (row[idxIdNum] || '').trim() : '') : '';
-      const id = idxIdNum >= 0 ? (row[idxIdNum] || '').trim() : '';
-      const sh = resolveTargetSheet(dbSheets, pl, nm, id);
-      return { idNum: id, name: nm, plan: pl.slice(0, 30), sheet: sh?.title || '找不到' };
+      const sh = resolveTargetSheet(dbSheets, pl, nm);
+      return { name: nm, plan: pl.slice(0, 30), sheet: sh?.title || '找不到' };
     });
     return Response.json({ success: true, source: SOURCE_SHEET, results: allResults, classify: classifyDetail });
 
