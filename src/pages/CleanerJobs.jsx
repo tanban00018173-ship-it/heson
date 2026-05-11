@@ -62,10 +62,10 @@ export default function CleanerJobs() {
   const avatarLetter = displayName?.[0]?.toUpperCase() || 'U';
 
   return (
-    <div className="fixed inset-0 flex flex-col overflow-hidden bg-stone-100">
+    <div className="fixed inset-0 overflow-hidden bg-stone-100">
 
-      {/* ── 地圖區 ── */}
-      <div className="relative flex-1 overflow-hidden">
+      {/* ── 地圖區（全屏） ── */}
+      <div className="absolute inset-0">
         <FlashTaskMap
           flashTasks={flashTasks}
           onAccept={(task) => acceptFlashMutation.mutateAsync(task)}
@@ -106,7 +106,7 @@ export default function CleanerJobs() {
         </div>
       </div>
 
-      {/* ── 底部訂單資訊面板 ── */}
+      {/* ── 底部訂單資訊面板（fixed 抽屜） ── */}
       <TaskBottomPanel
         flashTasks={flashTasks}
         selectedTask={selectedTask}

@@ -1,10 +1,11 @@
 /**
- * 底部訂單資訊面板 - 常駐顯示所有閃電任務
+ * 底部訂單資訊面板 - 可上拉抽屜
+ * 三段高度：peek（只顯示 handle）/ half（列表）/ full（全開）
  */
-import React, { useState } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import {
-  Zap, MapPin, Calendar, Clock, DollarSign, FileText,
-  CheckCircle2, ExternalLink, ChevronUp, ChevronDown, Loader2, X
+  Zap, MapPin, Calendar, Clock, FileText,
+  CheckCircle2, ExternalLink, Loader2, X
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -16,11 +17,17 @@ function openGoogleNavigation(lat, lng, address) {
   window.open(`https://www.google.com/maps/dir/?api=1&destination=${dest}&travelmode=driving`, '_blank');
 }
 
+// 高度設定（px 或 vh 字串，供 style 使用）
+const SNAP = {
+  peek: 56,       // 只露出 handle + 標題列
+  half: 260,      // 顯示水平任務列表
+  full: '82vh',   // 全開顯示詳情 + 列表
+};
+
 // 單一任務詳情卡
 function TaskDetailCard({ task, onAccept, accepting, onClose }) {
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-stone-100 overflow-hidden">
-      {/* 標題列 */}
+    <div className="bg-white rounded-2xl shadow-sm border border-stone-100 overflow-hidden mx-4 mb-3">
       <div className="flex items-center justify-between px-4 pt-4 pb-3">
         <div className="flex items-center gap-2">
           <div className="w-7 h-7 rounded-xl bg-amber-100 flex items-center justify-center">
@@ -28,12 +35,16 @@ function TaskDetailCard({ task, onAccept, accepting, onClose }) {
           </div>
           <Badge className="bg-amber-100 text-amber-700 border-0">{task.service_type}</Badge>
         </div>
-        {task.amount && (
-          <span className="text-base font-bold text-green-700">NT$ {task.amount.toLocaleString()}</span>
-        )}
+        <div className="flex items-center gap-3">
+          {task.amount && (
+            <span className="text-base font-bold text-green-700">NT$ {task.amount.toLocaleString()}</span>
+          )}
+          <button onClick={onClose} className="text-stone-300 hover:text-stone-500">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
       </div>
 
-      {/* 資訊列 */}
       <div className="px-4 pb-4 space-y-2">
         <div className="flex items-start gap-2">
           <MapPin className="w-3.5 h-3.5 text-amber-500 mt-0.5 flex-shrink-0" />
@@ -57,11 +68,8 @@ function TaskDetailCard({ task, onAccept, accepting, onClose }) {
         )}
       </div>
 
-      {/* 操作按鈕 */}
       <div className="flex gap-2 px-4 pb-4">
-        <Button variant="outline" size="sm" className="flex-1 rounded-xl" onClick={onClose}>
-          略過
-        </Button>
+        <Button variant="outline" size="sm" className="flex-1 rounded-xl" onClick={onClose}>略過</Button>
         <Button
           size="sm"
           className="flex-[2] bg-amber-500 hover:bg-amber-600 text-white rounded-xl shadow-md shadow-amber-200"
@@ -80,12 +88,12 @@ function TaskDetailCard({ task, onAccept, accepting, onClose }) {
   );
 }
 
-// 任務列表縮圖卡
+// 任務縮圖卡（水平捲動）
 function TaskMiniCard({ task, isSelected, onClick }) {
   return (
     <div
       onClick={onClick}
-      className={`flex-shrink-0 w-56 rounded-2xl p-3 border cursor-pointer transition-all ${
+      className={`flex-shrink-0 w-52 rounded-2xl p-3 border cursor-pointer transition-all ${
         isSelected
           ? 'bg-amber-50 border-amber-300 shadow-md'
           : 'bg-white border-stone-100 hover:border-amber-200 hover:shadow-sm'
@@ -106,73 +114,108 @@ function TaskMiniCard({ task, isSelected, onClick }) {
         <span className="truncate">{task.time_slot?.split(' ')[0] || '-'}</span>
       </div>
       <div className="mt-2 text-right">
-        <span className="text-xs font-medium text-amber-600">查看詳情 →</span>
+        <span className="text-xs font-medium text-amber-600">點擊查看 →</span>
       </div>
     </div>
   );
 }
 
 export default function TaskBottomPanel({ flashTasks, selectedTask, onSelectTask, onAccept, accepting }) {
-  const [expanded, setExpanded] = useState(false);
+  // snapState: 'peek' | 'half' | 'full'
+  const [snapState, setSnapState] = useState('half');
+  const dragStartY = useRef(null);
+  const dragStartSnap = useRef(null);
 
-  const hasDetail = !!selectedTask;
+  const currentHeight = snapState === 'peek' ? SNAP.peek
+    : snapState === 'full' ? SNAP.full
+    : SNAP.half;
+
+  // 選中任務時自動展開到 full
+  const handleSelectTask = (task) => {
+    onSelectTask(task);
+    if (task && snapState !== 'full') setSnapState('full');
+  };
+
+  const onDragStart = useCallback((clientY) => {
+    dragStartY.current = clientY;
+    dragStartSnap.current = snapState;
+  }, [snapState]);
+
+  const onDragEnd = useCallback((clientY) => {
+    if (dragStartY.current === null) return;
+    const delta = dragStartY.current - clientY; // 正 = 往上拉
+    dragStartY.current = null;
+
+    if (delta > 40) {
+      // 往上拉
+      setSnapState(s => s === 'peek' ? 'half' : 'full');
+    } else if (delta < -40) {
+      // 往下推
+      setSnapState(s => s === 'full' ? 'half' : 'peek');
+    }
+  }, []);
 
   return (
     <div
-      className="flex-shrink-0 bg-stone-50 border-t border-stone-200"
-      style={{ maxHeight: expanded ? '75vh' : 'auto' }}
+      className="fixed bottom-0 left-0 right-0 z-30 bg-white rounded-t-3xl shadow-2xl flex flex-col transition-all duration-300 ease-out"
+      style={{ height: typeof currentHeight === 'number' ? `${currentHeight}px` : currentHeight }}
     >
-      {/* 面板標題列 */}
-      <div className="flex items-center justify-between px-4 pt-3 pb-2">
-        <div className="flex items-center gap-2">
+      {/* ── Drag Handle ── */}
+      <div
+        className="flex-shrink-0 flex flex-col items-center pt-3 pb-2 cursor-grab active:cursor-grabbing select-none"
+        onMouseDown={e => onDragStart(e.clientY)}
+        onMouseUp={e => onDragEnd(e.clientY)}
+        onTouchStart={e => onDragStart(e.touches[0].clientY)}
+        onTouchEnd={e => onDragEnd(e.changedTouches[0].clientY)}
+      >
+        <div className="w-10 h-1 bg-stone-200 rounded-full mb-2" />
+        {/* 標題列 */}
+        <div className="flex items-center gap-2 w-full px-5">
           <Zap className="w-4 h-4 text-amber-500" />
-          <span className="text-sm font-bold text-stone-700">
+          <span className="text-sm font-bold text-stone-700 flex-1">
             {flashTasks.length > 0 ? `閃電任務（${flashTasks.length}）` : '目前無閃電任務'}
           </span>
           {flashTasks.length > 0 && <span className="w-2 h-2 bg-amber-400 rounded-full animate-pulse" />}
         </div>
-        <button
-          onClick={() => setExpanded(e => !e)}
-          className="w-7 h-7 rounded-full bg-stone-200 flex items-center justify-center hover:bg-stone-300 transition-colors"
-        >
-          {expanded ? <ChevronDown className="w-4 h-4 text-stone-600" /> : <ChevronUp className="w-4 h-4 text-stone-600" />}
-        </button>
       </div>
 
-      {flashTasks.length === 0 ? (
-        <div className="px-4 pb-4 text-center text-xs text-stone-400">
-          附近目前沒有待接的閃電任務，系統每 30 秒自動更新
-        </div>
-      ) : (
-        <>
-          {/* 任務詳情（選中任務時顯示） */}
-          {hasDetail && (
-            <div className="px-4 pb-3">
-              <TaskDetailCard
-                task={selectedTask}
-                onAccept={onAccept}
-                accepting={accepting}
-                onClose={() => onSelectTask(null)}
-              />
-            </div>
-          )}
+      {/* ── 內容區（超過時可捲動） ── */}
+      <div className="flex-1 overflow-y-auto overflow-x-hidden pb-6">
+        {flashTasks.length === 0 ? (
+          <p className="text-center text-xs text-stone-400 mt-4 px-6">
+            附近目前沒有待接的閃電任務，系統每 30 秒自動更新
+          </p>
+        ) : (
+          <>
+            {/* 任務詳情（選中時） */}
+            {selectedTask && (
+              <div className="pt-2">
+                <TaskDetailCard
+                  task={selectedTask}
+                  onAccept={onAccept}
+                  accepting={accepting}
+                  onClose={() => onSelectTask(null)}
+                />
+              </div>
+            )}
 
-          {/* 任務水平捲動列表 */}
-          <div
-            className="px-4 pb-4 overflow-x-auto flex gap-3 scrollbar-none"
-            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-          >
-            {flashTasks.map(task => (
-              <TaskMiniCard
-                key={task.id}
-                task={task}
-                isSelected={selectedTask?.id === task.id}
-                onClick={() => onSelectTask(selectedTask?.id === task.id ? null : task)}
-              />
-            ))}
-          </div>
-        </>
-      )}
+            {/* 水平捲動任務縮圖列 */}
+            <div
+              className="flex gap-3 px-4 py-3 overflow-x-auto"
+              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+            >
+              {flashTasks.map(task => (
+                <TaskMiniCard
+                  key={task.id}
+                  task={task}
+                  isSelected={selectedTask?.id === task.id}
+                  onClick={() => handleSelectTask(selectedTask?.id === task.id ? null : task)}
+                />
+              ))}
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 }
