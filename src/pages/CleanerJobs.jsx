@@ -58,8 +58,8 @@ export default function CleanerJobs() {
 
   if (!user) {
     return (
-      <div className="fixed inset-0 flex items-center justify-center bg-stone-100">
-        <div className="animate-spin w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full" />
+      <div className="fixed inset-0 flex items-center justify-center bg-white">
+        <div className="animate-spin w-8 h-8 border-2 border-black border-t-transparent rounded-full" />
       </div>
     );
   }
@@ -151,19 +151,19 @@ export default function CleanerJobs() {
             display: 'flex', flexDirection: 'column'
           }}>
             {/* 頭像區 */}
-            <div className="flex items-center gap-4 p-6 bg-gradient-to-br from-amber-50 to-orange-50 border-b border-stone-100">
-              <div className="w-14 h-14 rounded-full bg-amber-100 border-2 border-amber-200 flex items-center justify-center overflow-hidden flex-shrink-0">
+            <div className="flex items-center gap-4 p-6 bg-black border-b border-stone-800">
+              <div className="w-14 h-14 rounded-full bg-stone-700 border-2 border-white/20 flex items-center justify-center overflow-hidden flex-shrink-0">
                 {cleanerProfile?.profile_photo ? (
                   <img src={cleanerProfile.profile_photo} alt={displayName} className="w-full h-full object-cover" />
                 ) : (
-                  <span className="text-xl font-bold text-amber-600">{avatarLetter}</span>
+                  <span className="text-xl font-bold text-white">{avatarLetter}</span>
                 )}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-semibold text-stone-800 truncate">{displayName}</p>
-                <p className="text-xs text-stone-400 mt-0.5 truncate">{user?.email}</p>
+                <p className="font-semibold text-white truncate">{displayName}</p>
+                <p className="text-xs text-white/40 mt-0.5 truncate">{user?.email}</p>
               </div>
-              <button onClick={() => setMenuOpen(false)} className="text-stone-400 hover:text-stone-600 flex-shrink-0">
+              <button onClick={() => setMenuOpen(false)} className="text-white/40 hover:text-white flex-shrink-0">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -188,11 +188,11 @@ export default function CleanerJobs() {
                   to={createPageUrl(to)}
                   onClick={() => setMenuOpen(false)}
                   className={`flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium transition-colors ${
-                    active ? 'bg-amber-50 text-amber-700' : 'text-stone-600 hover:bg-stone-50'
+                    active ? 'bg-stone-100 text-black font-semibold' : 'text-stone-500 hover:bg-stone-50'
                   }`}
                 >
-                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${active ? 'bg-amber-100' : 'bg-stone-100'}`}>
-                    <Icon className={`w-4 h-4 ${active ? 'text-amber-600' : 'text-stone-500'}`} />
+                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${active ? 'bg-black' : 'bg-stone-100'}`}>
+                    <Icon className={`w-4 h-4 ${active ? 'text-white' : 'text-stone-500'}`} />
                   </div>
                   {label}
                 </Link>

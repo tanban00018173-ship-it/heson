@@ -22,17 +22,17 @@ export default function BottomTabBar({ activeTab, onTabChange }) {
             <button
               key={id}
               onClick={() => onTabChange(id)}
-              className="flex-1 flex flex-col items-center justify-center py-2.5 gap-0.5 transition-colors"
+              className="flex-1 flex flex-col items-center justify-center py-2.5 gap-0.5 transition-colors relative"
             >
               <Icon
-                className={`w-5 h-5 transition-colors ${isActive ? 'text-amber-500' : 'text-stone-400'}`}
+                className={`w-5 h-5 transition-colors ${isActive ? 'text-black' : 'text-stone-300'}`}
                 strokeWidth={isActive ? 2.5 : 1.8}
               />
-              <span className={`text-xs font-medium transition-colors ${isActive ? 'text-amber-500' : 'text-stone-400'}`}>
+              <span className={`text-xs font-medium transition-colors ${isActive ? 'text-black' : 'text-stone-300'}`}>
                 {label}
               </span>
               {isActive && (
-                <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-amber-500 rounded-full" />
+                <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-black rounded-full" />
               )}
             </button>
           );
