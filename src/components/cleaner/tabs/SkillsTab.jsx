@@ -61,19 +61,9 @@ const CATEGORIES = [
 ];
 
 // ─── 初始解鎖狀態 ────────────────────────────────────────────
-const INITIAL_STATE = {
-  clean_basic:  { unlocked: true,  quizPassed: true },
-  recurring:    { unlocked: true,  quizPassed: true },
-  deep_clean:   { unlocked: false, quizPassed: false },
-  bnb_basic:    { unlocked: true,  quizPassed: false },
-  bnb_deep:     { unlocked: false, quizPassed: false },
-  construction: { unlocked: false, quizPassed: false },
-  garbage:      { unlocked: true,  quizPassed: true },
-  laundry:      { unlocked: true,  quizPassed: false },
-  dishes:       { unlocked: false, quizPassed: false },
-  pet_clean:    { unlocked: false, quizPassed: false },
-  storage:      { unlocked: false, quizPassed: false },
-};
+const INITIAL_STATE = Object.fromEntries(
+  Object.keys(SKILL_DEFS).map(id => [id, { unlocked: false, quizPassed: false }])
+);
 
 // ─── 技能詳情面板 ────────────────────────────────────────────
 function SkillPanel({ skillId, skillState, onClose }) {
