@@ -22,6 +22,7 @@ export default function ProfileTab({ user, cleanerProfile }) {
           <button onClick={() => setActiveSection(null)}>
             <ChevronRight className="w-5 h-5 text-stone-400 rotate-180" />
           </button>
+
           <span className="font-semibold text-stone-800">常見問題</span>
         </div>
         <div className="p-4 space-y-3">

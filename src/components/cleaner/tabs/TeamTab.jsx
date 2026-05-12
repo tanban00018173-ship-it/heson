@@ -1,11 +1,25 @@
 import React, { useState } from 'react';
-import { MessageCircle, Send, ChevronLeft, Users, Phone, Building2 } from 'lucide-react';
+import { MessageCircle, Send, ChevronLeft, Users, Phone, Building2, Headset, User, Handshake } from 'lucide-react';
+
+function ContactAvatar({ type }) {
+  const map = {
+    company: { Icon: Headset, bg: 'bg-stone-800', color: 'text-white' },
+    client:  { Icon: User,    bg: 'bg-stone-200', color: 'text-stone-600' },
+    vendor:  { Icon: Handshake, bg: 'bg-stone-700', color: 'text-white' },
+  };
+  const { Icon, bg, color } = map[type] || map.client;
+  return (
+    <div className={`w-12 h-12 rounded-full ${bg} flex items-center justify-center flex-shrink-0`}>
+      <Icon className={`w-5 h-5 ${color}`} />
+    </div>
+  );
+}
 
 const CONTACTS = [
-  { id: 'heson', type: 'company', name: '赫頌客服團隊', avatar: '🏢', lastMsg: '您的問題我們已收到，稍後回覆', time: '10:32', unread: 1, online: true },
-  { id: 'client_1', type: 'client', name: '張小姐（台北信義）', avatar: '👤', lastMsg: '請問可以提前到嗎？', time: '昨天', unread: 0, online: false },
-  { id: 'client_2', type: 'client', name: '林先生（新北板橋）', avatar: '👤', lastMsg: '謝謝你！清得很乾淨！', time: '週一', unread: 0, online: false },
-  { id: 'vendor', type: 'vendor', name: '赫頌廠商對接', avatar: '🤝', lastMsg: '下週排班已更新，請確認', time: '週二', unread: 2, online: true },
+  { id: 'heson', type: 'company', name: '赫頌客服團隊', avatarType: 'company', lastMsg: '您的問題我們已收到，稍後回覆', time: '10:32', unread: 1, online: true },
+  { id: 'client_1', type: 'client', name: '張小姐（台北信義）', avatarType: 'client', lastMsg: '請問可以提前到嗎？', time: '昨天', unread: 0, online: false },
+  { id: 'client_2', type: 'client', name: '林先生（新北板橋）', avatarType: 'client', lastMsg: '謝謝你！清得很乾淨！', time: '週一', unread: 0, online: false },
+  { id: 'vendor', type: 'vendor', name: '赫頌廠商對接', avatarType: 'vendor', lastMsg: '下週排班已更新，請確認', time: '週二', unread: 2, online: true },
 ];
 
 const MOCK_MESSAGES = {
@@ -42,8 +56,8 @@ export default function TeamTab() {
           <button onClick={() => setActiveChat(null)}>
             <ChevronLeft className="w-5 h-5 text-stone-500" />
           </button>
-          <div className="w-9 h-9 rounded-full bg-stone-100 flex items-center justify-center text-xl">
-            {activeChat.avatar}
+          <div className="w-9 h-9 flex-shrink-0">
+            <ContactAvatar type={activeChat.avatarType} />
           </div>
           <div className="flex-1">
             <p className="text-sm font-semibold text-stone-800">{activeChat.name}</p>
@@ -113,9 +127,7 @@ export default function TeamTab() {
             className="w-full bg-white rounded-xl p-4 flex items-center gap-3 border border-stone-100 text-left hover:bg-stone-50 transition-colors"
           >
             <div className="relative flex-shrink-0">
-              <div className="w-12 h-12 rounded-full bg-stone-100 flex items-center justify-center text-2xl">
-                {contact.avatar}
-              </div>
+              <ContactAvatar type={contact.avatarType} />
               {contact.online && <span className="absolute bottom-0 right-0 w-3 h-3 bg-black border-2 border-white rounded-full" />}
             </div>
             <div className="flex-1 min-w-0">

@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { Play, CheckCircle2, Lock, Award, ChevronRight, ClipboardCheck } from 'lucide-react';
+import { Play, CheckCircle2, Lock, Award, ChevronRight, ClipboardCheck, Wind, Sparkles, Building, HardHat, RefreshCw } from 'lucide-react';
 
 const SKILLS = [
-  { id: 'basic_clean', name: '基礎居家清潔', description: '掌握標準清潔流程與工具使用', icon: '🧹', taskType: '輕量案件', unlocked: true, videoCount: 3, quizPassed: true },
-  { id: 'deep_clean', name: '深層細清技術', description: '深層清潔、除垢除黴專業手法', icon: '✨', taskType: '細清案件', unlocked: false, videoCount: 5, quizPassed: false },
-  { id: 'rental_clean', name: '民宿旅宿清潔', description: '快速換房流程與品質控制標準', icon: '🏨', taskType: '民宿清潔', unlocked: false, videoCount: 4, quizPassed: false },
-  { id: 'construction_clean', name: '毛坯裝潢後清潔', description: '建材粉塵、油漆殘留專業處理', icon: '🏗️', taskType: '毛坯案件', unlocked: false, videoCount: 6, quizPassed: false },
-  { id: 'recurring_clean', name: '定期清潔服務', description: '客戶關係維護與定期服務流程', icon: '🔄', taskType: '定清案件', unlocked: true, videoCount: 3, quizPassed: true },
+  { id: 'basic_clean', name: '基礎居家清潔', description: '掌握標準清潔流程與工具使用', Icon: Wind, taskType: '輕量案件', unlocked: true, videoCount: 3, quizPassed: true },
+  { id: 'deep_clean', name: '深層細清技術', description: '深層清潔、除垢除黴專業手法', Icon: Sparkles, taskType: '細清案件', unlocked: false, videoCount: 5, quizPassed: false },
+  { id: 'rental_clean', name: '民宿旅宿清潔', description: '快速換房流程與品質控制標準', Icon: Building, taskType: '民宿清潔', unlocked: false, videoCount: 4, quizPassed: false },
+  { id: 'construction_clean', name: '毛坯裝潢後清潔', description: '建材粉塵、油漆殘留專業處理', Icon: HardHat, taskType: '毛坯案件', unlocked: false, videoCount: 6, quizPassed: false },
+  { id: 'recurring_clean', name: '定期清潔服務', description: '客戶關係維護與定期服務流程', Icon: RefreshCw, taskType: '定清案件', unlocked: true, videoCount: 3, quizPassed: true },
 ];
 
 export default function SkillsTab() {
@@ -18,7 +18,9 @@ export default function SkillsTab() {
       <div className="flex-1 overflow-y-auto bg-white">
         <div className="bg-black p-6 text-white">
           <button onClick={() => setActiveSkill(null)} className="text-white/50 text-sm mb-4">← 返回</button>
-          <div className="text-4xl mb-2">{skill.icon}</div>
+          <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center mb-3">
+            <skill.Icon className="w-6 h-6 text-white" />
+          </div>
           <h2 className="text-xl font-bold">{skill.name}</h2>
           <p className="text-white/50 text-sm mt-1">{skill.description}</p>
         </div>
@@ -54,7 +56,13 @@ export default function SkillsTab() {
                 skill.unlocked ? 'bg-black text-white' : 'bg-stone-200 text-stone-400 cursor-not-allowed'
               }`}
             >
-              {skill.quizPassed ? '✅ 已通過測驗' : skill.unlocked ? '開始測驗' : '請先完成影片'}
+              <span className="flex items-center justify-center gap-1.5">
+                {skill.quizPassed
+                  ? <><CheckCircle2 className="w-4 h-4" /> 已通過測驗</>
+                  : skill.unlocked
+                    ? '開始測驗'
+                    : <><Lock className="w-4 h-4" /> 請先完成影片</>}
+              </span>
             </button>
           </div>
         </div>
@@ -97,8 +105,8 @@ export default function SkillsTab() {
             onClick={() => setActiveSkill(skill.id)}
             className="w-full text-left bg-white border border-stone-100 rounded-xl p-4 flex items-center gap-4 hover:bg-stone-50 transition-colors"
           >
-            <div className="w-12 h-12 rounded-xl bg-stone-100 flex items-center justify-center text-2xl flex-shrink-0">
-              {skill.icon}
+            <div className="w-12 h-12 rounded-xl bg-stone-100 flex items-center justify-center flex-shrink-0">
+              <skill.Icon className="w-6 h-6 text-stone-600" />
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-0.5">
@@ -107,8 +115,10 @@ export default function SkillsTab() {
               </div>
               <p className="text-xs text-stone-400 truncate">{skill.description}</p>
               <div className="flex items-center gap-2 mt-1.5">
-                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${skill.unlocked ? 'bg-black text-white' : 'bg-stone-100 text-stone-400'}`}>
-                  {skill.unlocked ? '已解鎖' : '未解鎖'}
+                <span className={`text-xs px-2 py-0.5 rounded-full font-medium flex items-center gap-1 ${skill.unlocked ? 'bg-black text-white' : 'bg-stone-100 text-stone-400'}`}>
+                  {skill.unlocked
+                    ? <><CheckCircle2 className="w-3 h-3" /> 已解鎖</>
+                    : <><Lock className="w-3 h-3" /> 未解鎖</>}
                 </span>
                 <span className="text-xs text-stone-300">→ {skill.taskType}</span>
               </div>
