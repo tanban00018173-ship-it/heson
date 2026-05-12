@@ -208,26 +208,94 @@ export default function SkillsTab() {
   const [scale, setScale] = useState(1);
   const isDragging = useRef(false);
   const lastPos = useRef({ x: 0, y: 0 });
+  const lastDist = useRef(null);
+  const activePointers = useRef({});
   const svgRef = useRef(null);
 
-  const SVG_W = 720;
-  const SVG_H = 420;
+  const getDistance = (touches) => {
+    const ids = Object.keys(touches);
+    if (ids.length < 2) return null;
+    const a = touches[ids[0]];
+    const b = touches[ids[1]];
+    return Math.hypot(a.x - b.x, a.y - b.y);
+  };
+
+  const getMidpoint = (touches) => {
+    const ids = Object.keys(touches);
+    if (ids.length < 2) return null;
+    const a = touches[ids[0]];
+    const b = touches[ids[1]];
+    return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+  };
 
   const onPointerDown = useCallback((e) => {
-    isDragging.current = true;
-    lastPos.current = { x: e.clientX, y: e.clientY };
+    activePointers.current[e.pointerId] = { x: e.clientX, y: e.clientY };
     svgRef.current?.setPointerCapture(e.pointerId);
+    if (Object.keys(activePointers.current).length === 1) {
+      isDragging.current = true;
+      lastPos.current = { x: e.clientX, y: e.clientY };
+    } else {
+      isDragging.current = false;
+      lastDist.current = getDistance(activePointers.current);
+    }
   }, []);
 
   const onPointerMove = useCallback((e) => {
-    if (!isDragging.current) return;
-    const dx = e.clientX - lastPos.current.x;
-    const dy = e.clientY - lastPos.current.y;
-    lastPos.current = { x: e.clientX, y: e.clientY };
-    setOffset(o => ({ x: o.x + dx, y: o.y + dy }));
+    activePointers.current[e.pointerId] = { x: e.clientX, y: e.clientY };
+    const count = Object.keys(activePointers.current).length;
+
+    if (count === 2) {
+      // pinch-to-zoom
+      const newDist = getDistance(activePointers.current);
+      const mid = getMidpoint(activePointers.current);
+      if (lastDist.current && newDist && mid) {
+        const ratio = newDist / lastDist.current;
+        setScale(s => {
+          const next = Math.min(Math.max(s * ratio, 0.3), 2.5);
+          // zoom toward midpoint
+          setOffset(o => ({
+            x: mid.x - (mid.x - o.x) * (next / s),
+            y: mid.y - (mid.y - o.y) * (next / s),
+          }));
+          return next;
+        });
+      }
+      lastDist.current = newDist;
+    } else if (count === 1 && isDragging.current) {
+      const dx = e.clientX - lastPos.current.x;
+      const dy = e.clientY - lastPos.current.y;
+      lastPos.current = { x: e.clientX, y: e.clientY };
+      setOffset(o => ({ x: o.x + dx, y: o.y + dy }));
+    }
   }, []);
 
-  const onPointerUp = useCallback(() => { isDragging.current = false; }, []);
+  const onPointerUp = useCallback((e) => {
+    delete activePointers.current[e.pointerId];
+    if (Object.keys(activePointers.current).length < 2) {
+      lastDist.current = null;
+    }
+    if (Object.keys(activePointers.current).length === 0) {
+      isDragging.current = false;
+    }
+  }, []);
+
+  // Mouse wheel zoom
+  const onWheel = useCallback((e) => {
+    e.preventDefault();
+    const rect = svgRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+    const delta = e.deltaY > 0 ? 0.9 : 1.1;
+    setScale(s => {
+      const next = Math.min(Math.max(s * delta, 0.3), 2.5);
+      setOffset(o => ({
+        x: mx - (mx - o.x) * (next / s),
+        y: my - (my - o.y) * (next / s),
+      }));
+      return next;
+    });
+  }, []);
 
   const unlockedCount = NODES.filter(n => !n.isRoot && n.unlocked).length;
   const certCount = NODES.filter(n => n.quizPassed).length;
@@ -272,6 +340,8 @@ export default function SkillsTab() {
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
           onPointerLeave={onPointerUp}
+          onWheel={onWheel}
+          style={{ touchAction: 'none' }}
         >
           <g transform={`translate(${offset.x}, ${offset.y}) scale(${scale})`}>
             {/* Edges */}
