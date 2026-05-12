@@ -1,86 +1,186 @@
 import React, { useState } from 'react';
-import { ShoppingBag, Plus, Tag, Star, Package } from 'lucide-react';
+import { ShoppingBag, Plus, Pencil, Trash2, X, Check, Package } from 'lucide-react';
 import { base44 } from "@/api/base44Client";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
-// 模擬商品資料（後台上架後從 entity 讀取）
-const MOCK_PRODUCTS = [
-  { id: 1, name: '深層清潔套餐', price: 2800, unit: '次', tag: '熱銷', image: 'https://images.unsplash.com/photo-1563453392212-326f5e854473?w=300&q=80' },
-  { id: 2, name: '居家環境消毒', price: 1500, unit: '次', tag: '新品', image: 'https://images.unsplash.com/photo-1584515933487-779824d29309?w=300&q=80' },
-  { id: 3, name: '冷氣濾網清洗', price: 800, unit: '台', tag: '', image: 'https://images.unsplash.com/photo-1585771724684-38269d6639fd?w=300&q=80' },
-  { id: 4, name: '浴室深層除垢', price: 1200, unit: '次', tag: '推薦', image: 'https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?w=300&q=80' },
-];
+const DEFAULT_CATEGORIES = ['全部'];
 
 export default function ShopTab({ user }) {
+  const qc = useQueryClient();
+  const isAdmin = user?.role === 'admin';
+
   const [selectedCategory, setSelectedCategory] = useState('全部');
-  const categories = ['全部', '清潔套餐', '特殊服務', '加購項目'];
+  const [editingProduct, setEditingProduct] = useState(null); // null | {} | product
+  const [showForm, setShowForm] = useState(false);
+
+  const { data: products = [] } = useQuery({
+    queryKey: ['shop_products'],
+    queryFn: () => base44.entities.ShopProduct.list('sort_order'),
+  });
+
+  // 動態分類（從商品中提取）
+  const categories = ['全部', ...Array.from(new Set(products.map(p => p.category).filter(Boolean)))];
+  const filtered = selectedCategory === '全部'
+    ? products.filter(p => p.is_active !== false)
+    : products.filter(p => p.is_active !== false && p.category === selectedCategory);
+
+  const saveMutation = useMutation({
+    mutationFn: (data) => data.id
+      ? base44.entities.ShopProduct.update(data.id, data)
+      : base44.entities.ShopProduct.create(data),
+    onSuccess: () => { qc.invalidateQueries(['shop_products']); setShowForm(false); setEditingProduct(null); },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id) => base44.entities.ShopProduct.delete(id),
+    onSuccess: () => qc.invalidateQueries(['shop_products']),
+  });
+
+  const openNew = () => {
+    setEditingProduct({ name: '', description: '', price: '', unit: '瓶', category: '', tag: '', image_url: '', stock: -1, is_active: true, sort_order: 99 });
+    setShowForm(true);
+  };
+  const openEdit = (p) => { setEditingProduct({ ...p }); setShowForm(true); };
+  const handleSave = () => {
+    if (!editingProduct?.name || !editingProduct?.price) return;
+    saveMutation.mutate({ ...editingProduct, price: Number(editingProduct.price), stock: Number(editingProduct.stock ?? -1), sort_order: Number(editingProduct.sort_order ?? 99) });
+  };
 
   return (
-    <div className="flex-1 overflow-y-auto bg-stone-50">
+    <div className="flex-1 overflow-y-auto bg-stone-50 h-full">
       {/* 頂部橫幅 */}
       <div className="bg-gradient-to-r from-amber-400 to-orange-400 p-5 text-white">
-        <div className="flex items-center gap-2 mb-1">
-          <ShoppingBag className="w-5 h-5" />
-          <span className="font-bold text-lg">服務商店</span>
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="flex items-center gap-2 mb-0.5">
+              <ShoppingBag className="w-5 h-5" />
+              <span className="font-bold text-lg">清潔用品商店</span>
+            </div>
+            <p className="text-white/80 text-sm">清潔劑・工具・新手禮包</p>
+          </div>
+          {isAdmin && (
+            <button onClick={openNew} className="flex items-center gap-1.5 bg-white/20 hover:bg-white/30 text-white text-sm font-medium px-3 py-1.5 rounded-xl transition-colors">
+              <Plus className="w-4 h-4" /> 新增商品
+            </button>
+          )}
         </div>
-        <p className="text-white/80 text-sm">精選服務項目，一鍵加入行程</p>
       </div>
 
       {/* 分類切換 */}
       <div className="flex gap-2 px-4 py-3 overflow-x-auto scrollbar-hide">
         {categories.map(cat => (
-          <button
-            key={cat}
-            onClick={() => setSelectedCategory(cat)}
+          <button key={cat} onClick={() => setSelectedCategory(cat)}
             className={`flex-shrink-0 px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
-              selectedCategory === cat
-                ? 'bg-amber-500 text-white'
-                : 'bg-white text-stone-500 border border-stone-200'
-            }`}
-          >
+              selectedCategory === cat ? 'bg-amber-500 text-white' : 'bg-white text-stone-500 border border-stone-200'
+            }`}>
             {cat}
           </button>
         ))}
       </div>
 
       {/* 商品列表 */}
-      <div className="grid grid-cols-2 gap-3 px-4 pb-4">
-        {MOCK_PRODUCTS.map(p => (
-          <div key={p.id} className="bg-white rounded-2xl overflow-hidden shadow-sm border border-stone-100">
-            <div className="relative">
-              <img src={p.image} alt={p.name} className="w-full h-28 object-cover" />
-              {p.tag && (
-                <span className="absolute top-2 left-2 bg-amber-400 text-white text-xs px-2 py-0.5 rounded-full font-medium">
-                  {p.tag}
-                </span>
-              )}
-            </div>
-            <div className="p-3">
-              <p className="text-sm font-semibold text-stone-800 mb-1">{p.name}</p>
-              <div className="flex items-center justify-between">
-                <span className="text-amber-600 font-bold text-sm">NT${p.price}<span className="text-stone-400 font-normal text-xs">/{p.unit}</span></span>
-                <button className="w-7 h-7 bg-amber-500 rounded-full flex items-center justify-center">
-                  <Plus className="w-4 h-4 text-white" />
-                </button>
+      {filtered.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-16 text-stone-400">
+          <Package className="w-12 h-12 mb-3 opacity-40" />
+          <p className="text-sm">{isAdmin ? '尚無商品，點右上角新增' : '目前暫無商品'}</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 gap-3 px-4 pb-24">
+          {filtered.map(p => (
+            <div key={p.id} className="bg-white rounded-2xl overflow-hidden shadow-sm border border-stone-100">
+              <div className="relative">
+                {p.image_url ? (
+                  <img src={p.image_url} alt={p.name} className="w-full h-28 object-cover" />
+                ) : (
+                  <div className="w-full h-28 bg-amber-50 flex items-center justify-center">
+                    <Package className="w-10 h-10 text-amber-200" />
+                  </div>
+                )}
+                {p.tag && (
+                  <span className="absolute top-2 left-2 bg-amber-400 text-white text-xs px-2 py-0.5 rounded-full font-medium">
+                    {p.tag}
+                  </span>
+                )}
+                {isAdmin && (
+                  <div className="absolute top-2 right-2 flex gap-1">
+                    <button onClick={() => openEdit(p)} className="w-6 h-6 bg-white/90 rounded-full flex items-center justify-center shadow">
+                      <Pencil className="w-3 h-3 text-stone-600" />
+                    </button>
+                    <button onClick={() => deleteMutation.mutate(p.id)} className="w-6 h-6 bg-white/90 rounded-full flex items-center justify-center shadow">
+                      <Trash2 className="w-3 h-3 text-red-500" />
+                    </button>
+                  </div>
+                )}
+              </div>
+              <div className="p-3">
+                <p className="text-sm font-semibold text-stone-800 mb-0.5 leading-snug">{p.name}</p>
+                {p.description && <p className="text-xs text-stone-400 mb-1 line-clamp-1">{p.description}</p>}
+                <div className="flex items-center justify-between mt-1">
+                  <span className="text-amber-600 font-bold text-sm">
+                    NT${p.price}<span className="text-stone-400 font-normal text-xs">/{p.unit || '個'}</span>
+                  </span>
+                  <button className="w-7 h-7 bg-amber-500 rounded-full flex items-center justify-center">
+                    <Plus className="w-4 h-4 text-white" />
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
-      </div>
-
-      {/* 管理員入口 */}
-      {user?.role === 'admin' && (
-        <div className="mx-4 mb-6 p-4 bg-amber-50 border border-amber-200 rounded-2xl">
-          <div className="flex items-center gap-2 mb-2">
-            <Package className="w-4 h-4 text-amber-600" />
-            <span className="text-sm font-semibold text-amber-800">後台管理</span>
-          </div>
-          <p className="text-xs text-amber-600 mb-3">在後台商品管理中上架或下架服務項目</p>
-          <button className="w-full py-2 bg-amber-500 text-white text-sm font-medium rounded-xl">
-            前往後台上架商品
-          </button>
+          ))}
         </div>
       )}
+
+      {/* 新增/編輯表單（底部 Modal） */}
+      {showForm && editingProduct && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40" onClick={() => setShowForm(false)}>
+          <div className="w-full max-w-lg bg-white rounded-t-3xl p-5 pb-8 max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold text-stone-800 text-base">{editingProduct.id ? '編輯商品' : '新增商品'}</h3>
+              <button onClick={() => setShowForm(false)}><X className="w-5 h-5 text-stone-400" /></button>
+            </div>
+            <div className="space-y-3">
+              <Field label="商品名稱 *" value={editingProduct.name} onChange={v => setEditingProduct(p => ({...p, name: v}))} placeholder="例：多功能清潔劑" />
+              <Field label="商品描述" value={editingProduct.description} onChange={v => setEditingProduct(p => ({...p, description: v}))} placeholder="簡短說明用途或成分" />
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="售價（NT$）*" value={editingProduct.price} onChange={v => setEditingProduct(p => ({...p, price: v}))} type="number" placeholder="199" />
+                <Field label="單位" value={editingProduct.unit} onChange={v => setEditingProduct(p => ({...p, unit: v}))} placeholder="瓶、組、包" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="分類" value={editingProduct.category} onChange={v => setEditingProduct(p => ({...p, category: v}))} placeholder="清潔劑、工具…" />
+                <Field label="標籤" value={editingProduct.tag} onChange={v => setEditingProduct(p => ({...p, tag: v}))} placeholder="熱銷、新品…" />
+              </div>
+              <Field label="圖片網址" value={editingProduct.image_url} onChange={v => setEditingProduct(p => ({...p, image_url: v}))} placeholder="https://..." />
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="庫存（-1=無限）" value={editingProduct.stock} onChange={v => setEditingProduct(p => ({...p, stock: v}))} type="number" placeholder="-1" />
+                <Field label="排序（數字越小越前）" value={editingProduct.sort_order} onChange={v => setEditingProduct(p => ({...p, sort_order: v}))} type="number" placeholder="99" />
+              </div>
+              <div className="flex items-center gap-2">
+                <input type="checkbox" id="is_active" checked={editingProduct.is_active !== false} onChange={e => setEditingProduct(p => ({...p, is_active: e.target.checked}))} className="w-4 h-4 accent-amber-500" />
+                <label htmlFor="is_active" className="text-sm text-stone-700">立即上架</label>
+              </div>
+            </div>
+            <button onClick={handleSave} disabled={saveMutation.isPending}
+              className="mt-5 w-full py-3 bg-amber-500 text-white font-semibold rounded-xl flex items-center justify-center gap-2 disabled:opacity-60">
+              <Check className="w-4 h-4" />
+              {saveMutation.isPending ? '儲存中...' : '儲存商品'}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Field({ label, value, onChange, type = 'text', placeholder }) {
+  return (
+    <div>
+      <label className="text-xs text-stone-500 font-medium mb-1 block">{label}</label>
+      <input
+        type={type}
+        value={value ?? ''}
+        onChange={e => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="w-full border border-stone-200 rounded-xl px-3 py-2 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-300"
+      />
     </div>
   );
 }
