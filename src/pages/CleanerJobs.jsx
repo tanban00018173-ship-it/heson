@@ -2,19 +2,25 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { X, ClipboardList, Zap, LogOut, User, Home, Navigation, RefreshCw } from "lucide-react";
+import { X, ClipboardList, Zap, LogOut, User, Home, RefreshCw } from "lucide-react";
 import AdminViewSwitcher from "@/components/AdminViewSwitcher";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import FlashTaskMap from "@/components/cleaner/FlashTaskMap";
 import TaskBottomPanel from "@/components/cleaner/TaskBottomPanel";
+import BottomTabBar from "@/components/cleaner/BottomTabBar";
+import ShopTab from "@/components/cleaner/tabs/ShopTab";
+import SkillsTab from "@/components/cleaner/tabs/SkillsTab";
+import TeamTab from "@/components/cleaner/tabs/TeamTab";
+import ProfileTab from "@/components/cleaner/tabs/ProfileTab";
 
 export default function CleanerJobs() {
   const [user, setUser] = useState(null);
   const [cleanerProfile, setCleanerProfile] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState(null);
+  const [activeTab, setActiveTab] = useState('map');
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -62,10 +68,21 @@ export default function CleanerJobs() {
   const avatarLetter = displayName?.[0]?.toUpperCase() || 'U';
 
   return (
-    <div className="fixed inset-0 overflow-hidden bg-stone-100">
+    <div className="fixed inset-0 overflow-hidden bg-stone-100 flex flex-col">
 
-      {/* ── 地圖區（全屏） ── */}
-      <div className="absolute inset-0">
+      {/* ── 非地圖 Tab 內容區 ── */}
+      {activeTab !== 'map' && (
+        <div className="flex-1 flex flex-col overflow-hidden" style={{ paddingBottom: '56px' }}>
+          {activeTab === 'shop'    && <ShopTab user={user} />}
+          {activeTab === 'skills'  && <SkillsTab />}
+          {activeTab === 'team'    && <TeamTab />}
+          {activeTab === 'profile' && <ProfileTab user={user} cleanerProfile={cleanerProfile} />}
+        </div>
+      )}
+
+      {/* ── 地圖區（全屏，僅地圖 tab 顯示） ── */}
+      <div className={`absolute inset-0 ${activeTab !== 'map' ? 'pointer-events-none opacity-0' : ''}`}
+           style={{ bottom: '56px' }}>
         <FlashTaskMap
           flashTasks={flashTasks}
           onAccept={(task) => acceptFlashMutation.mutateAsync(task)}
@@ -106,14 +123,19 @@ export default function CleanerJobs() {
         </div>
       </div>
 
-      {/* ── 底部訂單資訊面板（fixed 抽屜） ── */}
-      <TaskBottomPanel
-        flashTasks={flashTasks}
-        selectedTask={selectedTask}
-        onSelectTask={setSelectedTask}
-        onAccept={(task) => acceptFlashMutation.mutateAsync(task)}
-        accepting={acceptFlashMutation.isPending}
-      />
+      {/* ── 底部訂單資訊面板（fixed 抽屜，僅地圖 tab） ── */}
+      {activeTab === 'map' && (
+        <TaskBottomPanel
+          flashTasks={flashTasks}
+          selectedTask={selectedTask}
+          onSelectTask={setSelectedTask}
+          onAccept={(task) => acceptFlashMutation.mutateAsync(task)}
+          accepting={acceptFlashMutation.isPending}
+        />
+      )}
+
+      {/* ── 底部 Tab Bar ── */}
+      <BottomTabBar activeTab={activeTab} onTabChange={setActiveTab} />
 
       {/* ── 右側抽屜選單（Portal） ── */}
       {menuOpen && createPortal(
