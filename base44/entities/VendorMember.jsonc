@@ -1,0 +1,53 @@
+{
+  "name": "VendorMember",
+  "type": "object",
+  "properties": {
+    "vendor_id": {
+      "type": "string",
+      "description": "\u5ee0\u5546 ID"
+    },
+    "vendor_name": {
+      "type": "string",
+      "description": "\u5ee0\u5546\u540d\u7a31"
+    },
+    "user_id": {
+      "type": "string",
+      "description": "\u6210\u54e1 user ID"
+    },
+    "user_name": {
+      "type": "string",
+      "description": "\u6210\u54e1\u59d3\u540d"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "approved",
+        "rejected"
+      ],
+      "default": "pending",
+      "description": "\u5be9\u6838\u72c0\u614b"
+    }
+  },
+  "required": [
+    "vendor_id",
+    "user_id"
+  ],
+  "rls": {
+    "create": {},
+    "read": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "data.vendor_id": "{{user.id}}"
+        }
+      ]
+    },
+    "update": {},
+    "delete": {
+      "data.user_id": "{{user.id}}"
+    }
+  }
+}

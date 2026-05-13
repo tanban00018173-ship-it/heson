@@ -75,7 +75,7 @@ export default function CleanerJobs() {
         <div className="flex-1 flex flex-col overflow-hidden" style={{ paddingBottom: '56px' }}>
           {activeTab === 'shop'    && <ShopTab user={user} />}
           {activeTab === 'skills'  && <SkillsTab />}
-          {activeTab === 'team'    && <TeamTab />}
+          {activeTab === 'team'    && <TeamTab user={user} />}
           {activeTab === 'profile' && <ProfileTab user={user} cleanerProfile={cleanerProfile} />}
         </div>
       )}
