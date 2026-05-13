@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Search, Plus } from 'lucide-react';
+import { ArrowLeft, Search, Plus, ChevronDown, ChevronUp } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
@@ -10,6 +10,12 @@ export default function VendorJoin({ user, onBack, inline }) {
   const [newCode, setNewCode] = useState('');
   const [newDesc, setNewDesc] = useState('');
   const [msg, setMsg] = useState(null);
+
+  // 申請成為廠商合作夥伴
+  const [showApplyForm, setShowApplyForm] = useState(false);
+  const [applyForm, setApplyForm] = useState({ company: '', contact: '', phone: '', email: '', note: '' });
+  const [applyMsg, setApplyMsg] = useState(null);
+  const [applyLoading, setApplyLoading] = useState(false);
   const qc = useQueryClient();
 
   // 已申請或已加入的廠商
@@ -117,6 +123,61 @@ export default function VendorJoin({ user, onBack, inline }) {
                 className="px-5 py-3 bg-black text-white rounded-xl text-sm font-semibold disabled:opacity-40">
                 <Search className="w-4 h-4" />
               </button>
+            </div>
+
+            {/* 申請成為廠商合作夥伴 */}
+            <div className="border border-stone-200 rounded-xl overflow-hidden">
+              <button
+                onClick={() => { setShowApplyForm(v => !v); setApplyMsg(null); }}
+                className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-stone-50 transition-colors">
+                <span className="text-xs text-stone-500">
+                  還沒有廠商代碼？<span className="text-stone-800 font-medium underline underline-offset-2 ml-1">申請成為廠商合作夥伴</span>
+                </span>
+                {showApplyForm ? <ChevronUp className="w-4 h-4 text-stone-400 flex-shrink-0" /> : <ChevronDown className="w-4 h-4 text-stone-400 flex-shrink-0" />}
+              </button>
+
+              {showApplyForm && (
+                <div className="px-4 pb-4 pt-1 border-t border-stone-100 space-y-2 bg-stone-50">
+                  {applyMsg && (
+                    <div className={`px-3 py-2 rounded-lg text-xs ${applyMsg.type === 'ok' ? 'bg-green-50 text-green-700 border border-green-100' : 'bg-red-50 text-red-600 border border-red-100'}`}>
+                      {applyMsg.text}
+                    </div>
+                  )}
+                  <input value={applyForm.company} onChange={e => setApplyForm(f => ({...f, company: e.target.value}))}
+                    placeholder="公司／廠商名稱（必填）"
+                    className="w-full bg-white border border-stone-200 rounded-lg px-3 py-2 text-sm outline-none" />
+                  <input value={applyForm.contact} onChange={e => setApplyForm(f => ({...f, contact: e.target.value}))}
+                    placeholder="聯絡人姓名（必填）"
+                    className="w-full bg-white border border-stone-200 rounded-lg px-3 py-2 text-sm outline-none" />
+                  <input value={applyForm.phone} onChange={e => setApplyForm(f => ({...f, phone: e.target.value}))}
+                    placeholder="聯絡電話"
+                    className="w-full bg-white border border-stone-200 rounded-lg px-3 py-2 text-sm outline-none" />
+                  <input value={applyForm.email} onChange={e => setApplyForm(f => ({...f, email: e.target.value}))}
+                    placeholder="電子信箱"
+                    className="w-full bg-white border border-stone-200 rounded-lg px-3 py-2 text-sm outline-none" />
+                  <textarea value={applyForm.note} onChange={e => setApplyForm(f => ({...f, note: e.target.value}))}
+                    placeholder="備註（選填）"
+                    rows={2}
+                    className="w-full bg-white border border-stone-200 rounded-lg px-3 py-2 text-sm outline-none resize-none" />
+                  <button
+                    disabled={!applyForm.company.trim() || !applyForm.contact.trim() || applyLoading}
+                    onClick={async () => {
+                      setApplyLoading(true);
+                      setApplyMsg(null);
+                      await base44.integrations.Core.SendEmail({
+                        to: 'heson.tw@gmail.com',
+                        subject: `【廠商合作申請】${applyForm.company}`,
+                        body: `廠商合作申請\n\n公司名稱：${applyForm.company}\n聯絡人：${applyForm.contact}\n電話：${applyForm.phone || '—'}\nEmail：${applyForm.email || '—'}\n備註：${applyForm.note || '—'}\n\n申請人帳號：${user?.email || '—'}`,
+                      });
+                      setApplyMsg({ type: 'ok', text: '申請已送出，我們會盡快與您聯繫！' });
+                      setApplyForm({ company: '', contact: '', phone: '', email: '', note: '' });
+                      setApplyLoading(false);
+                    }}
+                    className="w-full py-2.5 bg-black text-white rounded-lg text-sm font-semibold disabled:opacity-40">
+                    {applyLoading ? '送出中...' : '送出申請'}
+                  </button>
+                </div>
+              )}
             </div>
 
             {myMembers.length > 0 && (
