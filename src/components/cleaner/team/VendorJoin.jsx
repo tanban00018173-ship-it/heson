@@ -14,20 +14,12 @@ export default function VendorJoin({ user, onBack, inline }) {
   const [applyLoading, setApplyLoading] = useState(false);
   const qc = useQueryClient();
 
-  // 已申請或已加入的廠商
-  const { data: myMembers = [] } = useQuery({
-    queryKey: ['vendor_members_mine', user?.id],
-    queryFn: () => base44.entities.VendorMember.filter({ user_id: user?.id }),
-    enabled: !!user?.id,
-  });
-
   const joinMutation = useMutation({
     mutationFn: async () => {
       const vendors = await base44.entities.Vendor.filter({ code: code.trim() });
       if (!vendors.length) throw new Error('找不到此代碼對應的廠商');
       const vendor = vendors[0];
-      const already = myMembers.find(m => m.vendor_id === vendor.id);
-      if (already) throw new Error('您已申請或加入此廠商');
+
       await base44.entities.VendorMember.create({
         vendor_id: vendor.id,
         vendor_name: vendor.name,
@@ -134,23 +126,7 @@ export default function VendorJoin({ user, onBack, inline }) {
               )}
             </div>
 
-            {myMembers.length > 0 && (
-              <div>
-                <p className="text-xs font-semibold text-stone-400 mb-2">我的申請紀錄</p>
-                {myMembers.map(m => (
-                  <div key={m.id} className="flex items-center justify-between px-4 py-3 bg-stone-50 rounded-xl border border-stone-100 mb-2">
-                    <span className="text-sm text-stone-700">{m.vendor_name}</span>
-                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                      m.status === 'approved' ? 'bg-black text-white' :
-                      m.status === 'rejected' ? 'bg-red-100 text-red-500' :
-                      'bg-stone-200 text-stone-500'
-                    }`}>
-                      {m.status === 'approved' ? '已加入' : m.status === 'rejected' ? '已拒絕' : '審核中'}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
+
         </div>
       </div>
     </div>

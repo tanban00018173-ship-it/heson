@@ -68,11 +68,8 @@ export default function TeamTab({ user }) {
 
         {tab === 'vendor' && (
           <div className="space-y-4">
-            {/* 加入/註冊 直接內嵌 */}
-            <VendorJoin user={user} onBack={() => {}} inline />
-
-            {/* 已加入的廠商列表 */}
-            {myVendors.length > 0 && (
+            {myVendors.length > 0 ? (
+              /* 已加入廠商 → 只顯示廠商列表 */
               <div>
                 <p className="text-xs font-semibold text-stone-400 mb-2">我的廠商群聊</p>
                 {myVendors.map(v => (
@@ -89,6 +86,9 @@ export default function TeamTab({ user }) {
                   </button>
                 ))}
               </div>
+            ) : (
+              /* 尚未加入任何廠商 → 顯示加入表單 */
+              <VendorJoin user={user} onBack={() => {}} inline />
             )}
           </div>
         )}
