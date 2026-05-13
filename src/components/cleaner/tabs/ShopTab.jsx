@@ -12,9 +12,11 @@ export default function ShopTab() {
   });
 
   const categories = ['全部', ...Array.from(new Set(products.map(p => p.category).filter(Boolean)))];
+  // 從後台商品 tag 欄位動態收集所有標籤
+  const tags = ['全部', ...Array.from(new Set(products.map(p => p.tag).filter(Boolean)))];
   const filtered = selectedCategory === '全部'
     ? products.filter(p => p.is_active !== false)
-    : products.filter(p => p.is_active !== false && p.category === selectedCategory);
+    : products.filter(p => p.is_active !== false && (p.category === selectedCategory || p.tag === selectedCategory));
 
   return (
     <div className="flex-1 overflow-y-auto bg-white h-full">
@@ -27,14 +29,14 @@ export default function ShopTab() {
         <p className="text-white/50 text-xs tracking-wider">清潔劑・工具・新手禮包</p>
       </div>
 
-      {/* 分類切換 */}
-      <div className="flex gap-2 px-4 py-3 overflow-x-auto scrollbar-hide border-b border-stone-100">
-        {categories.map(cat => (
-          <button key={cat} onClick={() => setSelectedCategory(cat)}
+      {/* 標籤篩選（從後台 tag 欄位動態生成，可橫向滾動） */}
+      <div className="flex gap-2 px-4 py-3 border-b border-stone-100 overflow-x-auto" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+        {tags.map(tag => (
+          <button key={tag} onClick={() => setSelectedCategory(tag)}
             className={`flex-shrink-0 px-4 py-1.5 rounded-full text-xs font-medium transition-colors ${
-              selectedCategory === cat ? 'bg-black text-white' : 'bg-stone-100 text-stone-500'
+              selectedCategory === tag ? 'bg-black text-white' : 'bg-stone-100 text-stone-500'
             }`}>
-            {cat}
+            {tag}
           </button>
         ))}
       </div>
