@@ -64,7 +64,7 @@ export default function VendorHome({ vendor, user, onBack, onLeave }) {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-hidden flex flex-col">
+      <div className="flex-1 min-h-0 flex flex-col">
         {tab === 'chat' && <VendorChat vendor={vendor} user={user} embedded />}
         {tab === 'members' && <VendorMembers vendor={vendor} user={user} />}
         {tab === 'info' && <VendorInfo vendor={vendor} user={user} />}

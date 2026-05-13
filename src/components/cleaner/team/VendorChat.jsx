@@ -57,7 +57,7 @@ export default function VendorChat({ vendor, user, embedded = false, onBack }) {
         <div ref={bottomRef} />
       </div>
 
-      <div className="bg-white px-4 py-3 flex items-center gap-2 border-t border-stone-100">
+      <div className="bg-white px-4 py-3 flex items-center gap-2 border-t border-stone-100" style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom))' }}>
         <input
           type="text"
           value={input}

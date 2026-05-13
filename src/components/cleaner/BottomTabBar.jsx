@@ -5,7 +5,7 @@ const TABS = [
   { id: 'shop',    icon: ShoppingBag, label: '商店' },
   { id: 'skills',  icon: Award,       label: '技能' },
   { id: 'map',     icon: Map,         label: '地圖' },
-  { id: 'team',    icon: Users,       label: '團隊' },
+  { id: 'team',    icon: Users,       label: '訊息' },
   { id: 'profile', icon: User,        label: '我的' },
 ];
 
