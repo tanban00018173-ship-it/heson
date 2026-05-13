@@ -2,21 +2,28 @@ import React, { useState } from 'react';
 import { ThumbsUp, ThumbsDown, HelpCircle, MessageSquare, Camera, ChevronRight, Award, FileText, LogOut, Shield, Phone } from 'lucide-react';
 import { base44 } from "@/api/base44Client";
 
-// 模擬評價資料（實際應從 API 取得）
-const MOCK_REVIEWS = { thumbsUp: 38, thumbsDown: 4 };
 const MIN_REVIEWS = 50;
 
-function calcApproval({ thumbsUp, thumbsDown }) {
+function calcApproval(thumbsUp = 0, thumbsDown = 0) {
   const total = thumbsUp + thumbsDown;
   if (total < MIN_REVIEWS) return { rate: 100, total, insufficient: true };
   return { rate: Math.round((thumbsUp / total) * 100), total, insufficient: false };
 }
 
-export default function ProfileTab({ user, cleanerProfile }) {
+export default function ProfileTab({ user, cleanerProfile, stats = {} }) {
   const [activeSection, setActiveSection] = useState(null);
 
   const displayName = cleanerProfile?.nickname || user?.full_name;
   const avatarLetter = displayName?.[0]?.toUpperCase() || 'U';
+
+  // 由外部 stats props 傳入，預設皆為 0（待串接）
+  const completedTasks = stats.completedTasks ?? 0;
+  const serviceHours   = stats.serviceHours   ?? 0;
+  const onTimeRate     = stats.onTimeRate      ?? null; // null = 尚無資料
+  const thumbsUp       = stats.thumbsUp        ?? 0;
+  const thumbsDown     = stats.thumbsDown      ?? 0;
+
+  const { rate, total, insufficient } = calcApproval(thumbsUp, thumbsDown);
 
   if (activeSection === 'faq') {
     const faqs = [
@@ -24,7 +31,7 @@ export default function ProfileTab({ user, cleanerProfile }) {
       { q: '薪資如何計算？', a: '平台派案抽成70%，接案後系統自動計算並於月底結算。' },
       { q: '如何提升接案優先度？', a: '完成更多技能認證、維持好評率 4.8 以上、準時出勤，可獲得優先派案。' },
       { q: '任務取消如何處理？', a: '服務前24小時取消不罰款；24小時內取消依規定酌收費用。' },
-      { q: '好評率如何計算？', a: '客戶完成服務後評分，過去30筆的平均分數即為您的好評率。' },
+      { q: '好評率如何計算？', a: '客戶給予讚/倒讚，累積 50 筆後顯示實際好評率，未達前對外顯示 100%。' },
     ];
     return (
       <div className="flex-1 overflow-y-auto bg-white">
@@ -32,7 +39,6 @@ export default function ProfileTab({ user, cleanerProfile }) {
           <button onClick={() => setActiveSection(null)}>
             <ChevronRight className="w-5 h-5 text-stone-400 rotate-180" />
           </button>
-
           <span className="font-semibold text-stone-800">常見問題</span>
         </div>
         <div className="p-4 space-y-3">
@@ -67,23 +73,26 @@ export default function ProfileTab({ user, cleanerProfile }) {
           <div>
             <p className="text-lg font-bold">{displayName || '管理師'}</p>
             <p className="text-white/40 text-sm">{user?.email}</p>
-            {(() => {
-              const { rate, total, insufficient } = calcApproval(MOCK_REVIEWS);
-              return (
-                <div className="flex items-center gap-1 mt-1">
-                  <span className="text-white font-semibold text-sm">{rate}%</span>
-                  <ThumbsUp className="w-3.5 h-3.5 text-white fill-white" />
-                  <span className="text-white/30 text-xs">
-                    {insufficient ? `（${total} 筆，累積中）` : `（${total} 筆評價）`}
-                  </span>
-                </div>
-              );
-            })()}
+            <div className="flex items-center gap-1 mt-1">
+              <span className="text-white font-semibold text-sm">{rate}%</span>
+              <ThumbsUp className="w-3.5 h-3.5 text-white fill-white" />
+              <span className="text-white/30 text-xs">
+                {total === 0
+                  ? '（尚無評價）'
+                  : insufficient
+                    ? `（${total} 筆，累積中）`
+                    : `（${total} 筆評價）`}
+              </span>
+            </div>
           </div>
         </div>
 
         <div className="grid grid-cols-3 gap-2 mt-5">
-          {[{ label: '完成任務', value: '48' }, { label: '服務時數', value: '162h' }, { label: '準時率', value: '98%' }].map(({ label, value }) => (
+          {[
+            { label: '完成任務', value: completedTasks > 0 ? String(completedTasks) : '—' },
+            { label: '服務時數', value: serviceHours > 0 ? `${serviceHours}h` : '—' },
+            { label: '準時率',   value: onTimeRate != null ? `${onTimeRate}%` : '—' },
+          ].map(({ label, value }) => (
             <div key={label} className="bg-white/10 rounded-xl p-3 text-center">
               <p className="text-base font-bold">{value}</p>
               <p className="text-white/40 text-xs">{label}</p>
@@ -119,43 +128,41 @@ export default function ProfileTab({ user, cleanerProfile }) {
         <div className="bg-white rounded-xl overflow-hidden border border-stone-100">
           <p className="px-4 pt-4 pb-2 text-xs font-semibold text-stone-400 uppercase tracking-wider">評價與回饋</p>
           <div className="px-4 pb-4">
-            {(() => {
-              const { rate, total, insufficient } = calcApproval(MOCK_REVIEWS);
-              return (
-                <>
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <span className="text-2xl font-bold text-stone-800">{rate}%</span>
-                      <ThumbsUp className="w-5 h-5 text-stone-800 fill-stone-800" />
-                      <span className="text-stone-400 text-sm">好評率</span>
-                    </div>
-                    <span className="text-xs text-stone-400">{total} 筆評價</span>
-                  </div>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <span className="text-2xl font-bold text-stone-800">{rate}%</span>
+                <ThumbsUp className="w-5 h-5 text-stone-800 fill-stone-800" />
+                <span className="text-stone-400 text-sm">好評率</span>
+              </div>
+              <span className="text-xs text-stone-400">{total} 筆評價</span>
+            </div>
 
-                  {/* 讚/倒讚 長條 */}
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <ThumbsUp className="w-3.5 h-3.5 text-stone-500 flex-shrink-0" />
-                    <div className="flex-1 bg-stone-100 rounded-full h-2">
-                      <div className="bg-black h-2 rounded-full transition-all" style={{ width: `${total ? (MOCK_REVIEWS.thumbsUp / total) * 100 : 0}%` }} />
-                    </div>
-                    <span className="text-xs text-stone-400 w-5 text-right">{MOCK_REVIEWS.thumbsUp}</span>
+            {total === 0 ? (
+              <p className="text-xs text-stone-400 text-center py-2">尚無評價紀錄</p>
+            ) : (
+              <>
+                <div className="flex items-center gap-2 mb-1.5">
+                  <ThumbsUp className="w-3.5 h-3.5 text-stone-500 flex-shrink-0" />
+                  <div className="flex-1 bg-stone-100 rounded-full h-2">
+                    <div className="bg-black h-2 rounded-full transition-all" style={{ width: `${total ? (thumbsUp / total) * 100 : 0}%` }} />
                   </div>
-                  <div className="flex items-center gap-2 mb-3">
-                    <ThumbsDown className="w-3.5 h-3.5 text-stone-400 flex-shrink-0" />
-                    <div className="flex-1 bg-stone-100 rounded-full h-2">
-                      <div className="bg-stone-400 h-2 rounded-full transition-all" style={{ width: `${total ? (MOCK_REVIEWS.thumbsDown / total) * 100 : 0}%` }} />
-                    </div>
-                    <span className="text-xs text-stone-400 w-5 text-right">{MOCK_REVIEWS.thumbsDown}</span>
+                  <span className="text-xs text-stone-400 w-5 text-right">{thumbsUp}</span>
+                </div>
+                <div className="flex items-center gap-2 mb-3">
+                  <ThumbsDown className="w-3.5 h-3.5 text-stone-400 flex-shrink-0" />
+                  <div className="flex-1 bg-stone-100 rounded-full h-2">
+                    <div className="bg-stone-400 h-2 rounded-full transition-all" style={{ width: `${total ? (thumbsDown / total) * 100 : 0}%` }} />
                   </div>
+                  <span className="text-xs text-stone-400 w-5 text-right">{thumbsDown}</span>
+                </div>
+              </>
+            )}
 
-                  {insufficient && (
-                    <div className="bg-stone-50 border border-stone-200 rounded-lg px-3 py-2 text-xs text-stone-400">
-                      累積評價未達 {MIN_REVIEWS} 筆，對外暫顯示 <span className="font-semibold text-stone-600">100%</span> 好評率
-                    </div>
-                  )}
-                </>
-              );
-            })()}
+            {insufficient && total > 0 && (
+              <div className="bg-stone-50 border border-stone-200 rounded-lg px-3 py-2 text-xs text-stone-400">
+                累積評價未達 {MIN_REVIEWS} 筆，對外暫顯示 <span className="font-semibold text-stone-600">100%</span> 好評率
+              </div>
+            )}
           </div>
         </div>
 
