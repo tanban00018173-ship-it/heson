@@ -9,7 +9,6 @@ import VendorChat from '../team/VendorChat';
 export default function TeamTab({ user }) {
   const [tab, setTab] = useState('chat'); // 'chat' | 'vendor'
   const [selectedVendor, setSelectedVendor] = useState(null);
-  const [showJoin, setShowJoin] = useState(false);
 
   // 已加入（approved）的廠商成員記錄
   const { data: approvedMembers = [] } = useQuery({
@@ -40,15 +39,7 @@ export default function TeamTab({ user }) {
     );
   }
 
-  // 加入/註冊廠商介面
-  if (showJoin) {
-    return (
-      <VendorJoin
-        user={user}
-        onBack={() => setShowJoin(false)}
-      />
-    );
-  }
+
 
   return (
     <div className="flex-1 overflow-y-auto bg-white">
@@ -76,21 +67,9 @@ export default function TeamTab({ user }) {
         {tab === 'chat' && <ClientChat />}
 
         {tab === 'vendor' && (
-          <div className="space-y-3">
-            {/* 加入/註冊入口 */}
-            <button onClick={() => setShowJoin(true)}
-              className="w-full flex items-center justify-between px-4 py-4 bg-stone-50 border border-stone-200 rounded-xl hover:bg-stone-100 transition-colors">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full bg-black flex items-center justify-center flex-shrink-0">
-                  <Building2 className="w-4 h-4 text-white" />
-                </div>
-                <div className="text-left">
-                  <p className="text-sm font-semibold text-stone-800">加入 / 註冊廠商</p>
-                  <p className="text-xs text-stone-400">輸入代碼加入，或建立新廠商群聊</p>
-                </div>
-              </div>
-              <span className="text-stone-300 text-lg">›</span>
-            </button>
+          <div className="space-y-4">
+            {/* 加入/註冊 直接內嵌 */}
+            <VendorJoin user={user} onBack={() => {}} inline />
 
             {/* 已加入的廠商列表 */}
             {myVendors.length > 0 && (
@@ -109,13 +88,6 @@ export default function TeamTab({ user }) {
                     <span className="text-stone-300 text-lg">›</span>
                   </button>
                 ))}
-              </div>
-            )}
-
-            {myVendors.length === 0 && (
-              <div className="text-center text-stone-300 py-8">
-                <Building2 className="w-10 h-10 mx-auto mb-2 opacity-30" />
-                <p className="text-sm">尚未加入任何廠商</p>
               </div>
             )}
           </div>

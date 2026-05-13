@@ -3,7 +3,7 @@ import { ArrowLeft, Search, Plus } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
-export default function VendorJoin({ user, onBack }) {
+export default function VendorJoin({ user, onBack, inline }) {
   const [tab, setTab] = useState('join'); // 'join' | 'create'
   const [code, setCode] = useState('');
   const [newName, setNewName] = useState('');
@@ -76,14 +76,16 @@ export default function VendorJoin({ user, onBack }) {
   });
 
   return (
-    <div className="flex-1 overflow-y-auto bg-white">
-      <div className="bg-black px-5 pt-8 pb-5 text-white flex items-center gap-3">
-        <button onClick={onBack}><ArrowLeft className="w-5 h-5 text-white/60" /></button>
-        <span className="font-bold text-lg">廠商群聊</span>
-      </div>
+    <div className={inline ? '' : 'flex-1 overflow-y-auto bg-white'}>
+      {!inline && (
+        <div className="bg-black px-5 pt-8 pb-5 text-white flex items-center gap-3">
+          <button onClick={onBack}><ArrowLeft className="w-5 h-5 text-white/60" /></button>
+          <span className="font-bold text-lg">廠商群聊</span>
+        </div>
+      )}
 
       {/* 切換 */}
-      <div className="flex mx-4 mt-4 rounded-xl overflow-hidden border border-stone-200">
+      <div className={`flex rounded-xl overflow-hidden border border-stone-200 ${inline ? '' : 'mx-4 mt-4'}`}>
         {[{ key: 'join', label: '加入廠商' }, { key: 'create', label: '註冊廠商' }].map(t => (
           <button key={t.key} onClick={() => { setTab(t.key); setMsg(null); }}
             className={`flex-1 py-2.5 text-sm font-semibold transition-colors ${tab === t.key ? 'bg-black text-white' : 'bg-white text-stone-400'}`}>
@@ -92,7 +94,7 @@ export default function VendorJoin({ user, onBack }) {
         ))}
       </div>
 
-      <div className="p-4">
+      <div className={inline ? 'pt-3' : 'p-4'}>
         {msg && (
           <div className={`mb-4 px-4 py-3 rounded-xl text-sm ${msg.type === 'ok' ? 'bg-stone-50 text-stone-700 border border-stone-200' : 'bg-red-50 text-red-600 border border-red-100'}`}>
             {msg.text}
