@@ -1,6 +1,16 @@
 import React, { useState } from 'react';
-import { User, Star, HelpCircle, MessageSquare, Camera, ChevronRight, Award, FileText, LogOut, Shield, Phone } from 'lucide-react';
+import { ThumbsUp, ThumbsDown, HelpCircle, MessageSquare, Camera, ChevronRight, Award, FileText, LogOut, Shield, Phone } from 'lucide-react';
 import { base44 } from "@/api/base44Client";
+
+// 模擬評價資料（實際應從 API 取得）
+const MOCK_REVIEWS = { thumbsUp: 38, thumbsDown: 4 };
+const MIN_REVIEWS = 50;
+
+function calcApproval({ thumbsUp, thumbsDown }) {
+  const total = thumbsUp + thumbsDown;
+  if (total < MIN_REVIEWS) return { rate: 100, total, insufficient: true };
+  return { rate: Math.round((thumbsUp / total) * 100), total, insufficient: false };
+}
 
 export default function ProfileTab({ user, cleanerProfile }) {
   const [activeSection, setActiveSection] = useState(null);
@@ -57,11 +67,18 @@ export default function ProfileTab({ user, cleanerProfile }) {
           <div>
             <p className="text-lg font-bold">{displayName || '管理師'}</p>
             <p className="text-white/40 text-sm">{user?.email}</p>
-            <div className="flex items-center gap-1 mt-1">
-              <Star className="w-3.5 h-3.5 text-white fill-white" />
-              <span className="text-white font-semibold text-sm">4.9</span>
-              <span className="text-white/30 text-xs">（52 則好評）</span>
-            </div>
+            {(() => {
+              const { rate, total, insufficient } = calcApproval(MOCK_REVIEWS);
+              return (
+                <div className="flex items-center gap-1 mt-1">
+                  <ThumbsUp className="w-3.5 h-3.5 text-white fill-white" />
+                  <span className="text-white font-semibold text-sm">{rate}%</span>
+                  <span className="text-white/30 text-xs">
+                    {insufficient ? `（${total} 筆，累積中）` : `（${total} 筆評價）`}
+                  </span>
+                </div>
+              );
+            })()}
           </div>
         </div>
 
@@ -102,24 +119,43 @@ export default function ProfileTab({ user, cleanerProfile }) {
         <div className="bg-white rounded-xl overflow-hidden border border-stone-100">
           <p className="px-4 pt-4 pb-2 text-xs font-semibold text-stone-400 uppercase tracking-wider">評價與回饋</p>
           <div className="px-4 pb-4">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <Star className="w-5 h-5 text-stone-800 fill-stone-800" />
-                <span className="text-2xl font-bold text-stone-800">4.9</span>
-                <span className="text-stone-400 text-sm">/ 5.0</span>
-              </div>
-              <span className="text-xs text-stone-400">52 則評價</span>
-            </div>
-            {[5, 4, 3].map(stars => (
-              <div key={stars} className="flex items-center gap-2 mb-1.5">
-                <span className="text-xs text-stone-400 w-3">{stars}</span>
-                <Star className="w-3 h-3 text-stone-400 fill-stone-400" />
-                <div className="flex-1 bg-stone-100 rounded-full h-1.5">
-                  <div className="bg-black h-1.5 rounded-full" style={{ width: stars === 5 ? '85%' : stars === 4 ? '12%' : '3%' }} />
-                </div>
-                <span className="text-xs text-stone-400 w-6 text-right">{stars === 5 ? '44' : stars === 4 ? '6' : '2'}</span>
-              </div>
-            ))}
+            {(() => {
+              const { rate, total, insufficient } = calcApproval(MOCK_REVIEWS);
+              return (
+                <>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <ThumbsUp className="w-5 h-5 text-stone-800 fill-stone-800" />
+                      <span className="text-2xl font-bold text-stone-800">{rate}%</span>
+                      <span className="text-stone-400 text-sm">好評率</span>
+                    </div>
+                    <span className="text-xs text-stone-400">{total} 筆評價</span>
+                  </div>
+
+                  {/* 讚/倒讚 長條 */}
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <ThumbsUp className="w-3.5 h-3.5 text-stone-500 flex-shrink-0" />
+                    <div className="flex-1 bg-stone-100 rounded-full h-2">
+                      <div className="bg-black h-2 rounded-full transition-all" style={{ width: `${total ? (MOCK_REVIEWS.thumbsUp / total) * 100 : 0}%` }} />
+                    </div>
+                    <span className="text-xs text-stone-400 w-5 text-right">{MOCK_REVIEWS.thumbsUp}</span>
+                  </div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <ThumbsDown className="w-3.5 h-3.5 text-stone-400 flex-shrink-0" />
+                    <div className="flex-1 bg-stone-100 rounded-full h-2">
+                      <div className="bg-stone-400 h-2 rounded-full transition-all" style={{ width: `${total ? (MOCK_REVIEWS.thumbsDown / total) * 100 : 0}%` }} />
+                    </div>
+                    <span className="text-xs text-stone-400 w-5 text-right">{MOCK_REVIEWS.thumbsDown}</span>
+                  </div>
+
+                  {insufficient && (
+                    <div className="bg-stone-50 border border-stone-200 rounded-lg px-3 py-2 text-xs text-stone-400">
+                      累積評價未達 {MIN_REVIEWS} 筆，對外暫顯示 <span className="font-semibold text-stone-600">100%</span> 好評率
+                    </div>
+                  )}
+                </>
+              );
+            })()}
           </div>
         </div>
 
