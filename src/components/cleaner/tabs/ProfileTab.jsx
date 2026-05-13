@@ -71,8 +71,8 @@ export default function ProfileTab({ user, cleanerProfile }) {
               const { rate, total, insufficient } = calcApproval(MOCK_REVIEWS);
               return (
                 <div className="flex items-center gap-1 mt-1">
-                  <ThumbsUp className="w-3.5 h-3.5 text-white fill-white" />
                   <span className="text-white font-semibold text-sm">{rate}%</span>
+                  <ThumbsUp className="w-3.5 h-3.5 text-white fill-white" />
                   <span className="text-white/30 text-xs">
                     {insufficient ? `（${total} 筆，累積中）` : `（${total} 筆評價）`}
                   </span>
@@ -125,8 +125,8 @@ export default function ProfileTab({ user, cleanerProfile }) {
                 <>
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
-                      <ThumbsUp className="w-5 h-5 text-stone-800 fill-stone-800" />
                       <span className="text-2xl font-bold text-stone-800">{rate}%</span>
+                      <ThumbsUp className="w-5 h-5 text-stone-800 fill-stone-800" />
                       <span className="text-stone-400 text-sm">好評率</span>
                     </div>
                     <span className="text-xs text-stone-400">{total} 筆評價</span>
