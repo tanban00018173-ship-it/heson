@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
 import { MessageCircle, Users, Building2 } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import ClientChat from '../team/ClientChat';
 import VendorJoin from '../team/VendorJoin';
-import VendorChat from '../team/VendorChat';
+import VendorHome from '../team/VendorHome';
 
 export default function TeamTab({ user }) {
   const [tab, setTab] = useState('chat'); // 'chat' | 'vendor'
   const [selectedVendor, setSelectedVendor] = useState(null);
+  const qc = useQueryClient();
 
   // 已加入（approved）的廠商成員記錄
   const { data: approvedMembers = [] } = useQuery({
@@ -28,13 +29,29 @@ export default function TeamTab({ user }) {
     approvedMembers.some(m => m.vendor_id === v.id)
   );
 
-  // 進入廠商群聊
+  const leaveMutation = useMutation({
+    mutationFn: async (vendor) => {
+      const record = approvedMembers.find(m => m.vendor_id === vendor.id);
+      if (record) await base44.entities.VendorMember.delete(record.id);
+    },
+    onSuccess: () => {
+      setSelectedVendor(null);
+      qc.invalidateQueries(['my_approved_vendors']);
+    },
+  });
+
+  // 進入廠商頁面
   if (selectedVendor) {
     return (
-      <VendorChat
+      <VendorHome
         vendor={selectedVendor}
         user={user}
         onBack={() => setSelectedVendor(null)}
+        onLeave={() => {
+          if (window.confirm(`確定退出「${selectedVendor.name}」廠商群聊？`)) {
+            leaveMutation.mutate(selectedVendor);
+          }
+        }}
       />
     );
   }

@@ -1,15 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ArrowLeft, Send, Settings } from 'lucide-react';
+import { Send } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import VendorAdmin from './VendorAdmin';
 
-export default function VendorChat({ vendor, user, onBack }) {
+// embedded=true: 無 header，直接嵌入 VendorHome 的 tab 裡
+export default function VendorChat({ vendor, user, embedded = false, onBack }) {
   const [input, setInput] = useState('');
-  const [showAdmin, setShowAdmin] = useState(false);
   const bottomRef = useRef(null);
   const qc = useQueryClient();
-  const isAdmin = vendor.admin_id === user?.id;
 
   const { data: messages = [] } = useQuery({
     queryKey: ['vendor_messages', vendor.id],
@@ -34,33 +32,8 @@ export default function VendorChat({ vendor, user, onBack }) {
     },
   });
 
-  if (showAdmin) {
-    return (
-      <div className="flex-1 overflow-y-auto bg-white">
-        <div className="bg-black px-5 pt-8 pb-5 text-white flex items-center gap-3">
-          <button onClick={() => setShowAdmin(false)}><ArrowLeft className="w-5 h-5 text-white/60" /></button>
-          <span className="font-bold text-lg">{vendor.name} · 管理</span>
-        </div>
-        <VendorAdmin vendor={vendor} />
-      </div>
-    );
-  }
-
   return (
-    <div className="flex-1 flex flex-col bg-white overflow-hidden">
-      <div className="bg-black px-5 pt-8 pb-4 text-white flex items-center gap-3">
-        <button onClick={onBack}><ArrowLeft className="w-5 h-5 text-white/60" /></button>
-        <div className="flex-1">
-          <p className="font-bold">{vendor.name}</p>
-          <p className="text-white/40 text-xs">廠商群聊</p>
-        </div>
-        {isAdmin && (
-          <button onClick={() => setShowAdmin(true)}>
-            <Settings className="w-5 h-5 text-white/50" />
-          </button>
-        )}
-      </div>
-
+    <div className="flex-1 flex flex-col overflow-hidden">
       <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-stone-50">
         {messages.map(msg => {
           const isMe = msg.sender_id === user?.id;
