@@ -1,14 +1,10 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Search, Plus, ChevronDown, ChevronUp } from 'lucide-react';
+import { ArrowLeft, Search, ChevronDown, ChevronUp } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 export default function VendorJoin({ user, onBack, inline }) {
-  const [tab, setTab] = useState('join'); // 'join' | 'create'
   const [code, setCode] = useState('');
-  const [newName, setNewName] = useState('');
-  const [newCode, setNewCode] = useState('');
-  const [newDesc, setNewDesc] = useState('');
   const [msg, setMsg] = useState(null);
 
   // 申請成為廠商合作夥伴
@@ -49,37 +45,6 @@ export default function VendorJoin({ user, onBack, inline }) {
     onError: (e) => setMsg({ type: 'err', text: e.message }),
   });
 
-  const createMutation = useMutation({
-    mutationFn: async () => {
-      if (!newName.trim() || !newCode.trim()) throw new Error('請填寫廠商名稱與代碼');
-      const existing = await base44.entities.Vendor.filter({ code: newCode.trim() });
-      if (existing.length) throw new Error('此代碼已被使用，請換一個');
-      const vendor = await base44.entities.Vendor.create({
-        name: newName.trim(),
-        code: newCode.trim(),
-        description: newDesc.trim(),
-        admin_id: user.id,
-        admin_name: user.full_name || user.email,
-      });
-      // 創建者自動加入且已審核
-      await base44.entities.VendorMember.create({
-        vendor_id: vendor.id,
-        vendor_name: vendor.name,
-        user_id: user.id,
-        user_name: user.full_name || user.email,
-        status: 'approved',
-      });
-      return vendor.name;
-    },
-    onSuccess: (name) => {
-      setMsg({ type: 'ok', text: `廠商「${name}」建立成功！` });
-      setNewName(''); setNewCode(''); setNewDesc('');
-      qc.invalidateQueries(['vendor_members_mine']);
-      qc.invalidateQueries(['my_approved_vendors']);
-      setTimeout(onBack, 1200);
-    },
-    onError: (e) => setMsg({ type: 'err', text: e.message }),
-  });
 
   return (
     <div className={inline ? '' : 'flex-1 overflow-y-auto bg-white'}>
@@ -90,16 +55,6 @@ export default function VendorJoin({ user, onBack, inline }) {
         </div>
       )}
 
-      {/* 切換 */}
-      <div className={`flex rounded-xl overflow-hidden border border-stone-200 ${inline ? '' : 'mx-4 mt-4'}`}>
-        {[{ key: 'join', label: '加入廠商' }, { key: 'create', label: '註冊廠商' }].map(t => (
-          <button key={t.key} onClick={() => { setTab(t.key); setMsg(null); }}
-            className={`flex-1 py-2.5 text-sm font-semibold transition-colors ${tab === t.key ? 'bg-black text-white' : 'bg-white text-stone-400'}`}>
-            {t.label}
-          </button>
-        ))}
-      </div>
-
       <div className={inline ? 'pt-3' : 'p-4'}>
         {msg && (
           <div className={`mb-4 px-4 py-3 rounded-xl text-sm ${msg.type === 'ok' ? 'bg-stone-50 text-stone-700 border border-stone-200' : 'bg-red-50 text-red-600 border border-red-100'}`}>
@@ -107,8 +62,7 @@ export default function VendorJoin({ user, onBack, inline }) {
           </div>
         )}
 
-        {tab === 'join' && (
-          <div className="space-y-4">
+        <div className="space-y-4">
             <p className="text-xs text-stone-400">輸入廠商管理員提供的代碼，申請加入廠商群聊</p>
             <div className="flex gap-2">
               <input
@@ -197,38 +151,7 @@ export default function VendorJoin({ user, onBack, inline }) {
                 ))}
               </div>
             )}
-          </div>
-        )}
-
-        {tab === 'create' && (
-          <div className="space-y-3">
-            <p className="text-xs text-stone-400">建立廠商群聊，系統會產生一組代碼供成員加入</p>
-            <input
-              value={newName}
-              onChange={e => setNewName(e.target.value)}
-              placeholder="廠商名稱（必填）"
-              className="w-full bg-stone-100 rounded-xl px-4 py-3 text-sm outline-none"
-            />
-            <input
-              value={newCode}
-              onChange={e => setNewCode(e.target.value.replace(/\s/g, ''))}
-              placeholder="自訂代碼（英數字，必填）"
-              className="w-full bg-stone-100 rounded-xl px-4 py-3 text-sm outline-none"
-            />
-            <input
-              value={newDesc}
-              onChange={e => setNewDesc(e.target.value)}
-              placeholder="廠商描述（選填）"
-              className="w-full bg-stone-100 rounded-xl px-4 py-3 text-sm outline-none"
-            />
-            <button
-              onClick={() => createMutation.mutate()}
-              disabled={!newName.trim() || !newCode.trim() || createMutation.isPending}
-              className="w-full py-3 bg-black text-white rounded-xl text-sm font-semibold disabled:opacity-40 flex items-center justify-center gap-2">
-              <Plus className="w-4 h-4" /> 建立廠商
-            </button>
-          </div>
-        )}
+        </div>
       </div>
     </div>
   );
