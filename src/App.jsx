@@ -25,6 +25,7 @@ import SheetSyncLog from './pages/SheetSyncLog'
 import ServiceCaseManager from './pages/ServiceCaseManager'
 import InternalSpreadsheet from './pages/InternalSpreadsheet'
 import PartTimeSchedule from './pages/PartTimeSchedule'
+import AdminShopProducts from './pages/AdminShopProducts'
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes, useNavigate, useLocation } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
@@ -131,6 +132,7 @@ const AuthenticatedApp = () => {
       <Route path="/ServiceCaseManager" element={<LayoutWrapper currentPageName="ServiceCaseManager"><ServiceCaseManager /></LayoutWrapper>} />
       <Route path="/InternalSpreadsheet" element={<InternalSpreadsheet />} />
       <Route path="/PartTimeSchedule" element={<PartTimeSchedule />} />
+      <Route path="/AdminShopProducts" element={<AdminShopProducts />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

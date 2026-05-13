@@ -5,7 +5,7 @@ import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Users, ClipboardList, TrendingUp, Clock, CheckCircle, Table } from "lucide-react";
+import { Calendar, Users, ClipboardList, TrendingUp, Clock, CheckCircle, Table, ShoppingBag } from "lucide-react";
 import { motion } from "framer-motion";
 import { format } from "date-fns";
 import { zhTW } from "date-fns/locale";
@@ -203,15 +203,26 @@ export default function AdminDashboard() {
                   <CardTitle className="text-lg">內部工具</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <Link to="/InternalSpreadsheet">
-                    <div className="flex items-center justify-between p-4 bg-amber-50 rounded-xl hover:bg-amber-100 transition-colors cursor-pointer">
-                      <div className="flex items-center gap-3">
-                        <Table className="w-5 h-5 text-amber-600" />
-                        <span className="text-stone-700">內部試算表 + AI 助理</span>
+                  <div className="space-y-3">
+                    <Link to="/InternalSpreadsheet">
+                      <div className="flex items-center justify-between p-4 bg-amber-50 rounded-xl hover:bg-amber-100 transition-colors cursor-pointer">
+                        <div className="flex items-center gap-3">
+                          <Table className="w-5 h-5 text-amber-600" />
+                          <span className="text-stone-700">內部試算表 + AI 助理</span>
+                        </div>
+                        <Badge className="bg-amber-100 text-amber-700">前往</Badge>
                       </div>
-                      <Badge className="bg-amber-100 text-amber-700">前往</Badge>
-                    </div>
-                  </Link>
+                    </Link>
+                    <Link to="/AdminShopProducts">
+                      <div className="flex items-center justify-between p-4 bg-stone-50 rounded-xl hover:bg-stone-100 transition-colors cursor-pointer mt-0">
+                        <div className="flex items-center gap-3">
+                          <ShoppingBag className="w-5 h-5 text-stone-600" />
+                          <span className="text-stone-700">赫頌商店管理</span>
+                        </div>
+                        <Badge className="bg-stone-100 text-stone-600">前往</Badge>
+                      </div>
+                    </Link>
+                  </div>
                 </CardContent>
               </Card>
             </motion.div>
