@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
+import { Link } from "react-router-dom";
 import Sidebar from "@/components/dashboard/Sidebar";
 import MobileNav from "@/components/dashboard/MobileNav";
 import { base44 } from "@/api/base44Client";
@@ -10,14 +12,16 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Save, User, Shield, CheckCircle } from "lucide-react";
+import { Loader2, Save, User, Shield, CheckCircle, X, Menu, ClipboardList, Zap, Home, LogOut } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
+import { createPageUrl } from "@/utils";
 
 const serviceAreas = ['台北市', '新北市', '宜蘭縣'];
 
 export default function CleanerProfile() {
   const [user, setUser] = useState(null);
+  const [menuOpen, setMenuOpen] = useState(false);
   const queryClient = useQueryClient();
   const [formData, setFormData] = useState({
     nickname: '',
@@ -108,6 +112,81 @@ export default function CleanerProfile() {
         <Sidebar userRole="cleaner" userName={profile?.nickname || user?.full_name} />
       </div>
       <MobileNav userRole="cleaner" userName={profile?.nickname || user?.full_name} />
+      
+      {/* 中台漢堡菜單按鈕 (mobile only) */}
+      <button
+        onClick={() => setMenuOpen(true)}
+        className="lg:hidden fixed top-4 right-4 z-30 w-10 h-10 bg-white rounded-full shadow-md flex items-center justify-center hover:shadow-lg transition-shadow"
+      >
+        <Menu className="w-5 h-5 text-stone-700" />
+      </button>
+
+      {/* 漢堡菜單 Portal */}
+      {menuOpen && createPortal(
+        <>
+          <div
+            style={{ position: 'fixed', inset: 0, zIndex: 99999, background: 'rgba(0,0,0,0.35)' }}
+            onClick={() => setMenuOpen(false)}
+          />
+          <div style={{
+            position: 'fixed', top: 0, right: 0, bottom: 0, zIndex: 100000,
+            width: '280px', background: '#fff',
+            boxShadow: '-4px 0 32px rgba(0,0,0,0.15)',
+            display: 'flex', flexDirection: 'column'
+          }}>
+            {/* 頭像區 */}
+            <div className="flex items-center gap-4 p-6 bg-black border-b border-stone-800">
+              <div className="w-14 h-14 rounded-full bg-stone-700 border-2 border-white/20 flex items-center justify-center flex-shrink-0">
+                <span className="text-xl font-bold text-white">{(profile?.nickname || user?.full_name)?.[0]?.toUpperCase() || 'U'}</span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-white truncate">{profile?.nickname || user?.full_name}</p>
+                <p className="text-xs text-white/40 mt-0.5 truncate">{user?.email}</p>
+              </div>
+              <button onClick={() => setMenuOpen(false)} className="text-white/40 hover:text-white flex-shrink-0">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* 選單項目 */}
+            <nav className="flex-1 p-4 space-y-1">
+              {[
+                { to: 'CleanerJobs', icon: Zap, label: '閃電任務地圖' },
+                { to: 'CleanerSchedule', icon: ClipboardList, label: '我的行程' },
+                { to: 'CleanerProfile', icon: User, label: '個人資料', active: true },
+              ].map(({ to, icon: Icon, label, active }) => (
+                <Link
+                  key={to}
+                  to={createPageUrl(to)}
+                  onClick={() => setMenuOpen(false)}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium transition-colors ${
+                    active ? 'bg-stone-100 text-black font-semibold' : 'text-stone-500 hover:bg-stone-50'
+                  }`}
+                >
+                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${active ? 'bg-black' : 'bg-stone-100'}`}>
+                    <Icon className={`w-4 h-4 ${active ? 'text-white' : 'text-stone-500'}`} />
+                  </div>
+                  {label}
+                </Link>
+              ))}
+            </nav>
+
+            {/* 登出 */}
+            <div className="p-4 border-t border-stone-100">
+              <button
+                onClick={() => base44.auth.logout()}
+                className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium text-stone-500 hover:bg-stone-50 w-full transition-colors"
+              >
+                <div className="w-8 h-8 rounded-xl bg-stone-100 flex items-center justify-center">
+                  <LogOut className="w-4 h-4 text-stone-500" />
+                </div>
+                登出
+              </button>
+            </div>
+          </div>
+        </>,
+        document.body
+      )}
       
       <main className="flex-1 pt-16 lg:pt-0">
         <div className="p-6 lg:p-8 max-w-2xl mx-auto">
