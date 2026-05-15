@@ -177,10 +177,10 @@ export default function VendorChatPage() {
         <div className={`flex flex-col border-r border-stone-100 bg-white ${selectedContact ? 'hidden md:flex md:w-72' : 'w-full md:w-72'}`}>
           {/* Header */}
           <div className="flex items-center gap-3 px-4 py-3.5 border-b border-stone-100">
-            <button onClick={() => navigate(-1)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-stone-100 transition-colors">
+            <button onClick={() => navigate('/')} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-stone-100 transition-colors">
               <ArrowLeft className="w-5 h-5 text-stone-600" />
             </button>
-            <p className="font-bold text-stone-900">訊息</p>
+            <p className="font-bold text-stone-900">聊聊</p>
           </div>
 
           {/* 搜尋 */}
