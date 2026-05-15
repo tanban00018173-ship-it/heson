@@ -1,18 +1,65 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import { User, Menu, LogOut } from "lucide-react";
+import { 
+  Home, 
+  Calendar, 
+  ClipboardList, 
+  User, 
+  Menu,
+  X,
+  LogOut,
+  Users,
+  FileText,
+  BarChart3,
+  UserCheck,
+  Table
+} from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-
+import AdminViewSwitcher from "@/components/AdminViewSwitcher";
 
 export default function MobileNav({ userRole = 'client', userName = '' }) {
   const [open, setOpen] = useState(false);
   const location = useLocation();
 
   const clientLinks = [
+    { name: "我的方案", path: "ClientDashboard", icon: Home },
+    { name: "我的預約", path: "MyBookings", icon: Calendar },
+    { name: "新增預約", path: "ClientBooking", icon: Calendar },
+    { name: "服務紀錄", path: "ClientHistory", icon: ClipboardList },
     { name: "個人資料", path: "ClientProfile", icon: User },
   ];
+
+  const cleanerLinks = [
+    { name: "接案列表", path: "CleanerJobs", icon: ClipboardList },
+    { name: "我的行程", path: "CleanerSchedule", icon: Calendar },
+    { name: "服務回報", path: "CleanerReport", icon: FileText },
+    { name: "個人資料", path: "CleanerProfile", icon: User },
+    { name: "前台（客戶視角）", path: "ClientDashboard", icon: Home },
+  ];
+
+  const adminLinks = [
+    { name: "總覽", path: "AdminDashboard", icon: BarChart3 },
+    { name: "派單管理", path: "AdminDispatch", icon: Calendar },
+    { name: "客戶管理", path: "AdminClients", icon: Users },
+    { name: "管理師管理", path: "AdminCleaners", icon: User },
+    { name: "員工出勤", path: "AdminAttendance", icon: UserCheck },
+    { name: "試算表", path: "InternalSpreadsheet", icon: Table },
+  ];
+
+  const getLinks = () => {
+    switch (userRole) {
+      case 'admin':
+        return adminLinks;
+      case 'cleaner':
+        return cleanerLinks;
+      default:
+        return clientLinks;
+    }
+  };
+
+  const links = getLinks();
 
   const handleLogout = async () => {
     await base44.auth.logout();
@@ -37,13 +84,14 @@ export default function MobileNav({ userRole = 'client', userName = '' }) {
           </SheetTrigger>
           <SheetContent side="right" className="w-72 p-0">
             <div className="p-6 border-b border-stone-100">
+              {userRole === 'admin' && <div className="mb-3"><AdminViewSwitcher /></div>}
               <p className="text-sm text-stone-500">
                 您好，{userName || '訪客'}
               </p>
             </div>
             <nav className="p-4">
               <ul className="space-y-1">
-                {clientLinks.map((link) => {
+                {links.map((link) => {
                   const isActive = location.pathname.includes(link.path);
                   return (
                     <li key={link.path}>
