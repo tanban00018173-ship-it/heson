@@ -77,8 +77,8 @@ export default function CleanerJobs() {
       {/* ── 非地圖 Tab 內容區 ── */}
       {activeTab !== 'map' && (
         <div className="flex-1 flex flex-col overflow-hidden" style={{ paddingBottom: '56px' }}>
+          {activeTab === 'home'    && <ProfileTab user={user} cleanerProfile={cleanerProfile} />}
           {activeTab === 'shop'    && <ShopTab user={user} />}
-          {activeTab === 'skills'  && <SkillsTab />}
           {activeTab === 'team'    && <TeamTab user={user} />}
           {activeTab === 'profile' && <ProfileTab user={user} cleanerProfile={cleanerProfile} />}
         </div>

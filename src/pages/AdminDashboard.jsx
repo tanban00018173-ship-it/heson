@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, Users, ClipboardList, TrendingUp, Clock, CheckCircle, Table, ShoppingBag } from "lucide-react";
+import BottomNav from "@/components/shared/BottomNav";
 import { motion } from "framer-motion";
 import { format } from "date-fns";
 import { zhTW } from "date-fns/locale";
@@ -87,7 +88,8 @@ export default function AdminDashboard() {
       </div>
       <MobileNav userRole="admin" userName={user?.full_name} />
       
-      <main className="flex-1 pt-16 lg:pt-0">
+      <BottomNav role="admin" />
+      <main className="flex-1 pt-16 lg:pt-0 pb-20 lg:pb-0">
         <div className="p-6 lg:p-8">
           {/* Header */}
           <div className="mb-8">
