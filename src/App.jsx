@@ -29,6 +29,7 @@ import AdminShopProducts from './pages/AdminShopProducts'
 import FlashTaskPost from './pages/FlashTaskPost'
 import AdminUsers from './pages/AdminUsers'
 import ClientShop from './pages/ClientShop'
+import ClientProfileEdit from './pages/ClientProfileEdit'
 import VendorChatPage from './pages/VendorChatPage'
 import { CartProvider } from './lib/CartContext'
 import React from 'react';
@@ -141,6 +142,7 @@ const AuthenticatedApp = () => {
       <Route path="/FlashTaskPost" element={<FlashTaskPost />} />
       <Route path="/AdminUsers" element={<LayoutWrapper currentPageName="AdminUsers"><AdminUsers /></LayoutWrapper>} />
       <Route path="/ClientShop" element={<ClientShop />} />
+      <Route path="/ClientProfileEdit" element={<LayoutWrapper currentPageName="ClientProfileEdit"><ClientProfileEdit /></LayoutWrapper>} />
       <Route path="/VendorChatPage" element={<VendorChatPage />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
