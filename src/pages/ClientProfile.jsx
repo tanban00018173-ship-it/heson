@@ -5,15 +5,16 @@ import ClientBottomNav from "@/components/dashboard/ClientBottomNav";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, Save, Home, Phone, MapPin, Users, PawPrint, LogOut } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Loader2, Save, Phone, MapPin, Users, PawPrint, LogOut, Edit2, X, Check } from "lucide-react";
 import { toast } from "sonner";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function ClientProfile() {
   const [user, setUser] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
   const queryClient = useQueryClient();
   const [formData, setFormData] = useState({
     phone: '',
@@ -25,6 +26,7 @@ export default function ClientProfile() {
     subscription_plan: '無',
     remaining_visits: 0,
   });
+  const [originalData, setOriginalData] = useState(null);
 
   useEffect(() => {
     const loadUser = async () => {
@@ -46,7 +48,7 @@ export default function ClientProfile() {
   useEffect(() => {
     if (clientProfile?.[0]) {
       const p = clientProfile[0];
-      setFormData({
+      const data = {
         phone: p.phone || '',
         address: p.address || '',
         housing_type: p.housing_type || '',
@@ -55,9 +57,18 @@ export default function ClientProfile() {
         has_pets: p.has_pets || false,
         subscription_plan: p.subscription_plan || '無',
         remaining_visits: p.remaining_visits || 0,
-      });
+      };
+      setFormData(data);
+      setOriginalData(data);
     }
   }, [clientProfile]);
+
+  const handleEditToggle = () => {
+    if (isEditing) {
+      setFormData(originalData);
+    }
+    setIsEditing(!isEditing);
+  };
 
   const saveMutation = useMutation({
     mutationFn: async (data) => {
@@ -68,6 +79,8 @@ export default function ClientProfile() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['clientProfile'] });
       toast.success("資料已更新");
+      setIsEditing(false);
+      setOriginalData(formData);
     },
   });
 
@@ -96,55 +109,49 @@ export default function ClientProfile() {
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="mb-6">
             <div className="bg-[#131b2e] rounded-3xl p-8 relative overflow-hidden">
               <div className="absolute -top-8 -right-8 w-28 h-28 bg-white/10 rounded-full blur-3xl" />
-              <div className="flex items-center gap-5">
-                <div className="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center flex-shrink-0 border border-white/10">
-                  <span className="text-white text-2xl font-headline font-bold">
-                    {user?.full_name?.[0] || 'U'}
-                  </span>
-                </div>
-                <div>
-                  <h2 className="text-white font-headline font-extrabold text-xl">{user?.full_name || '訪客'}</h2>
-                  <p className="text-[#7c839b] text-sm mt-0.5">{user?.email}</p>
-                  {clientProfile?.[0]?.subscription_plan && (
-                    <span className="inline-block mt-2 bg-white/10 text-[#bec6e0] text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full">
-                      {clientProfile[0].subscription_plan}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-5">
+                  <div className="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center flex-shrink-0 border border-white/10">
+                    <span className="text-white text-2xl font-headline font-bold">
+                      {user?.full_name?.[0] || 'U'}
                     </span>
-                  )}
+                  </div>
+                  <div>
+                    <h2 className="text-white font-headline font-extrabold text-xl">{user?.full_name || '訪客'}</h2>
+                    <p className="text-[#7c839b] text-sm mt-0.5">{user?.email}</p>
+                    {clientProfile?.[0]?.subscription_plan && (
+                      <span className="inline-block mt-2 bg-white/10 text-[#bec6e0] text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full">
+                        {clientProfile[0].subscription_plan}
+                      </span>
+                    )}
+                  </div>
                 </div>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={handleEditToggle}
+                  className="bg-white/10 border-white/20 hover:bg-white/20 text-white"
+                >
+                  {isEditing ? <X className="w-5 h-5" /> : <Edit2 className="w-4 h-4" />}
+                </Button>
               </div>
             </div>
           </motion.div>
 
-          {/* Plan Card */}
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }} className="mb-6">
-            <div className="bg-white rounded-3xl border border-[#e8eef6] p-6">
-              <p className="text-xs font-semibold tracking-widest uppercase text-stone-400 mb-4">我的方案</p>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="p-4 bg-[#eef4fc] rounded-2xl">
-                  <p className="text-xs text-stone-400 font-semibold uppercase tracking-wide mb-1">目前方案</p>
-                  <p className="font-headline font-bold text-stone-900 text-base">{clientProfile?.[0]?.subscription_plan || '無'}</p>
-                </div>
-                <div className="p-4 bg-[#eef4fc] rounded-2xl">
-                  <p className="text-xs text-stone-400 font-semibold uppercase tracking-wide mb-1">剩餘次數</p>
-                  <p className="font-headline font-bold text-stone-900 text-base">{clientProfile?.[0]?.remaining_visits ?? 0} 次</p>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Form */}
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-            <div className="bg-white rounded-3xl border border-[#e8eef6] p-6 mb-5">
-              <p className="text-xs font-semibold tracking-widest uppercase text-stone-400 mb-5">帳戶資訊</p>
-              <div className="space-y-4">
-                {/* Phone */}
-                <div className="flex items-center justify-between p-4 bg-[#eef4fc] rounded-2xl">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center">
-                      <Phone className="w-4 h-4 text-stone-700" />
-                    </div>
-                    <div>
-                      <p className="text-xs text-stone-400 font-semibold uppercase tracking-wide">聯絡電話</p>
+          {/* Preview Mode */}
+          <AnimatePresence>
+            {isEditing ? (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ delay: 0.1 }}
+              >
+                <div className="bg-white rounded-3xl border border-[#e8eef6] p-6 mb-5">
+                  <p className="text-xs font-semibold tracking-widest uppercase text-stone-400 mb-5">帳戶資訊</p>
+                  <div className="space-y-3">
+                    <div className="p-4 bg-[#eef4fc] rounded-2xl">
+                      <p className="text-xs text-stone-400 font-semibold uppercase tracking-wide mb-2">聯絡電話</p>
                       <Input
                         value={formData.phone}
                         onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
@@ -152,17 +159,8 @@ export default function ClientProfile() {
                         className="border-0 bg-transparent p-0 h-auto font-semibold text-stone-900 placeholder:text-stone-300 focus-visible:ring-0 text-sm"
                       />
                     </div>
-                  </div>
-                </div>
-
-                {/* Address */}
-                <div className="flex items-center justify-between p-4 bg-[#eef4fc] rounded-2xl">
-                  <div className="flex items-center gap-3 flex-1">
-                    <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center flex-shrink-0">
-                      <MapPin className="w-4 h-4 text-stone-700" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-xs text-stone-400 font-semibold uppercase tracking-wide">服務地址</p>
+                    <div className="p-4 bg-[#eef4fc] rounded-2xl">
+                      <p className="text-xs text-stone-400 font-semibold uppercase tracking-wide mb-2">服務地址</p>
                       <Input
                         value={formData.address}
                         onChange={(e) => setFormData({ ...formData, address: e.target.value })}
@@ -172,123 +170,155 @@ export default function ClientProfile() {
                     </div>
                   </div>
                 </div>
-              </div>
-            </div>
 
-            <div className="bg-white rounded-3xl border border-[#e8eef6] p-6 mb-5">
-              <p className="text-xs font-semibold tracking-widest uppercase text-stone-400 mb-5">居家資訊</p>
-              <div className="space-y-4">
-                {/* Housing + Sqft */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="p-4 bg-[#eef4fc] rounded-2xl">
-                    <p className="text-xs text-stone-400 font-semibold uppercase tracking-wide mb-2">房屋類型</p>
-                    <Select value={formData.housing_type} onValueChange={(v) => setFormData({ ...formData, housing_type: v })}>
-                      <SelectTrigger className="border-0 bg-transparent p-0 h-auto font-semibold text-stone-900 text-sm focus:ring-0">
-                        <SelectValue placeholder="請選擇" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="透天">透天厝</SelectItem>
-                        <SelectItem value="公寓">公寓</SelectItem>
-                        <SelectItem value="大樓">大樓</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="p-4 bg-[#eef4fc] rounded-2xl">
-                    <p className="text-xs text-stone-400 font-semibold uppercase tracking-wide mb-1">坪數</p>
-                    <Input
-                      type="number"
-                      value={formData.square_footage}
-                      onChange={(e) => setFormData({ ...formData, square_footage: e.target.value })}
-                      placeholder="例：30"
-                      className="border-0 bg-transparent p-0 h-auto font-semibold text-stone-900 placeholder:text-stone-300 focus-visible:ring-0 text-sm"
-                    />
-                  </div>
-                </div>
-
-                {/* Family */}
-                <div className="flex items-center gap-3 p-4 bg-[#eef4fc] rounded-2xl">
-                  <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center flex-shrink-0">
-                    <Users className="w-4 h-4 text-stone-700" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-xs text-stone-400 font-semibold uppercase tracking-wide">家庭成員</p>
-                    <Input
-                      value={formData.family_members}
-                      onChange={(e) => setFormData({ ...formData, family_members: e.target.value })}
-                      placeholder="例：2大1小"
-                      className="border-0 bg-transparent p-0 h-auto font-semibold text-stone-900 placeholder:text-stone-300 focus-visible:ring-0 text-sm"
-                    />
-                  </div>
-                </div>
-
-                {/* Pets */}
-                <div className="flex items-center justify-between p-4 bg-[#eef4fc] rounded-2xl">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center">
-                      <PawPrint className="w-4 h-4 text-stone-700" />
+                <div className="bg-white rounded-3xl border border-[#e8eef6] p-6 mb-5">
+                  <p className="text-xs font-semibold tracking-widest uppercase text-stone-400 mb-5">居家資訊</p>
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="p-4 bg-[#eef4fc] rounded-2xl">
+                        <p className="text-xs text-stone-400 font-semibold uppercase tracking-wide mb-2">房屋類型</p>
+                        <Select value={formData.housing_type} onValueChange={(v) => setFormData({ ...formData, housing_type: v })}>
+                          <SelectTrigger className="border-0 bg-transparent p-0 h-auto font-semibold text-stone-900 text-sm focus:ring-0">
+                            <SelectValue placeholder="請選擇" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="透天">透天厝</SelectItem>
+                            <SelectItem value="公寓">公寓</SelectItem>
+                            <SelectItem value="大樓">大樓</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="p-4 bg-[#eef4fc] rounded-2xl">
+                        <p className="text-xs text-stone-400 font-semibold uppercase tracking-wide mb-2">坪數</p>
+                        <Input
+                          type="number"
+                          value={formData.square_footage}
+                          onChange={(e) => setFormData({ ...formData, square_footage: e.target.value })}
+                          placeholder="例：30"
+                          className="border-0 bg-transparent p-0 h-auto font-semibold text-stone-900 placeholder:text-stone-300 focus-visible:ring-0 text-sm"
+                        />
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-semibold text-stone-900 text-sm">是否有寵物</p>
-                      <p className="text-xs text-stone-400">管理師均接受寵物友善訓練</p>
+                    <div className="p-4 bg-[#eef4fc] rounded-2xl">
+                      <p className="text-xs text-stone-400 font-semibold uppercase tracking-wide mb-2">家庭成員</p>
+                      <Input
+                        value={formData.family_members}
+                        onChange={(e) => setFormData({ ...formData, family_members: e.target.value })}
+                        placeholder="例：2 大 1 小"
+                        className="border-0 bg-transparent p-0 h-auto font-semibold text-stone-900 placeholder:text-stone-300 focus-visible:ring-0 text-sm"
+                      />
+                    </div>
+                    <div className="p-4 bg-[#eef4fc] rounded-2xl">
+                      <p className="text-xs text-stone-400 font-semibold uppercase tracking-wide mb-2">是否有寵物</p>
+                      <Switch
+                        checked={formData.has_pets}
+                        onCheckedChange={(checked) => setFormData({ ...formData, has_pets: checked })}
+                        className="data-[state=checked]:bg-amber-500"
+                      />
                     </div>
                   </div>
-                  <Switch
-                    checked={formData.has_pets}
-                    onCheckedChange={(checked) => setFormData({ ...formData, has_pets: checked })}
-                  />
                 </div>
-              </div>
-            </div>
 
-            <div className="bg-white rounded-3xl border border-[#e8eef6] p-6">
-              <p className="text-xs font-semibold tracking-widest uppercase text-stone-400 mb-5">訂閱資訊</p>
-              <div className="grid grid-cols-2 gap-3">
-                {/* Subscription Plan */}
-                <div className="p-4 bg-[#eef4fc] rounded-2xl">
-                  <p className="text-xs text-stone-400 font-semibold uppercase tracking-wide mb-2">目前方案</p>
-                  <Select value={formData.subscription_plan} onValueChange={(v) => setFormData({ ...formData, subscription_plan: v })} disabled>
-                    <SelectTrigger className="border-0 bg-transparent p-0 h-auto font-semibold text-stone-900 text-sm focus:ring-0">
-                      <SelectValue placeholder="請選擇" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="基礎月護-4次">基礎月護-4次</SelectItem>
-                      <SelectItem value="進階月安-8次">進階月安-8次</SelectItem>
-                      <SelectItem value="尊榮月恆-12次">尊榮月恆-12次</SelectItem>
-                      <SelectItem value="單次清潔">單次清潔</SelectItem>
-                      <SelectItem value="無">無</SelectItem>
-                    </SelectContent>
-                  </Select>
+                <div className="flex gap-3">
+                  <Button
+                    onClick={() => {
+                      saveMutation.mutate(formData);
+                    }}
+                    disabled={saveMutation.isPending}
+                    className="flex-1 bg-[#131b2e] hover:bg-[#1a2438] text-white font-headline font-bold py-6 rounded-2xl disabled:opacity-50"
+                  >
+                    {saveMutation.isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Check className="w-5 h-5 mr-2" />儲存變更</>}
+                  </Button>
+                  <Button
+                    onClick={handleEditToggle}
+                    variant="outline"
+                    className="flex-1 border-2 border-stone-200 text-stone-600 font-headline font-bold py-6 rounded-2xl hover:bg-stone-50"
+                  >
+                    <X className="w-5 h-5 mr-2" />取消
+                  </Button>
                 </div>
-                {/* Remaining Visits */}
-                <div className="p-4 bg-[#eef4fc] rounded-2xl">
-                  <p className="text-xs text-stone-400 font-semibold uppercase tracking-wide mb-1">剩餘次數</p>
-                  <Input
-                    type="number"
-                    value={formData.remaining_visits}
-                    disabled
-                    className="border-0 bg-transparent p-0 h-auto font-semibold text-stone-900 placeholder:text-stone-300 focus-visible:ring-0 text-sm disabled:opacity-100"
-                  />
+              </motion.div>
+            ) : (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ delay: 0.1 }}
+              >
+                <div className="bg-white rounded-3xl border border-[#e8eef6] p-6 mb-5">
+                  <p className="text-xs font-semibold tracking-widest uppercase text-stone-400 mb-5">帳戶資訊</p>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between p-4 bg-[#eef4fc] rounded-2xl">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center">
+                          <Phone className="w-4 h-4 text-stone-700" />
+                        </div>
+                        <div>
+                          <p className="text-xs text-stone-400 font-semibold uppercase tracking-wide">聯絡電話</p>
+                          <p className="font-semibold text-stone-900 text-sm">{formData.phone || '未設定'}</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between p-4 bg-[#eef4fc] rounded-2xl">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center">
+                          <MapPin className="w-4 h-4 text-stone-700" />
+                        </div>
+                        <div>
+                          <p className="text-xs text-stone-400 font-semibold uppercase tracking-wide">服務地址</p>
+                          <p className="font-semibold text-stone-900 text-sm">{formData.address || '未設定'}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
 
-            {/* Save */}
-            <button
-              onClick={() => saveMutation.mutate(formData)}
-              disabled={saveMutation.isPending}
-              className="w-full bg-[#131b2e] text-white font-headline font-bold py-4 rounded-2xl hover:opacity-90 active:scale-95 transition-all duration-200 flex items-center justify-center gap-2 mb-4 disabled:opacity-50"
-            >
-              {saveMutation.isPending ? <><Loader2 className="w-5 h-5 animate-spin" />儲存中...</> : <><Save className="w-5 h-5" />儲存資料</>}
-            </button>
+                <div className="bg-white rounded-3xl border border-[#e8eef6] p-6 mb-5">
+                  <p className="text-xs font-semibold tracking-widest uppercase text-stone-400 mb-5">居家資訊</p>
+                  <div className="grid grid-cols-2 gap-3 mb-3">
+                    <div className="p-4 bg-[#eef4fc] rounded-2xl">
+                      <p className="text-xs text-stone-400 font-semibold uppercase tracking-wide mb-1">房屋類型</p>
+                      <p className="font-semibold text-stone-900 text-sm">{formData.housing_type || '未設定'}</p>
+                    </div>
+                    <div className="p-4 bg-[#eef4fc] rounded-2xl">
+                      <p className="text-xs text-stone-400 font-semibold uppercase tracking-wide mb-1">坪數</p>
+                      <p className="font-semibold text-stone-900 text-sm">{formData.square_footage ? `${formData.square_footage} 坪` : '未設定'}</p>
+                    </div>
+                  </div>
+                  <div className="p-4 bg-[#eef4fc] rounded-2xl mb-3">
+                    <p className="text-xs text-stone-400 font-semibold uppercase tracking-wide mb-1">家庭成員</p>
+                    <p className="font-semibold text-stone-900 text-sm">{formData.family_members || '未設定'}</p>
+                  </div>
+                  <div className="p-4 bg-[#eef4fc] rounded-2xl">
+                    <p className="text-xs text-stone-400 font-semibold uppercase tracking-wide mb-1">寵物</p>
+                    <p className="font-semibold text-stone-900 text-sm">{formData.has_pets ? '有寵物 ✓' : '無寵物'}</p>
+                  </div>
+                </div>
 
-            {/* Logout */}
-            <button
-              onClick={() => base44.auth.logout()}
-              className="w-full flex items-center justify-center gap-2 p-4 rounded-2xl bg-[#eef4fc] hover:bg-red-50 hover:text-red-600 transition-colors duration-300 font-semibold text-stone-500 text-sm"
-            >
-              <LogOut className="w-4 h-4" />登出
-            </button>
-          </motion.div>
+                <div className="bg-white rounded-3xl border border-[#e8eef6] p-6 mb-5">
+                  <p className="text-xs font-semibold tracking-widest uppercase text-stone-400 mb-5">訂閱資訊</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="p-4 bg-[#eef4fc] rounded-2xl">
+                      <p className="text-xs text-stone-400 font-semibold uppercase tracking-wide mb-1">目前方案</p>
+                      <p className="font-headline font-bold text-stone-900 text-base">{clientProfile?.[0]?.subscription_plan || '無'}</p>
+                    </div>
+                    <div className="p-4 bg-[#eef4fc] rounded-2xl">
+                      <p className="text-xs text-stone-400 font-semibold uppercase tracking-wide mb-1">剩餘次數</p>
+                      <p className="font-headline font-bold text-stone-900 text-base">{clientProfile?.[0]?.remaining_visits ?? 0} 次</p>
+                    </div>
+                  </div>
+                </div>
+
+                <Button
+                  onClick={() => base44.auth.logout()}
+                  variant="outline"
+                  className="w-full border-2 border-stone-200 text-stone-500 font-headline font-bold py-6 rounded-2xl hover:bg-red-50 hover:text-red-600 hover:border-red-200"
+                >
+                  <LogOut className="w-5 h-5 mr-2" />登出
+                </Button>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </main>
       <ClientBottomNav />
