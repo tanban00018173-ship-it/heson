@@ -5,7 +5,6 @@ import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Calendar, Clock, MapPin, Plus, Sparkles, ArrowRight, ClipboardList, User } from "lucide-react";
-import BottomNav from "@/components/shared/BottomNav";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { motion } from "framer-motion";
@@ -66,8 +65,7 @@ export default function ClientDashboard() {
       </div>
       <MobileNav userRole="client" userName={user?.full_name} />
 
-      <BottomNav role="client" />
-      <main className="flex-1 pt-16 lg:pt-0 pb-24 lg:pb-8">
+      <main className="flex-1 pt-16 lg:pt-0 pb-8">
         <div className="p-6 lg:p-8 max-w-5xl mx-auto">
           {/* Header */}
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="mb-8">
