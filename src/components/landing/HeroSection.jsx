@@ -1,147 +1,176 @@
-import React, { useState, useEffect } from 'react';
-import { Button } from "@/components/ui/button";
-import { ArrowRight } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
-import { createPageUrl } from "@/utils";
-import { motion, AnimatePresence } from "framer-motion";
-import { requireAuth } from "@/utils/requireAuth";
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { Zap, Shield, CreditCard, ArrowRight, ChevronRight } from 'lucide-react';
+import { requireAuth } from '@/utils/requireAuth';
 
-const slides = [
-  {
-    bg: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1600&q=85",
-    badge: "限時優惠",
-    title: "新會員首次預約",
-    highlight: "享 85 折",
-    sub: "宜蘭地區・家事清潔全系列",
-    price: "$599 起",
-  },
-  {
-    bg: "https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=1600&q=85",
-    badge: "限時優惠",
-    title: "新會員首次預約",
-    highlight: "享 85 折",
-    sub: "全台本島・家事清潔全系列",
-    price: "$599 起",
-  },
-  {
-    bg: "https://images.unsplash.com/photo-1527515545081-5db817172677?w=1600&q=85",
-    badge: "限時優惠",
-    title: "新會員首次預約",
-    highlight: "享 85 折",
-    sub: "商業空間・家事清潔全系列",
-    price: "$599 起",
-  },
+const FLASH_TASKS = [
+  { id: 'dishes',   emoji: '🍽️', label: '洗碗',   base: 200 },
+  { id: 'trash',    emoji: '🗑️', label: '倒垃圾', base: 150 },
+  { id: 'laundry',  emoji: '👕', label: '洗曬衣', base: 250 },
+  { id: 'moving',   emoji: '📦', label: '微清運', base: 350 },
 ];
 
-const quickLinks = [
-  { name: "居家清潔", emoji: "🏠" },
-  { name: "家電清洗", emoji: "❄️" },
-  { name: "整理收納", emoji: "📦" },
-  { name: "商業清潔", emoji: "🏢" },
-  { name: "布面清洗", emoji: "🛋️" },
-  { name: "裝潢後清潔", emoji: "🔨" },
+const FEATURES = [
+  { icon: '⚡️', title: '極速媒合', desc: '方圓 3 公里內人員即刻救援，10 分鐘內確認接單。' },
+  { icon: '🛡️', title: '資金擔保', desc: '任務完工確認無誤，平台才會撥款，品質有保障。' },
+  { icon: '💼', title: '訂閱/單次隨選', desc: '從百元微任務到專業大掃除，彈性滿足所有日常。' },
 ];
 
 export default function HeroSection() {
-  const [current, setCurrent] = useState(0);
   const navigate = useNavigate();
+  const [selected, setSelected] = useState(null);
+  const [price, setPrice] = useState(200);
 
-  const handleBooking = async () => {
-    const ok = await requireAuth(navigate, 'BookingForm');
-    if (ok) navigate('/BookingForm');
+  const handleSelect = (task) => {
+    setSelected(task.id);
+    setPrice(task.base);
   };
 
-  useEffect(() => {
-    const t = setInterval(() => setCurrent(p => (p + 1) % slides.length), 5000);
-    return () => clearInterval(t);
-  }, []);
+  const handlePost = async () => {
+    const ok = await requireAuth(navigate, 'FlashTaskPost');
+    if (ok) navigate('/FlashTaskPost' + (selected ? `?task=${selected}&price=${price}` : ''));
+  };
 
-  const slide = slides[current];
+  const handleBooking = async () => {
+    const ok = await requireAuth(navigate, 'ClientBooking');
+    if (ok) navigate('/ClientBooking');
+  };
+
+  const currentTask = FLASH_TASKS.find(t => t.id === selected);
 
   return (
     <div>
-      {/* Hero */}
-      <section className="relative h-[85vh] min-h-[520px] overflow-hidden">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={current}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.8 }}
-            className="absolute inset-0"
-          >
-            <img src={slide.bg} alt="" className="w-full h-full object-cover" />
-            <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/30 to-transparent" />
+      {/* ── Hero 主視覺 ── */}
+      <section className="relative min-h-screen bg-[#0d0d0d] overflow-hidden flex flex-col">
+        {/* 背景光暈 */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-amber-500/10 rounded-full blur-[120px]" />
+          <div className="absolute top-1/2 left-1/4 w-[300px] h-[300px] bg-amber-400/5 rounded-full blur-[80px]" />
+        </div>
+
+        {/* 網格背景 */}
+        <div className="absolute inset-0 opacity-[0.04]"
+          style={{ backgroundImage: 'linear-gradient(#fff 1px,transparent 1px),linear-gradient(90deg,#fff 1px,transparent 1px)', backgroundSize: '60px 60px' }} />
+
+        <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-6 text-center py-24 pt-32">
+          {/* Badge */}
+          <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
+            className="inline-flex items-center gap-2 bg-amber-500/15 border border-amber-500/30 text-amber-400 text-xs font-semibold px-4 py-1.5 rounded-full mb-8 uppercase tracking-widest">
+            <Zap className="w-3.5 h-3.5" />
+            隨選家務平台 · 閃電媒合
           </motion.div>
-        </AnimatePresence>
 
-        {/* Content */}
-        <div className="relative z-10 h-full flex flex-col justify-center">
-          <div className="container mx-auto px-6 lg:px-12">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={current}
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.6 }}
-                className="max-w-2xl"
-              >
-                <span className="inline-block bg-amber-500 text-white text-xs font-medium px-3 py-1.5 rounded-full mb-5">
-                  {slide.badge}
-                </span>
-                <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white leading-tight">
-                  {slide.title}<br />
-                  <span className="text-amber-400">{slide.highlight}</span>
-                </h1>
-                <p className="text-white/80 text-lg mt-4 mb-2">{slide.sub}</p>
-                <p className="text-white text-2xl font-semibold mb-8">{slide.price}</p>
-                <div className="flex flex-wrap gap-3">
-                  <Button size="lg" onClick={handleBooking} className="bg-white text-stone-800 hover:bg-stone-100 rounded-full px-8 py-6 text-base font-medium shadow-xl">
-                    開始預約 <ArrowRight className="ml-2 w-5 h-5" />
-                  </Button>
-                  <a href="https://lin.ee/xKVxq7Y" target="_blank" rel="noopener noreferrer">
-                    <Button size="lg" variant="outline" className="border-white/80 bg-white/15 text-white hover:bg-white/25 rounded-full px-8 py-6 text-base font-medium">
-                      查看方案
-                    </Button>
-                  </a>
-                </div>
-              </motion.div>
-            </AnimatePresence>
-          </div>
-        </div>
+          {/* 大標題 */}
+          <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.1 }}
+            className="text-4xl md:text-6xl lg:text-7xl font-black text-white leading-[1.05] tracking-tight max-w-4xl mb-4">
+            赫頌 HESON
+            <br />
+            <span className="text-amber-400">你的隨選</span>
+            <br />
+            生活小幫手
+          </motion.h1>
 
-        {/* Slide Controls */}
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-3 z-10">
-          {slides.map((_, i) => (
-            <button key={i} onClick={() => setCurrent(i)}
-              className={`rounded-full transition-all duration-300 ${i === current ? 'w-8 h-2 bg-amber-400' : 'w-2 h-2 bg-white/50'}`}
-            />
-          ))}
-        </div>
+          {/* 副標題 */}
+          <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6, delay: 0.25 }}
+            className="text-stone-400 text-lg md:text-xl max-w-xl mb-10 leading-relaxed">
+            用叫車的速度解決家務。<br />
+            洗碗、倒垃圾、微清運，<span className="text-white font-semibold">NT$200 起</span>，閃電隨叫隨到。
+          </motion.p>
 
-        {/* Stats */}
-        <div className="absolute bottom-0 right-0 hidden md:flex gap-px z-10">
-          {[['58,000+', '媒合戶數'], ['56,000+', '真實評價'], ['679+', '認證人員']].map(([num, label]) => (
-            <div key={label} className="bg-black/40 backdrop-blur-sm px-6 py-4 text-center">
-              <p className="text-white text-xl font-bold">{num}</p>
-              <p className="text-white/70 text-xs mt-0.5">{label}</p>
+          {/* ── 閃電任務卡片 ── */}
+          <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.35 }}
+            className="w-full max-w-md bg-white/5 backdrop-blur-md border border-white/10 rounded-3xl p-6 mb-6">
+
+            <p className="text-xs font-semibold text-stone-400 uppercase tracking-widest mb-4 text-left">選擇任務類型</p>
+
+            {/* 任務 Grid */}
+            <div className="grid grid-cols-4 gap-2 mb-5">
+              {FLASH_TASKS.map(task => (
+                <button key={task.id} onClick={() => handleSelect(task)}
+                  className={`flex flex-col items-center gap-1.5 p-3 rounded-2xl border-2 transition-all ${
+                    selected === task.id
+                      ? 'border-amber-400 bg-amber-400/15'
+                      : 'border-white/10 bg-white/5 hover:border-white/20'
+                  }`}>
+                  <span className="text-2xl">{task.emoji}</span>
+                  <span className={`text-xs font-medium ${selected === task.id ? 'text-amber-300' : 'text-stone-400'}`}>{task.label}</span>
+                </button>
+              ))}
             </div>
-          ))}
+
+            {/* 價格調整 */}
+            {selected && (
+              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="mb-4">
+                <p className="text-xs text-stone-400 mb-2 text-left">任務金額（可加價提高媒合速度）</p>
+                <div className="flex items-center gap-3 bg-white/5 rounded-2xl p-3">
+                  <button onClick={() => setPrice(p => Math.max(currentTask.base, p - 50))}
+                    className="w-9 h-9 rounded-xl bg-white/10 text-white text-lg font-bold hover:bg-white/20 transition-colors flex items-center justify-center">−</button>
+                  <div className="flex-1 text-center">
+                    <span className="text-2xl font-black text-white">NT${price}</span>
+                  </div>
+                  <button onClick={() => setPrice(p => p + 50)}
+                    className="w-9 h-9 rounded-xl bg-amber-500 text-white text-lg font-bold hover:bg-amber-400 transition-colors flex items-center justify-center">+</button>
+                </div>
+                <p className="text-[10px] text-stone-500 mt-1.5 text-center">底價 NT${currentTask.base}，加價可加速媒合</p>
+              </motion.div>
+            )}
+
+            {/* CTA */}
+            <button onClick={handlePost} disabled={!selected}
+              className={`w-full py-4 rounded-2xl font-black text-base transition-all flex items-center justify-center gap-2 ${
+                selected
+                  ? 'bg-amber-500 text-black hover:bg-amber-400 shadow-[0_0_24px_rgba(245,158,11,0.4)]'
+                  : 'bg-white/10 text-stone-500 cursor-not-allowed'
+              }`}>
+              {selected ? (
+                <><Zap className="w-5 h-5" />確認 NT${price} · 尋找小幫手</>
+              ) : (
+                '請先選擇任務類型'
+              )}
+            </button>
+          </motion.div>
+
+          {/* 次要 CTA */}
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }}
+            className="flex flex-wrap gap-3 justify-center">
+            <button onClick={handleBooking}
+              className="flex items-center gap-2 bg-white/10 hover:bg-white/15 text-white border border-white/20 rounded-full px-6 py-2.5 text-sm font-medium transition-colors">
+              預約專業清潔 <ChevronRight className="w-4 h-4" />
+            </button>
+            <a href="https://lin.ee/xKVxq7Y" target="_blank" rel="noopener noreferrer"
+              className="flex items-center gap-2 text-stone-400 hover:text-white rounded-full px-6 py-2.5 text-sm font-medium transition-colors">
+              查看訂閱方案 <ArrowRight className="w-4 h-4" />
+            </a>
+          </motion.div>
+
+          {/* 統計數字 */}
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.7 }}
+            className="flex items-center gap-8 mt-16">
+            {[['58,000+', '媒合戶數'], ['56,000+', '真實評價'], ['679+', '認證人員']].map(([num, label]) => (
+              <div key={label} className="text-center">
+                <p className="text-xl md:text-2xl font-black text-white">{num}</p>
+                <p className="text-xs text-stone-500 mt-0.5">{label}</p>
+              </div>
+            ))}
+          </motion.div>
         </div>
       </section>
 
-      {/* Quick Service Links */}
-      <section className="bg-white border-b border-stone-100 shadow-sm">
-        <div className="container mx-auto px-6 lg:px-12">
-          <div className="flex items-center justify-around py-4 overflow-x-auto gap-2">
-            {quickLinks.map((q) => (
-              <button key={q.name} onClick={handleBooking}
-                className="flex flex-col items-center gap-1.5 px-4 py-2 rounded-xl hover:bg-amber-50 transition-colors min-w-[72px] text-center group">
-                <span className="text-2xl">{q.emoji}</span>
-                <span className="text-xs text-stone-600 group-hover:text-amber-700 font-medium whitespace-nowrap">{q.name}</span>
-              </button>
+      {/* ── Features Section ── */}
+      <section className="bg-[#111] py-20 px-6">
+        <div className="max-w-4xl mx-auto">
+          <p className="text-xs font-semibold text-amber-500 uppercase tracking-widest text-center mb-4">為什麼選擇赫頌</p>
+          <h2 className="text-3xl md:text-4xl font-black text-white text-center mb-12">平台三大保障</h2>
+          <div className="grid md:grid-cols-3 gap-6">
+            {FEATURES.map((f, i) => (
+              <motion.div key={f.title} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.1 }} viewport={{ once: true }}
+                className="bg-white/5 border border-white/10 rounded-3xl p-6 hover:border-amber-500/30 transition-colors">
+                <div className="text-4xl mb-4">{f.icon}</div>
+                <h3 className="text-lg font-bold text-white mb-2">{f.title}</h3>
+                <p className="text-stone-400 text-sm leading-relaxed">{f.desc}</p>
+              </motion.div>
             ))}
           </div>
         </div>

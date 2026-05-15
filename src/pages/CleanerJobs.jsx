@@ -14,6 +14,8 @@ import ShopTab from "@/components/cleaner/tabs/ShopTab";
 import SkillsTab from "@/components/cleaner/tabs/SkillsTab";
 import TeamTab from "@/components/cleaner/tabs/TeamTab";
 import ProfileTab from "@/components/cleaner/tabs/ProfileTab";
+import OnlineToggle from "@/components/cleaner/OnlineToggle";
+import TaskExecutionFlow from "@/components/cleaner/TaskExecutionFlow";
 
 export default function CleanerJobs() {
   const [user, setUser] = useState(null);
@@ -21,6 +23,7 @@ export default function CleanerJobs() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState(null);
   const [activeTab, setActiveTab] = useState('map');
+  const [executingTask, setExecutingTask] = useState(null);
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -50,9 +53,10 @@ export default function CleanerJobs() {
         confirmed_by_cleaner: true,
       });
     },
-    onSuccess: () => {
+    onSuccess: (_, task) => {
       queryClient.invalidateQueries({ queryKey: ['flashTasks'] });
-      toast.success('🎉 已接受閃電任務！正在開啟導航...');
+      toast.success('🎉 已接受閃電任務！');
+      setExecutingTask(task);
     },
   });
 
@@ -90,6 +94,20 @@ export default function CleanerJobs() {
           onSelectTask={setSelectedTask}
         />
 
+        {/* ── 左上角 上線/休息 Toggle ── */}
+        <div className="absolute top-4 left-4 z-30 flex items-center gap-2">
+          <OnlineToggle cleanerProfile={cleanerProfile} />
+        </div>
+
+        {/* ── 任務數量（移到 toggle 右側，隱藏在小螢幕） ── */}
+        {flashTasks.length > 0 && (
+          <div className="absolute top-14 left-4 z-30 flex items-center gap-2 bg-white/90 backdrop-blur-sm rounded-2xl px-3.5 py-2 shadow-md">
+            <Zap className="w-4 h-4 text-amber-500" />
+            <span className="text-sm font-semibold text-stone-800">{flashTasks.length} 個閃電任務</span>
+            <span className="w-2 h-2 bg-amber-400 rounded-full animate-pulse" />
+          </div>
+        )}
+
         {/* ── 右上角浮動控制區 ── */}
         <div className="absolute top-4 right-4 z-30 flex flex-col items-center gap-3">
           {/* 頭像選單按鈕 */}
@@ -113,14 +131,7 @@ export default function CleanerJobs() {
           </button>
         </div>
 
-        {/* ── 左上角任務數量 ── */}
-        <div className="absolute top-4 left-4 z-30 flex items-center gap-2 bg-white/90 backdrop-blur-sm rounded-2xl px-3.5 py-2 shadow-md">
-          <Zap className="w-4 h-4 text-amber-500" />
-          <span className="text-sm font-semibold text-stone-800">
-            {flashTasks.length > 0 ? `${flashTasks.length} 個閃電任務` : '暫無任務'}
-          </span>
-          {flashTasks.length > 0 && <span className="w-2 h-2 bg-amber-400 rounded-full animate-pulse" />}
-        </div>
+        {/* 舊任務數量區塊已整合至 OnlineToggle 下方 */}
       </div>
 
       {/* ── 底部訂單資訊面板（fixed 抽屜，僅地圖 tab） ── */}
@@ -136,6 +147,18 @@ export default function CleanerJobs() {
 
       {/* ── 底部 Tab Bar ── */}
       <BottomTabBar activeTab={activeTab} onTabChange={setActiveTab} />
+
+      {/* ── 任務執行流程 Modal ── */}
+      {executingTask && (
+        <TaskExecutionFlow
+          booking={executingTask}
+          onClose={() => setExecutingTask(null)}
+          onComplete={() => {
+            setExecutingTask(null);
+            queryClient.invalidateQueries({ queryKey: ['flashTasks'] });
+          }}
+        />
+      )}
 
       {/* ── 右側抽屜選單（Portal） ── */}
       {menuOpen && createPortal(

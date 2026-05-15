@@ -193,6 +193,15 @@ export default function AdminDashboard() {
                         </Badge>
                       </div>
                     </Link>
+                    <Link to="/AdminUsers">
+                      <div className="flex items-center justify-between p-4 bg-stone-50 rounded-xl hover:bg-stone-100 transition-colors cursor-pointer">
+                        <div className="flex items-center gap-3">
+                          <Users className="w-5 h-5 text-stone-600" />
+                          <span className="text-stone-700">人員權限管理</span>
+                        </div>
+                        <Badge className="bg-stone-100 text-stone-600">前往</Badge>
+                      </div>
+                    </Link>
                   </div>
                 </CardContent>
               </Card>
