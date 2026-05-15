@@ -2,14 +2,14 @@ import React, { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Zap, MapPin, Loader2, Check, ArrowLeft, Plus, Minus } from 'lucide-react';
+import { Zap, MapPin, Loader2, Check, ArrowLeft, Plus, Minus, UtensilsCrossed, Trash2, WashingMachine, Package, RefreshCw, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 
 const FLASH_TASKS = [
-  { id: 'dishes',  emoji: '🍽️', label: '洗碗',   base: 200 },
-  { id: 'trash',   emoji: '🗑️', label: '倒垃圾', base: 150 },
-  { id: 'laundry', emoji: '👕', label: '洗曬衣', base: 250 },
-  { id: 'moving',  emoji: '📦', label: '微清運', base: 350 },
+  { id: 'dishes',  Icon: UtensilsCrossed, label: '洗碗',   base: 200 },
+  { id: 'trash',   Icon: Trash2,          label: '倒垃圾', base: 150 },
+  { id: 'laundry', Icon: WashingMachine,  label: '洗曬衣', base: 250 },
+  { id: 'moving',  Icon: Package,         label: '微清運', base: 350 },
 ];
 
 
@@ -175,7 +175,9 @@ export default function FlashTaskPost() {
     return (
       <div className="fixed inset-0 bg-[#0d0d0d] flex flex-col items-center justify-center text-center px-6">
         <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="max-w-sm w-full">
-          <div className="text-5xl mb-6">⚠️</div>
+          <div className="w-16 h-16 bg-amber-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
+            <AlertTriangle className="w-8 h-8 text-amber-400" />
+          </div>
           <h2 className="text-2xl font-black text-white mb-3">目前附近人員滿載</h2>
           <p className="text-stone-400 mb-8 leading-relaxed">
             您的報價可能低於市場行情。<br />建議<span className="text-amber-400 font-semibold">提高任務金額 $50</span> 重新發佈，以加速媒合！
@@ -248,8 +250,8 @@ export default function FlashTaskPost() {
                 placeholder="或手動輸入地址..."
                 className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white placeholder-stone-600 outline-none focus:border-amber-500/50"
               />
-              <button onClick={getGPS} className="text-xs text-amber-500 mt-2 hover:text-amber-400 transition-colors">
-                🔄 重新定位
+              <button onClick={getGPS} className="flex items-center gap-1 text-xs text-amber-500 mt-2 hover:text-amber-400 transition-colors">
+                <RefreshCw className="w-3 h-3" /> 重新定位
               </button>
             </div>
           )}
@@ -266,7 +268,7 @@ export default function FlashTaskPost() {
                     ? 'border-amber-400 bg-amber-400/15'
                     : 'border-white/10 bg-white/5 hover:border-white/25'
                 }`}>
-                <span className="text-2xl">{task.emoji}</span>
+                <task.Icon className={`w-6 h-6 ${selected === task.id ? 'text-amber-400' : 'text-stone-400'}`} />
                 <span className={`text-xs font-medium ${selected === task.id ? 'text-amber-300' : 'text-stone-400'}`}>{task.label}</span>
                 <span className={`text-[10px] ${selected === task.id ? 'text-amber-400' : 'text-stone-600'}`}>NT${task.base}起</span>
               </button>

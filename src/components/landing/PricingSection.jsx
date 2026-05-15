@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Check, ArrowRight, Clock, Zap, Crown } from "lucide-react";
+import { Check, ArrowRight, Clock, Zap, Crown, Star, CalendarDays, Users, Building2, Sparkles, HardHat } from "lucide-react";
 import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 
@@ -9,7 +9,7 @@ const platformPlans = [
   {
     id: "light",
     name: "輕量方案",
-    icon: "⚡",
+    Icon: Zap,
     hourly_rate: 600,
     min_hours: 3,
     price_range: "$1,800 - $2,400",
@@ -23,7 +23,7 @@ const platformPlans = [
   {
     id: "recurring_biweekly",
     name: "雙週方案",
-    icon: "📅",
+    Icon: CalendarDays,
     price: 4600,
     visits: "2次/共8小時",
     features: [
@@ -36,7 +36,7 @@ const platformPlans = [
   {
     id: "recurring_monthly_lite",
     name: "小資包月",
-    icon: "🏠",
+    Icon: Star,
     price: 8400,
     visits: "4次/共16小時",
     features: [
@@ -50,7 +50,7 @@ const platformPlans = [
   {
     id: "recurring_monthly",
     name: "家庭包月",
-    icon: "👨‍👩‍👧",
+    Icon: Users,
     price: 14400,
     visits: "8次/共32小時",
     features: [
@@ -63,7 +63,7 @@ const platformPlans = [
   {
     id: "recurring_enterprise",
     name: "企業/別墅",
-    icon: "🏢",
+    Icon: Building2,
     price: 25600,
     visits: "16次/共64小時",
     features: [
@@ -79,7 +79,7 @@ const hesonPlans = [
   {
     id: "fine_cleaning",
     name: "細清案件",
-    icon: "✨",
+    Icon: Sparkles,
     price: 3000,
     duration: "6小時/人",
     addon: "加時：NT$600 × 1小時/人",
@@ -92,7 +92,7 @@ const hesonPlans = [
   {
     id: "raw_unit",
     name: "毛坯案件",
-    icon: "🏗️",
+    Icon: HardHat,
     price: "500-800/坪",
     duration: "場勘估價",
     features: [
@@ -151,7 +151,7 @@ export default function PricingSection() {
                 : 'bg-white border border-stone-200 text-stone-600 hover:border-stone-300'
             }`}
           >
-            🌟 平台派案
+            平台派案
           </button>
           <button
             onClick={() => setSelected('heson')}
@@ -161,7 +161,7 @@ export default function PricingSection() {
                 : 'bg-white border border-stone-200 text-stone-600 hover:border-stone-300'
             }`}
           >
-            🌟 赫頌直營
+            赫頌直營
           </button>
         </div>
 
@@ -195,7 +195,9 @@ export default function PricingSection() {
                     </div>
                   )}
 
-                  <div className="text-3xl mb-3">{plan.icon}</div>
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 ${plan.popular ? 'bg-amber-500/20' : 'bg-stone-100'}`}>
+                    <plan.Icon className={`w-5 h-5 ${plan.popular ? 'text-amber-400' : 'text-stone-600'}`} />
+                  </div>
                   <h3 className={`text-lg font-semibold mb-4 ${plan.popular ? 'text-white' : 'text-stone-800'}`}>
                     {plan.name}
                   </h3>
@@ -261,7 +263,9 @@ export default function PricingSection() {
                   transition={{ delay: idx * 0.1 }}
                   className="rounded-2xl p-8 bg-white border border-stone-200 shadow-lg"
                 >
-                  <div className="text-4xl mb-4">{plan.icon}</div>
+                  <div className="w-12 h-12 bg-stone-100 rounded-xl flex items-center justify-center mb-4">
+                    <plan.Icon className="w-6 h-6 text-stone-600" />
+                  </div>
                   <h3 className="text-2xl font-semibold text-stone-800 mb-1">
                     {plan.name}
                   </h3>

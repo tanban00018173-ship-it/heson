@@ -1,20 +1,20 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Zap, Shield, CreditCard, ArrowRight, ChevronRight } from 'lucide-react';
+import { Zap, Shield, Briefcase, ArrowRight, ChevronRight, UtensilsCrossed, Trash2, WashingMachine, Package } from 'lucide-react';
 import { requireAuth } from '@/utils/requireAuth';
 
 const FLASH_TASKS = [
-  { id: 'dishes',   emoji: '🍽️', label: '洗碗',   base: 200 },
-  { id: 'trash',    emoji: '🗑️', label: '倒垃圾', base: 150 },
-  { id: 'laundry',  emoji: '👕', label: '洗曬衣', base: 250 },
-  { id: 'moving',   emoji: '📦', label: '微清運', base: 350 },
+  { id: 'dishes',   Icon: UtensilsCrossed, label: '洗碗',   base: 200 },
+  { id: 'trash',    Icon: Trash2,          label: '倒垃圾', base: 150 },
+  { id: 'laundry',  Icon: WashingMachine,  label: '洗曬衣', base: 250 },
+  { id: 'moving',   Icon: Package,         label: '微清運', base: 350 },
 ];
 
 const FEATURES = [
-  { icon: '⚡️', title: '極速媒合', desc: '方圓 3 公里內人員即刻救援，10 分鐘內確認接單。' },
-  { icon: '🛡️', title: '資金擔保', desc: '任務完工確認無誤，平台才會撥款，品質有保障。' },
-  { icon: '💼', title: '訂閱/單次隨選', desc: '從百元微任務到專業大掃除，彈性滿足所有日常。' },
+  { Icon: Zap,      title: '極速媒合', desc: '方圓 3 公里內人員即刻救援，10 分鐘內確認接單。' },
+  { Icon: Shield,   title: '資金擔保', desc: '任務完工確認無誤，平台才會撥款，品質有保障。' },
+  { Icon: Briefcase, title: '訂閱/單次隨選', desc: '從百元微任務到專業大掃除，彈性滿足所有日常。' },
 ];
 
 export default function HeroSection() {
@@ -93,7 +93,7 @@ export default function HeroSection() {
                       ? 'border-amber-400 bg-amber-400/15'
                       : 'border-white/10 bg-white/5 hover:border-white/20'
                   }`}>
-                  <span className="text-2xl">{task.emoji}</span>
+                  <task.Icon className={`w-6 h-6 ${selected === task.id ? 'text-amber-400' : 'text-stone-400'}`} />
                   <span className={`text-xs font-medium ${selected === task.id ? 'text-amber-300' : 'text-stone-400'}`}>{task.label}</span>
                 </button>
               ))}
@@ -167,7 +167,9 @@ export default function HeroSection() {
               <motion.div key={f.title} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.1 }} viewport={{ once: true }}
                 className="bg-white/5 border border-white/10 rounded-3xl p-6 hover:border-amber-500/30 transition-colors">
-                <div className="text-4xl mb-4">{f.icon}</div>
+                <div className="w-12 h-12 bg-amber-500/15 rounded-2xl flex items-center justify-center mb-4">
+                  <f.Icon className="w-6 h-6 text-amber-400" />
+                </div>
                 <h3 className="text-lg font-bold text-white mb-2">{f.title}</h3>
                 <p className="text-stone-400 text-sm leading-relaxed">{f.desc}</p>
               </motion.div>

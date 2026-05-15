@@ -2,11 +2,11 @@ import React from 'react';
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Gift, MessageCircle, Building2 } from "lucide-react";
 
 const activities = [
   {
-    emoji: "🎁",
+    Icon: Gift,
     title: "新會員歡迎禮",
     desc: "加入會員送 $200 折扣券，滿額再抽好禮",
     cta: "立即預約",
@@ -14,7 +14,7 @@ const activities = [
     linkTo: "BookingForm",
   },
   {
-    emoji: "💬",
+    Icon: MessageCircle,
     title: "加入 LINE 好友",
     desc: "每月領取專屬折扣，不定期發送限定優惠",
     cta: "加入 LINE",
@@ -22,7 +22,7 @@ const activities = [
     linkTo: null,
   },
   {
-    emoji: "🏢",
+    Icon: Building2,
     title: "企業清潔方案",
     desc: "從細節開始，好環境讓企業創造更高價值",
     cta: "立即預約",
@@ -57,7 +57,9 @@ export default function ThemeActivities() {
                 transition={{ delay: i * 0.1 }}
                 className="bg-white rounded-2xl p-6 border border-stone-100 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-0.5 flex flex-col gap-3 cursor-pointer group"
               >
-                <div className="text-3xl">{a.emoji}</div>
+                <div className="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center">
+                  <a.Icon className="w-5 h-5 text-amber-600" />
+                </div>
                 <h3 className="font-medium text-stone-800">{a.title}</h3>
                 <p className="text-sm text-stone-500 leading-relaxed flex-1">{a.desc}</p>
                 <div className="flex items-center gap-1 text-amber-600 text-sm font-medium group-hover:gap-2 transition-all">

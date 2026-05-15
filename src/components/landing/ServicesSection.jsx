@@ -1,18 +1,18 @@
 import React, { useEffect, useRef } from 'react';
 import { motion } from "framer-motion";
-import { Star, MapPin, Tag } from "lucide-react";
+import { Star, MapPin, Tag, Home, Snowflake, LayoutGrid, Building2, Sofa, Hammer } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 
 // Service cases will be fetched from database
 
 const categories = [
-  { name: "居家清潔", sub: "鐘點・定期・大掃除", emoji: "🏠", hot: true },
-  { name: "家電清洗", sub: "冷氣・洗衣機・油煙機", emoji: "❄️", hot: false },
-  { name: "整理收納", sub: "整理師・空間規劃", emoji: "📦", hot: false },
-  { name: "商業清潔", sub: "辦公室・商業空間", emoji: "🏢", hot: false },
-  { name: "布面清洗", sub: "沙發・床墊・窗簾", emoji: "🛋️", hot: false },
-  { name: "裝潢後清潔", sub: "新屋・工程後清潔", emoji: "🔨", hot: false },
+  { name: "居家清潔", sub: "鐘點・定期・大掃除", Icon: Home, hot: true },
+  { name: "家電清洗", sub: "冷氣・洗衣機・油煙機", Icon: Snowflake, hot: false },
+  { name: "整理收納", sub: "整理師・空間規劃", Icon: LayoutGrid, hot: false },
+  { name: "商業清潔", sub: "辦公室・商業空間", Icon: Building2, hot: false },
+  { name: "布面清洗", sub: "沙發・床墊・窗簾", Icon: Sofa, hot: false },
+  { name: "裝潢後清潔", sub: "新屋・工程後清潔", Icon: Hammer, hot: false },
 ];
 
 // Marquee ticker
@@ -36,7 +36,7 @@ function MarqueeTicker() {
             onClick={() => navigate(`/ServiceInquiry?service=${encodeURIComponent(cat.name)}`)}
             className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-stone-50 hover:bg-amber-50 hover:text-amber-700 text-stone-700 text-sm font-medium transition-colors border border-stone-100 hover:border-amber-200 shrink-0"
           >
-            <span>{cat.emoji}</span>
+            <cat.Icon className="w-4 h-4" />
             <span>{cat.name}</span>
           </button>
         ))}
@@ -87,7 +87,9 @@ export default function ServicesSection() {
                 onClick={() => navigate(`/ServiceInquiry?service=${encodeURIComponent(cat.name)}`)}
                 className="w-full bg-white rounded-2xl p-5 text-center hover:shadow-lg transition-all duration-300 hover:-translate-y-1 border border-stone-100 relative"
               >
-                <div className="text-3xl mb-3">{cat.emoji}</div>
+                <div className="w-12 h-12 bg-amber-50 rounded-2xl flex items-center justify-center mb-3 mx-auto">
+                  <cat.Icon className="w-6 h-6 text-amber-600" />
+                </div>
                 <p className="font-medium text-stone-800 text-sm">{cat.name}</p>
                 <p className="text-xs text-stone-400 mt-1">{cat.sub}</p>
               </button>
