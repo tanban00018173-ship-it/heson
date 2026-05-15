@@ -6,14 +6,14 @@
 export const ROLE_HOME = {
   admin: '/AdminDashboard',
   cleaner: '/CleanerJobs',
-  user: '/',
+  user: '/Home',
 };
 
 /**
  * 取得該 role 的預設首頁路徑
  */
 export function getRoleHome(role) {
-  return ROLE_HOME[role] || '/ClientDashboard';
+  return ROLE_HOME[role] || '/Home';
 }
 
 /**
