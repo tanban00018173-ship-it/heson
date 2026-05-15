@@ -14,13 +14,6 @@ const TABS = [
 
 export default function ClientBottomNav() {
   const location = useLocation();
-  const [isAuth, setIsAuth] = useState(false);
-
-  useEffect(() => {
-    base44.auth.isAuthenticated().then(setIsAuth);
-  }, []);
-
-  if (!isAuth) return null;
 
   return (
     <div
