@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { Home, ShoppingBag, Zap, Bell, User } from 'lucide-react';
+import { base44 } from '@/api/base44Client';
 
 const TABS = [
   { id: 'home',    icon: Home,        label: '首頁',  path: 'ClientDashboard' },
@@ -13,6 +14,13 @@ const TABS = [
 
 export default function ClientBottomNav() {
   const location = useLocation();
+  const [isAuth, setIsAuth] = useState(false);
+
+  useEffect(() => {
+    base44.auth.isAuthenticated().then(setIsAuth);
+  }, []);
+
+  if (!isAuth) return null;
 
   return (
     <div

@@ -1,5 +1,6 @@
 import React from 'react';
 import Navbar from "@/components/landing/Navbar";
+import ClientBottomNav from "@/components/dashboard/ClientBottomNav";
 import HesonAIChat from "@/components/HesonAIChat";
 import HeroSection from "@/components/landing/HeroSection";
 import ThemeActivities from "@/components/landing/ThemeActivities";
@@ -23,6 +24,7 @@ export default function Home() {
       <CTASection />
       <Footer />
       <HesonAIChat />
+      <ClientBottomNav />
     </div>
   );
 }
