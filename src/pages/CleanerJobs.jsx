@@ -204,21 +204,24 @@ export default function CleanerJobs() {
                 { to: 'CleanerJobs', icon: Zap, label: '閃電任務地圖', active: true },
                 { to: 'CleanerSchedule', icon: ClipboardList, label: '我的行程' },
                 { to: 'CleanerProfile', icon: User, label: '個人資料' },
+                { to: 'AdminDashboard', icon: Home, label: '後台（管理員視角）', adminOnly: true },
                 { to: 'ClientDashboard', icon: Home, label: '前台（客戶視角）' },
-              ].map(({ to, icon: Icon, label, active }) => (
-                <Link
-                  key={to}
-                  to={createPageUrl(to)}
-                  onClick={() => setMenuOpen(false)}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium transition-colors ${
-                    active ? 'bg-stone-100 text-black font-semibold' : 'text-stone-500 hover:bg-stone-50'
-                  }`}
-                >
-                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${active ? 'bg-black' : 'bg-stone-100'}`}>
-                    <Icon className={`w-4 h-4 ${active ? 'text-white' : 'text-stone-500'}`} />
-                  </div>
-                  {label}
-                </Link>
+              ].map(({ to, icon: Icon, label, active, adminOnly }) => (
+                user?.role === 'admin' || !adminOnly ? (
+                  <Link
+                    key={to}
+                    to={createPageUrl(to)}
+                    onClick={() => setMenuOpen(false)}
+                    className={`flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium transition-colors ${
+                      active ? 'bg-stone-100 text-black font-semibold' : 'text-stone-500 hover:bg-stone-50'
+                    }`}
+                  >
+                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${active ? 'bg-black' : 'bg-stone-100'}`}>
+                      <Icon className={`w-4 h-4 ${active ? 'text-white' : 'text-stone-500'}`} />
+                    </div>
+                    {label}
+                  </Link>
+                ) : null
               ))}
             </nav>
 
