@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Sidebar from "@/components/dashboard/Sidebar";
 import MobileNav from "@/components/dashboard/MobileNav";
+import AdminBottomNav from "@/components/dashboard/AdminBottomNav";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -87,7 +88,8 @@ export default function AdminDashboard() {
       </div>
       <MobileNav userRole="admin" userName={user?.full_name} />
       
-      <main className="flex-1 pt-16 lg:pt-0">
+      <AdminBottomNav />
+      <main className="flex-1 pt-16 lg:pt-0 pb-20 lg:pb-0">
         <div className="p-6 lg:p-8">
           {/* Header */}
           <div className="mb-8">
