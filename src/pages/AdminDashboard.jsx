@@ -90,15 +90,15 @@ export default function AdminDashboard() {
       
       <AdminBottomNav />
       <main className="flex-1 pt-16 lg:pt-0 pb-20 lg:pb-0">
-        <div className="p-6 lg:p-8">
+        <div className="p-4 lg:p-8 max-w-7xl mx-auto">
           {/* Header */}
-          <div className="mb-8">
-            <h1 className="text-2xl font-medium text-stone-800">管理後台</h1>
-            <p className="text-stone-500 mt-1">總覽系統狀態與近期活動</p>
+          <div className="mb-6 lg:mb-8">
+            <h1 className="text-xl lg:text-2xl font-medium text-stone-800">管理後台</h1>
+            <p className="text-sm text-stone-500 mt-1">總覽系統狀態與近期活動</p>
           </div>
 
           {/* Stats Grid */}
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 mb-6 lg:mb-8">
             {stats.map((stat, index) => (
               <motion.div
                 key={stat.title}
@@ -123,7 +123,7 @@ export default function AdminDashboard() {
             ))}
           </div>
 
-          <div className="grid lg:grid-cols-3 gap-6">
+          <div className="grid lg:grid-cols-3 gap-4 lg:gap-6">
             {/* Recent Bookings */}
             <motion.div
               className="lg:col-span-2"
@@ -132,25 +132,23 @@ export default function AdminDashboard() {
               transition={{ duration: 0.4, delay: 0.4 }}
             >
               <Card className="border-0 shadow-sm">
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <CardTitle className="text-lg">最新預約</CardTitle>
+                <CardHeader className="flex flex-row items-center justify-between pb-4">
+                  <CardTitle className="text-base lg:text-lg">最新預約</CardTitle>
                 </CardHeader>
                 <CardContent>
                   {bookings?.slice(0, 5).length === 0 ? (
-                    <p className="text-stone-400 text-center py-8">暫無預約</p>
+                    <p className="text-stone-400 text-center py-6">暫無預約</p>
                   ) : (
-                    <div className="space-y-4">
+                    <div className="space-y-3">
                       {bookings?.slice(0, 5).map((booking) => (
                         <div key={booking.id} className="flex items-center justify-between p-3 bg-stone-50 rounded-xl">
-                          <div>
-                            <p className="font-medium text-stone-800">{booking.client_name || '未知客戶'}</p>
-                            <p className="text-sm text-stone-500">
+                          <div className="min-w-0 flex-1">
+                            <p className="font-medium text-stone-800 text-sm truncate">{booking.client_name || '未知客戶'}</p>
+                            <p className="text-xs text-stone-500">
                               {booking.scheduled_date && format(new Date(booking.scheduled_date), 'M/d', { locale: zhTW })} · {booking.time_slot}
                             </p>
                           </div>
-                          <Badge className={getStatusColor(booking.status)}>
-                            {booking.status}
-                          </Badge>
+                          <Badge className={getStatusColor(booking.status)}>{booking.status}</Badge>
                         </div>
                       ))}
                     </div>
@@ -161,47 +159,47 @@ export default function AdminDashboard() {
 
             {/* Right Column */}
             <motion.div
-              className="flex flex-col gap-6"
+              className="flex flex-col gap-4 lg:gap-6"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: 0.5 }}
             >
               {/* Pending Actions */}
               <Card className="border-0 shadow-sm">
-                <CardHeader>
-                  <CardTitle className="text-lg">待處理事項</CardTitle>
+                <CardHeader className="pb-4">
+                  <CardTitle className="text-base lg:text-lg">待處理事項</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
                     <Link to={createPageUrl("AdminDispatch")}>
-                      <div className="flex items-center justify-between p-4 bg-yellow-50 rounded-xl hover:bg-yellow-100 transition-colors cursor-pointer">
-                        <div className="flex items-center gap-3">
-                          <Clock className="w-5 h-5 text-yellow-600" />
-                          <span className="text-stone-700">待派單預約</span>
+                      <div className="flex items-center justify-between p-3 bg-yellow-50 rounded-xl hover:bg-yellow-100 transition-colors cursor-pointer">
+                        <div className="flex items-center gap-2">
+                          <Clock className="w-4 h-4 text-yellow-600" />
+                          <span className="text-sm text-stone-700">待派單預約</span>
                         </div>
-                        <Badge className="bg-yellow-100 text-yellow-700">
+                        <Badge className="bg-yellow-100 text-yellow-700 text-xs">
                           {pendingBookings.length}
                         </Badge>
                       </div>
                     </Link>
                     <Link to={createPageUrl("AdminCleaners")}>
-                      <div className="flex items-center justify-between p-4 bg-blue-50 rounded-xl hover:bg-blue-100 transition-colors cursor-pointer">
-                        <div className="flex items-center gap-3">
-                          <Users className="w-5 h-5 text-blue-600" />
-                          <span className="text-stone-700">待審核管理師</span>
+                      <div className="flex items-center justify-between p-3 bg-blue-50 rounded-xl hover:bg-blue-100 transition-colors cursor-pointer">
+                        <div className="flex items-center gap-2">
+                          <Users className="w-4 h-4 text-blue-600" />
+                          <span className="text-sm text-stone-700">待審核管理師</span>
                         </div>
-                        <Badge className="bg-blue-100 text-blue-700">
+                        <Badge className="bg-blue-100 text-blue-700 text-xs">
                           {cleaners?.filter(c => !c.is_active).length || 0}
                         </Badge>
                       </div>
                     </Link>
                     <Link to="/AdminUsers">
-                      <div className="flex items-center justify-between p-4 bg-stone-50 rounded-xl hover:bg-stone-100 transition-colors cursor-pointer">
-                        <div className="flex items-center gap-3">
-                          <Users className="w-5 h-5 text-stone-600" />
-                          <span className="text-stone-700">人員權限管理</span>
+                      <div className="flex items-center justify-between p-3 bg-stone-50 rounded-xl hover:bg-stone-100 transition-colors cursor-pointer">
+                        <div className="flex items-center gap-2">
+                          <Users className="w-4 h-4 text-stone-600" />
+                          <span className="text-sm text-stone-700">人員權限管理</span>
                         </div>
-                        <Badge className="bg-stone-100 text-stone-600">前往</Badge>
+                        <Badge className="bg-stone-100 text-stone-600 text-xs">前往</Badge>
                       </div>
                     </Link>
                   </div>
@@ -210,27 +208,27 @@ export default function AdminDashboard() {
 
               {/* Internal Tools */}
               <Card className="border-0 shadow-sm">
-                <CardHeader>
-                  <CardTitle className="text-lg">內部工具</CardTitle>
+                <CardHeader className="pb-4">
+                  <CardTitle className="text-base lg:text-lg">內部工具</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
                     <Link to="/InternalSpreadsheet">
-                      <div className="flex items-center justify-between p-4 bg-amber-50 rounded-xl hover:bg-amber-100 transition-colors cursor-pointer">
-                        <div className="flex items-center gap-3">
-                          <Table className="w-5 h-5 text-amber-600" />
-                          <span className="text-stone-700">內部試算表 + AI 助理</span>
+                      <div className="flex items-center justify-between p-3 bg-amber-50 rounded-xl hover:bg-amber-100 transition-colors cursor-pointer">
+                        <div className="flex items-center gap-2">
+                          <Table className="w-4 h-4 text-amber-600" />
+                          <span className="text-sm text-stone-700">內部試算表 + AI 助理</span>
                         </div>
-                        <Badge className="bg-amber-100 text-amber-700">前往</Badge>
+                        <Badge className="bg-amber-100 text-amber-700 text-xs">前往</Badge>
                       </div>
                     </Link>
                     <Link to="/AdminShopProducts">
-                      <div className="flex items-center justify-between p-4 bg-stone-50 rounded-xl hover:bg-stone-100 transition-colors cursor-pointer mt-0">
-                        <div className="flex items-center gap-3">
-                          <ShoppingBag className="w-5 h-5 text-stone-600" />
-                          <span className="text-stone-700">赫頌商店管理</span>
+                      <div className="flex items-center justify-between p-3 bg-stone-50 rounded-xl hover:bg-stone-100 transition-colors cursor-pointer">
+                        <div className="flex items-center gap-2">
+                          <ShoppingBag className="w-4 h-4 text-stone-600" />
+                          <span className="text-sm text-stone-700">赫頌商店管理</span>
                         </div>
-                        <Badge className="bg-stone-100 text-stone-600">前往</Badge>
+                        <Badge className="bg-stone-100 text-stone-600 text-xs">前往</Badge>
                       </div>
                     </Link>
                   </div>
