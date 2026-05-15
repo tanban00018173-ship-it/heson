@@ -29,6 +29,7 @@ import AdminShopProducts from './pages/AdminShopProducts'
 import FlashTaskPost from './pages/FlashTaskPost'
 import AdminUsers from './pages/AdminUsers'
 import ClientShop from './pages/ClientShop'
+import { CartProvider } from './lib/CartContext'
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes, useNavigate, useLocation } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
@@ -149,6 +150,7 @@ function App() {
 
   return (
     <AuthProvider>
+      <CartProvider>
       <QueryClientProvider client={queryClientInstance}>
         <Router>
           <NavigationTracker />
@@ -157,6 +159,7 @@ function App() {
         <Toaster />
         <VisualEditAgent />
       </QueryClientProvider>
+      </CartProvider>
     </AuthProvider>
   )
 }

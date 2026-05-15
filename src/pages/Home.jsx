@@ -1,29 +1,28 @@
-import React from 'react';
-import Navbar from "@/components/landing/Navbar";
+import React, { useRef } from 'react';
 import ClientBottomNav from "@/components/dashboard/ClientBottomNav";
+import HomeTopBar from "@/components/home/HomeTopBar";
+import ServiceGrid from "@/components/home/ServiceGrid";
+import CartDrawer from "@/components/home/CartDrawer";
 import HesonAIChat from "@/components/HesonAIChat";
-import HeroSection from "@/components/landing/HeroSection";
-import ThemeActivities from "@/components/landing/ThemeActivities";
-import ServicesSection from "@/components/landing/ServicesSection";
-import TestimonialsSection from "@/components/landing/TestimonialsSection";
-import FeaturesSection from "@/components/landing/FeaturesSection";
-import PricingSection from "@/components/landing/PricingSection";
-import CTASection from "@/components/landing/CTASection";
-import Footer from "@/components/landing/Footer";
 
 export default function Home() {
+  const chatRef = useRef(null);
+
+  const handleChatOpen = () => {
+    // HesonAIChat uses its own internal toggle; we dispatch a custom event
+    window.dispatchEvent(new CustomEvent('heson:open-chat'));
+  };
+
   return (
-    <div className="min-h-screen">
-      <Navbar />
-      <HeroSection />
-      <ServicesSection />
-      <ThemeActivities />
-      <FeaturesSection />
-      <PricingSection />
-      <TestimonialsSection />
-      <CTASection />
-      <Footer />
-      <HesonAIChat />
+    <div className="min-h-screen bg-stone-50">
+      <HomeTopBar onChatOpen={handleChatOpen} />
+
+      <main className="pb-28">
+        <ServiceGrid />
+      </main>
+
+      <CartDrawer />
+      <HesonAIChat autoOpenEvent="heson:open-chat" />
       <ClientBottomNav />
     </div>
   );

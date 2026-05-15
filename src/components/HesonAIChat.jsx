@@ -94,7 +94,7 @@ function EnhanceAreasSelector({ onConfirm }) {
   );
 }
 
-export default function HesonAIChat() {
+export default function HesonAIChat({ autoOpenEvent } = {}) {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState([{ role: 'assistant', content: WELCOME }]);
   const [quickShown, setQuickShown] = useState(false);
@@ -105,6 +105,13 @@ export default function HesonAIChat() {
   const [bookingData, setBookingData] = useState({});
   const bottomRef = useRef(null);
   const dateInputRef = useRef(null);
+
+  useEffect(() => {
+    if (!autoOpenEvent) return;
+    const handler = () => setOpen(true);
+    window.addEventListener(autoOpenEvent, handler);
+    return () => window.removeEventListener(autoOpenEvent, handler);
+  }, [autoOpenEvent]);
 
   useEffect(() => {
     if (open) bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
