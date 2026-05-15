@@ -171,7 +171,7 @@ export default function CleanerJobs() {
             position: 'fixed', top: 0, right: 0, bottom: 0, zIndex: 100000,
             width: '280px', background: '#fff',
             boxShadow: '-4px 0 32px rgba(0,0,0,0.15)',
-            display: 'flex', flexDirection: 'column'
+            display: 'flex', flexDirection: 'column', overflowY: 'auto'
           }}>
             {/* 頭像區 */}
             <div className="flex items-center gap-4 p-6 bg-black border-b border-stone-800">
