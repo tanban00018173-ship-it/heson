@@ -6,7 +6,7 @@
 export const ROLE_HOME = {
   admin: '/AdminDashboard',
   cleaner: '/CleanerJobs',
-  user: '/ClientDashboard',
+  user: '/',
 };
 
 /**

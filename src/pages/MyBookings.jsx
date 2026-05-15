@@ -51,6 +51,13 @@ export default function MyBookings() {
     enabled: !!user,
   });
 
+  const { data: clientProfile = [] } = useQuery({
+    queryKey: ['clientProfile', user?.id],
+    queryFn: () => base44.entities.ClientProfile.filter({ user_id: user?.id }),
+    enabled: !!user?.id,
+  });
+  const profile = clientProfile?.[0];
+
   const handleCancelBooking = async (bookingId) => {
     setCancelingId(bookingId);
     try {
@@ -94,8 +101,26 @@ export default function MyBookings() {
           <div className="container mx-auto px-4 lg:px-8 py-8 pb-28 lg:pb-8">
             {/* Header */}
             <div className="mb-8">
-              <h1 className="text-2xl md:text-3xl font-light text-stone-800 mb-2 break-words">我的預約</h1>
+              <h1 className="text-2xl md:text-3xl font-light text-stone-800 mb-2 break-words">我的訂單</h1>
               <p className="text-sm md:text-base text-stone-500">查詢與管理您的服務預約</p>
+            </div>
+
+            {/* Plan Card */}
+            <div className="bg-[#131b2e] rounded-3xl p-6 mb-6 relative overflow-hidden">
+              <div className="absolute -top-6 -right-6 w-24 h-24 bg-white/10 rounded-full blur-3xl" />
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-amber-400 text-xs font-semibold tracking-widest uppercase">我的方案</span>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-[#7c839b] text-xs mb-1">目前方案</p>
+                  <p className="text-white font-headline font-bold text-xl">{profile?.subscription_plan || '無'}</p>
+                </div>
+                <div>
+                  <p className="text-[#7c839b] text-xs mb-1">剩餘次數</p>
+                  <p className="text-white font-headline font-bold text-xl">{profile?.remaining_visits ?? 0} 次</p>
+                </div>
+              </div>
             </div>
 
             {isLoading && (

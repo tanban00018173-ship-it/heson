@@ -115,6 +115,23 @@ export default function ClientProfile() {
             </div>
           </motion.div>
 
+          {/* Plan Card */}
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }} className="mb-6">
+            <div className="bg-white rounded-3xl border border-[#e8eef6] p-6">
+              <p className="text-xs font-semibold tracking-widest uppercase text-stone-400 mb-4">我的方案</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="p-4 bg-[#eef4fc] rounded-2xl">
+                  <p className="text-xs text-stone-400 font-semibold uppercase tracking-wide mb-1">目前方案</p>
+                  <p className="font-headline font-bold text-stone-900 text-base">{clientProfile?.[0]?.subscription_plan || '無'}</p>
+                </div>
+                <div className="p-4 bg-[#eef4fc] rounded-2xl">
+                  <p className="text-xs text-stone-400 font-semibold uppercase tracking-wide mb-1">剩餘次數</p>
+                  <p className="font-headline font-bold text-stone-900 text-base">{clientProfile?.[0]?.remaining_visits ?? 0} 次</p>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+
           {/* Form */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
             <div className="bg-white rounded-3xl border border-[#e8eef6] p-6 mb-5">
