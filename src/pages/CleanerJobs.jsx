@@ -192,7 +192,7 @@ export default function CleanerJobs() {
             </div>
 
             {/* 選單項目 */}
-            <nav className="flex-1 p-4 space-y-1">
+            <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
               {user?.role === 'admin' && (
                 <div className="pb-3 mb-2 border-b border-stone-100">
                   <p className="text-xs text-stone-400 font-medium mb-2 px-1">切換視角</p>
