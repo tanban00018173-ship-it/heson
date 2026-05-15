@@ -205,8 +205,8 @@ export default function VendorChatPage() {
             ) : contacts.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-48 text-stone-300 gap-2 px-6 text-center">
                 <MessageSquare className="w-8 h-8" />
-                <p className="text-sm font-medium text-stone-400">尚無配合人員</p>
-                <p className="text-xs">加入廠商並通過審核後，即可與配合人員聊天</p>
+                <p className="text-sm font-medium text-stone-400">目前還沒有對話</p>
+                <p className="text-xs">完成預約後，您可以在這裡與服務人員直接聯繫</p>
               </div>
             ) : (
               contacts.map(contact => (
