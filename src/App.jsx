@@ -28,6 +28,7 @@ import PartTimeSchedule from './pages/PartTimeSchedule'
 import AdminShopProducts from './pages/AdminShopProducts'
 import FlashTaskPost from './pages/FlashTaskPost'
 import AdminUsers from './pages/AdminUsers'
+import ClientShop from './pages/ClientShop'
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes, useNavigate, useLocation } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
@@ -137,6 +138,7 @@ const AuthenticatedApp = () => {
       <Route path="/AdminShopProducts" element={<AdminShopProducts />} />
       <Route path="/FlashTaskPost" element={<FlashTaskPost />} />
       <Route path="/AdminUsers" element={<LayoutWrapper currentPageName="AdminUsers"><AdminUsers /></LayoutWrapper>} />
+      <Route path="/ClientShop" element={<ClientShop />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

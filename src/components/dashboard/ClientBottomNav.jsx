@@ -5,8 +5,8 @@ import { Home, ShoppingBag, Zap, Bell, User } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 
 const TABS = [
-  { id: 'home',    icon: Home,        label: '首頁',  path: 'ClientDashboard' },
-  { id: 'shop',    icon: ShoppingBag, label: '商店',  path: 'Home', hash: '#shop' },
+  { id: 'home',    icon: Home,        label: '首頁',  path: 'Home' },
+  { id: 'shop',    icon: ShoppingBag, label: '商店',  path: 'ClientShop' },
   { id: 'task',    icon: Zap,         label: '任務',  path: 'FlashTaskPost', primary: true },
   { id: 'notify',  icon: Bell,        label: '通知',  path: 'MyBookings' },
   { id: 'profile', icon: User,        label: '我的',  path: 'ClientProfile' },

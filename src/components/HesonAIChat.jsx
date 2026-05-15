@@ -405,7 +405,7 @@ export default function HesonAIChat() {
       {/* Floating Button */}
       <button
         onClick={() => setOpen(o => !o)}
-        className="fixed bottom-6 right-4 z-50 w-14 h-14 bg-gradient-to-br from-amber-400 to-amber-600 hover:from-amber-500 hover:to-amber-700 rounded-full shadow-xl flex items-center justify-center transition-all duration-300 hover:scale-110 text-white font-bold text-xl"
+        className="fixed bottom-24 right-4 z-50 w-14 h-14 bg-gradient-to-br from-amber-400 to-amber-600 hover:from-amber-500 hover:to-amber-700 rounded-full shadow-xl flex items-center justify-center transition-all duration-300 hover:scale-110 text-white font-bold text-xl lg:bottom-6"
         aria-label="開啟小赫 AI 客服"
       >
         {open ? <X className="w-6 h-6" /> : '🤖'}
@@ -420,7 +420,7 @@ export default function HesonAIChat() {
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
             transition={{ duration: 0.2 }}
             className="fixed bottom-24 right-4 z-50 bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-stone-200"
-            style={{ width: 'min(380px, calc(100vw - 32px))', height: 'min(540px, calc(100vh - 160px))' }}
+            style={{ width: 'min(380px, calc(100vw - 32px))', height: 'min(540px, calc(100vh - 200px))' }}
           >
             {/* Header */}
             <div className="bg-gradient-to-r from-amber-500 to-amber-600 px-4 py-3 flex items-center gap-3 flex-shrink-0 shadow-sm">
