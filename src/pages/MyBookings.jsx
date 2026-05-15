@@ -1,10 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import Navbar from '@/components/landing/Navbar';
-import Footer from '@/components/landing/Footer';
-import Sidebar from '@/components/dashboard/Sidebar';
-import MobileNav from '@/components/dashboard/MobileNav';
 import ClientBottomNav from '@/components/dashboard/ClientBottomNav';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -89,16 +85,8 @@ export default function MyBookings() {
 
   return (
     <div className="min-h-screen bg-stone-50">
-      <Navbar />
-      <MobileNav userRole={user?.role} userName={user?.full_name} />
-      
-      <div className="flex min-h-[calc(100vh-80px)] pt-16 lg:pt-0">
-        <div className="hidden lg:block">
-          <Sidebar userRole={user?.role} userName={user?.full_name} />
-        </div>
-        
-        <main className="flex-1">
-          <div className="container mx-auto px-4 lg:px-8 py-8 pb-28 lg:pb-8">
+      <main className="pt-0 pb-28">
+        <div className="container mx-auto px-4 py-8">
             {/* Header */}
             <div className="mb-8">
               <h1 className="text-2xl md:text-3xl font-light text-stone-800 mb-2 break-words">我的訂單</h1>
@@ -234,8 +222,8 @@ export default function MyBookings() {
               </div>
             )}
           </div>
-        </main>
-      </div>
+        </div>
+      </main>
 
       <ClientBottomNav />
 
