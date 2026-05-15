@@ -49,7 +49,6 @@ export default function ClientBooking() {
 
   const REFERRAL_OPTIONS = ['Facebook', 'Instagram', 'Threads', '朋友推薦', 'LINE', 'Google 搜尋', '其他'];
   const WEEKDAYS = ['週一', '週二', '週三', '週四', '週五', '週六', '週日'];
-  const isRecurring = profile?.subscription_plan && (profile.subscription_plan.includes('月') || profile.subscription_plan.includes('定期'));
 
   useEffect(() => {
     const loadUser = async () => {
@@ -69,6 +68,7 @@ export default function ClientBooking() {
   });
 
   const profile = clientProfile?.[0];
+  const isRecurring = profile?.subscription_plan && (profile.subscription_plan.includes('月') || profile.subscription_plan.includes('定期'));
 
   const handleSubmit = async (e) => {
     e.preventDefault();
