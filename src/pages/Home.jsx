@@ -1,6 +1,7 @@
 import React, { useRef } from 'react';
 import ClientBottomNav from "@/components/dashboard/ClientBottomNav";
 import HomeTopBar from "@/components/home/HomeTopBar";
+import HeroBanner from "@/components/home/HeroBanner";
 import ServiceGrid from "@/components/home/ServiceGrid";
 import CartDrawer from "@/components/home/CartDrawer";
 import HesonAIChat from "@/components/HesonAIChat";
@@ -18,6 +19,7 @@ export default function Home() {
       <HomeTopBar onChatOpen={handleChatOpen} />
 
       <main className="pb-28">
+        <HeroBanner />
         <ServiceGrid />
       </main>
 
