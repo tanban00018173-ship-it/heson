@@ -226,7 +226,7 @@ export default function CleanerJobs() {
             </nav>
 
             {/* 登出 */}
-            <div className="p-4 pb-24 border-t border-stone-100">
+            <div className="p-4 border-t border-stone-100">
               <button
                 onClick={() => base44.auth.logout()}
                 className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium text-stone-500 hover:bg-stone-50 w-full transition-colors"
