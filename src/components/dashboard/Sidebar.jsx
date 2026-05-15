@@ -18,7 +18,7 @@ import {
 import { base44 } from "@/api/base44Client";
 import AdminViewSwitcher from "@/components/AdminViewSwitcher";
 
-export default function Sidebar({ userRole = 'client', userName = '' }) {
+export default function Sidebar({ userRole = 'client', userName = '', isAdmin = false }) {
   const location = useLocation();
 
   const clientLinks = [
@@ -75,7 +75,7 @@ export default function Sidebar({ userRole = 'client', userName = '' }) {
             className="h-8 w-auto"
           />
         </Link>
-        {userRole === 'admin' && (
+        {(userRole === 'admin' || isAdmin) && (
           <div className="mt-3">
             <AdminViewSwitcher />
           </div>
@@ -112,7 +112,13 @@ export default function Sidebar({ userRole = 'client', userName = '' }) {
       </nav>
 
       {/* Footer */}
-      <div className="p-4 border-t border-stone-100">
+      <div className="p-4 border-t border-stone-100 space-y-2">
+        {isAdmin && userRole !== 'admin' && (
+          <div className="mb-1">
+            <p className="text-xs text-stone-400 px-1 mb-1.5">切換視角</p>
+            <AdminViewSwitcher />
+          </div>
+        )}
         <button
           onClick={handleLogout}
           className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-stone-500 hover:bg-stone-50 hover:text-stone-700 w-full transition-all"

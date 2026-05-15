@@ -19,7 +19,7 @@ import { base44 } from "@/api/base44Client";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import AdminViewSwitcher from "@/components/AdminViewSwitcher";
 
-export default function MobileNav({ userRole = 'client', userName = '' }) {
+export default function MobileNav({ userRole = 'client', userName = '', isAdmin = false }) {
   const [open, setOpen] = useState(false);
   const location = useLocation();
 
@@ -84,7 +84,7 @@ export default function MobileNav({ userRole = 'client', userName = '' }) {
           </SheetTrigger>
           <SheetContent side="right" className="w-72 p-0">
             <div className="p-6 border-b border-stone-100">
-              {userRole === 'admin' && <div className="mb-3"><AdminViewSwitcher /></div>}
+              {(userRole === 'admin' || isAdmin) && <div className="mb-3"><AdminViewSwitcher /></div>}
               <p className="text-sm text-stone-500">
                 您好，{userName || '訪客'}
               </p>
@@ -112,7 +112,13 @@ export default function MobileNav({ userRole = 'client', userName = '' }) {
                 })}
               </ul>
             </nav>
-            <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-stone-100">
+            <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-stone-100 space-y-2">
+              {isAdmin && userRole !== 'admin' && (
+                <div>
+                  <p className="text-xs text-stone-400 px-1 mb-1.5">切換視角</p>
+                  <AdminViewSwitcher />
+                </div>
+              )}
               <button
                 onClick={handleLogout}
                 className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-stone-500 hover:bg-stone-50 hover:text-stone-700 w-full transition-all"
