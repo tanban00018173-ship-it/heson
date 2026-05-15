@@ -222,14 +222,8 @@ export default function CleanerJobs() {
               ))}
             </nav>
 
-            {/* 切換視角 + 登出 */}
-            <div className="p-4 border-t border-stone-100 space-y-2">
-              {user?.role === 'admin' && (
-                <div>
-                  <p className="text-xs text-stone-400 px-1 mb-1.5">切換視角</p>
-                  <AdminViewSwitcher />
-                </div>
-              )}
+            {/* 登出 */}
+            <div className="p-4 border-t border-stone-100">
               <button
                 onClick={() => base44.auth.logout()}
                 className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium text-stone-500 hover:bg-stone-50 w-full transition-colors"

@@ -61,9 +61,9 @@ export default function ClientDashboard() {
   return (
     <div className="min-h-screen bg-[#f6f9ff] flex font-body">
       <div className="hidden lg:block">
-        <Sidebar userRole="client" userName={user?.full_name} isAdmin={user?.role === 'admin'} />
+        <Sidebar userRole="client" userName={user?.full_name} />
       </div>
-      <MobileNav userRole="client" userName={user?.full_name} isAdmin={user?.role === 'admin'} />
+      <MobileNav userRole="client" userName={user?.full_name} />
 
       <main className="flex-1 pt-16 lg:pt-0 pb-8">
         <div className="p-6 lg:p-8 max-w-5xl mx-auto">
