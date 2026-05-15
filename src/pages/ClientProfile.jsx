@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Sidebar from "@/components/dashboard/Sidebar";
 import MobileNav from "@/components/dashboard/MobileNav";
+import ClientBottomNav from "@/components/dashboard/ClientBottomNav";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
@@ -84,7 +85,7 @@ export default function ClientProfile() {
       <MobileNav userRole="client" userName={user?.full_name} />
 
       <main className="flex-1 pt-16 lg:pt-0">
-        <div className="p-6 lg:p-8 max-w-2xl mx-auto">
+        <div className="p-6 lg:p-8 max-w-2xl mx-auto pb-28">
           {/* Header */}
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
             <p className="text-xs font-semibold tracking-widest uppercase text-stone-400 font-headline mb-1">帳戶設定</p>
@@ -273,6 +274,7 @@ export default function ClientProfile() {
           </motion.div>
         </div>
       </main>
+      <ClientBottomNav />
     </div>
   );
 }
