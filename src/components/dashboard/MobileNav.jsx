@@ -24,11 +24,19 @@ export default function MobileNav({ userRole = 'client', userName = '' }) {
   const location = useLocation();
 
   const clientLinks = [
-    { name: "我的", path: "ClientProfile", icon: User },
+    { name: "我的方案", path: "ClientDashboard", icon: Home },
+    { name: "我的預約", path: "MyBookings", icon: Calendar },
+    { name: "新增預約", path: "ClientBooking", icon: Calendar },
+    { name: "服務紀錄", path: "ClientHistory", icon: ClipboardList },
+    { name: "個人資料", path: "ClientProfile", icon: User },
   ];
 
   const cleanerLinks = [
-    { name: "我的", path: "CleanerProfile", icon: User },
+    { name: "接案列表", path: "CleanerJobs", icon: ClipboardList },
+    { name: "我的行程", path: "CleanerSchedule", icon: Calendar },
+    { name: "服務回報", path: "CleanerReport", icon: FileText },
+    { name: "個人資料", path: "CleanerProfile", icon: User },
+    { name: "前台（客戶視角）", path: "ClientDashboard", icon: Home },
   ];
 
   const adminLinks = [
