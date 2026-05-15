@@ -5,6 +5,7 @@ import Navbar from '@/components/landing/Navbar';
 import Footer from '@/components/landing/Footer';
 import Sidebar from '@/components/dashboard/Sidebar';
 import MobileNav from '@/components/dashboard/MobileNav';
+import ClientBottomNav from '@/components/dashboard/ClientBottomNav';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -90,7 +91,7 @@ export default function MyBookings() {
         </div>
         
         <main className="flex-1">
-          <div className="container mx-auto px-4 lg:px-8 py-8">
+          <div className="container mx-auto px-4 lg:px-8 py-8 pb-28 lg:pb-8">
             {/* Header */}
             <div className="mb-8">
               <h1 className="text-2xl md:text-3xl font-light text-stone-800 mb-2 break-words">我的預約</h1>
@@ -211,7 +212,7 @@ export default function MyBookings() {
         </main>
       </div>
 
-      <Footer />
+      <ClientBottomNav />
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={!!deleteConfirmId} onOpenChange={(open) => !open && setDeleteConfirmId(null)}>
