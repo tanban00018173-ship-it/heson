@@ -24,7 +24,7 @@ export default function ClientShop() {
 
   return (
     <div className="min-h-screen bg-stone-50">
-      <main className="pt-0 pb-28">
+      <main className="pt-0 pb-40">
         {/* Header */}
         <div className="bg-white border-b border-stone-100 px-4 py-5 sticky top-0 z-30">
           <div className="max-w-2xl mx-auto">
