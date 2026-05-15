@@ -1,0 +1,51 @@
+{
+  "name": "DirectMessage",
+  "type": "object",
+  "properties": {
+    "conversation_id": {
+      "type": "string",
+      "description": "\u5c0d\u8a71 ID\uff08\u7531\u5169\u500b user ID \u6392\u5e8f\u5f8c\u7d44\u6210\uff0c\u4f8b\u5982 uid_a__uid_b\uff09"
+    },
+    "sender_id": {
+      "type": "string",
+      "description": "\u767c\u9001\u8005 user ID"
+    },
+    "sender_name": {
+      "type": "string",
+      "description": "\u767c\u9001\u8005\u59d3\u540d"
+    },
+    "receiver_id": {
+      "type": "string",
+      "description": "\u63a5\u6536\u8005 user ID"
+    },
+    "text": {
+      "type": "string",
+      "description": "\u8a0a\u606f\u5167\u5bb9"
+    }
+  },
+  "required": [
+    "conversation_id",
+    "sender_id",
+    "receiver_id",
+    "text"
+  ],
+  "rls": {
+    "create": {},
+    "read": {
+      "$or": [
+        {
+          "data.sender_id": "{{user.id}}"
+        },
+        {
+          "data.receiver_id": "{{user.id}}"
+        }
+      ]
+    },
+    "update": {
+      "data.sender_id": "{{user.id}}"
+    },
+    "delete": {
+      "data.sender_id": "{{user.id}}"
+    }
+  }
+}
