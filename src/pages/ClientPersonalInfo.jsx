@@ -269,7 +269,7 @@ export default function ClientPersonalInfo() {
           <RowItem
             label="手機號碼"
             value={maskPhone(profile?.phone)}
-            onEdit={() => openEdit({ key: 'phone', title: '手機號碼', value: '', inputType: 'tel', placeholder: '請輸入手機號碼' })}
+            onEdit={() => openEdit({ key: 'phone', title: '手機號碼', value: profile?.phone, inputType: 'tel', placeholder: '請輸入手機號碼' })}
           />
           <RowItem
             label="電子郵件"
