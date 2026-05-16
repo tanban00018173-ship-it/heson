@@ -27,14 +27,16 @@ function EditSheet({ open, title, value, onClose, onSave, inputType = 'text', pl
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col justify-end">
+    <div className="fixed inset-0 z-50 flex flex-col justify-end" style={{ paddingBottom: 'env(keyboard-inset-height, 0px)' }}>
       {/* 背景遮罩 */}
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
       {/* 面板 */}
-      <div className="relative bg-white rounded-t-3xl px-5 pt-5 pb-8 flex flex-col gap-4 animate-in slide-in-from-bottom duration-200">
+      <div className="relative bg-white rounded-t-3xl px-5 pt-5 pb-8 flex flex-col gap-4 animate-in slide-in-from-bottom duration-200"
+        style={{ marginBottom: 'env(keyboard-inset-height, 0px)' }}
+      >
         {/* 標題列 */}
         <div className="flex items-center justify-between">
-          <h2 className="text-base font-bold text-stone-900">編輯{title}</h2>
+          <h2 className="text-base font-bold text-stone-900 flex-1 text-center">編輯{title}</h2>
           <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full bg-stone-100 hover:bg-stone-200 transition-colors">
             <X className="w-4 h-4 text-stone-600" />
           </button>
@@ -67,6 +69,7 @@ function EditSheet({ open, title, value, onClose, onSave, inputType = 'text', pl
             placeholder={placeholder}
             className="w-full border border-stone-200 rounded-xl px-4 py-3 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-stone-300"
             autoFocus
+            onFocus={e => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
           />
         )}
         {/* 儲存按鈕 */}
