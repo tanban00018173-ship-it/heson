@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { ShoppingBag, Package, Search, ShoppingCart } from 'lucide-react';
+import { ShoppingBag, Package, Search, ShoppingCart, MessageCircle } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { useCart } from '@/lib/CartContext';
+import CartDrawer from '@/components/home/CartDrawer';
 import ClientBottomNav from '@/components/dashboard/ClientBottomNav';
 import { toast } from 'sonner';
 
@@ -22,15 +25,39 @@ export default function ClientShop() {
     return matchCat && matchSearch;
   });
 
+  const { totalCount, setOpen: setCartOpen } = useCart();
+
   return (
     <div className="min-h-screen bg-stone-50">
       <main className="pt-0 pb-40">
-        {/* Header */}
-        <div className="bg-white border-b border-stone-100 px-4 py-5 sticky top-0 z-30">
+        {/* Header — 與首頁相同佈局 */}
+        <div className="bg-white border-b border-stone-100 px-4 py-3 sticky top-0 z-30">
           <div className="max-w-2xl mx-auto">
+            {/* 第一行：標題 + 購物車 + 聊聊 */}
             <div className="flex items-center gap-2 mb-3">
-              <ShoppingBag className="w-5 h-5 text-amber-500" />
-              <h1 className="text-lg font-bold text-stone-900">赫頌商店</h1>
+              <div className="flex items-center gap-2 flex-1">
+                <ShoppingBag className="w-5 h-5 text-amber-500" />
+                <h1 className="text-lg font-bold text-stone-900">赫頌商店</h1>
+              </div>
+              {/* 購物車 */}
+              <button
+                onClick={() => setCartOpen(true)}
+                className="relative w-10 h-10 flex items-center justify-center rounded-2xl bg-stone-100 hover:bg-stone-200 transition-colors"
+              >
+                <ShoppingCart className="w-5 h-5 text-stone-700" />
+                {totalCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-amber-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                    {totalCount > 9 ? '9+' : totalCount}
+                  </span>
+                )}
+              </button>
+              {/* 聊聊 */}
+              <Link
+                to="/VendorChatPage"
+                className="w-10 h-10 flex items-center justify-center rounded-2xl bg-stone-900 hover:bg-stone-700 transition-colors"
+              >
+                <MessageCircle className="w-5 h-5 text-white" />
+              </Link>
             </div>
             {/* Search */}
             <div className="relative">
@@ -131,6 +158,7 @@ export default function ClientShop() {
         </div>
       </main>
 
+      <CartDrawer />
       <ClientBottomNav />
     </div>
   );

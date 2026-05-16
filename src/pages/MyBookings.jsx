@@ -280,9 +280,12 @@ export default function MyBookings() {
       <main className="pt-0 pb-28">
         <div className="max-w-2xl mx-auto">
 
-          {/* 頂部 Header — 白色，仿蝦皮 */}
-          <div className="bg-white border-b border-stone-100 px-4 pt-10 pb-3 sticky top-0 z-20">
-            <div className="flex items-center justify-between">
+          {/* 頂部 Header — 與首頁相同佈局 */}
+          <div className="bg-white border-b border-stone-100 px-4 py-3 sticky top-0 z-20">
+            <div className="flex items-center gap-2">
+              {/* 標題（佔滿左側空間） */}
+              <h1 className="flex-1 text-lg font-bold text-stone-900">通知</h1>
+
               {/* 購物車 */}
               <button
                 onClick={() => setCartOpen(true)}
@@ -296,20 +299,12 @@ export default function MyBookings() {
                 )}
               </button>
 
-              {/* 標題置中 */}
-              <h1 className="text-lg font-bold text-stone-900">通知</h1>
-
               {/* 聊聊 */}
               <Link
                 to="/VendorChatPage"
-                className="relative w-10 h-10 flex items-center justify-center rounded-2xl bg-stone-900 hover:bg-stone-700 transition-colors"
+                className="w-10 h-10 flex items-center justify-center rounded-2xl bg-stone-900 hover:bg-stone-700 transition-colors"
               >
                 <MessageCircle className="w-5 h-5 text-white" />
-                {unreadCount > 0 && (
-                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
-                    {unreadCount > 9 ? '9+' : unreadCount}
-                  </span>
-                )}
               </Link>
             </div>
           </div>
