@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { Home, ShoppingBag, Zap, Bell, User } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { motion } from 'framer-motion';
 
 const TABS = [
   { id: 'home',    icon: Home,        label: '首頁',  path: 'Home' },
@@ -28,10 +28,32 @@ export default function ClientBottomNav() {
           if (primary) {
             return (
               <Link key={id} to={href} className="flex-1 flex flex-col items-center justify-center py-2 relative">
-                <div className="w-12 h-12 bg-gold-500 rounded-2xl flex items-center justify-center shadow-lg shadow-gold-500/40 -mt-5 mb-0.5">
-                  <Icon className="w-6 h-6 text-white" strokeWidth={2.5} />
+                {/* 光暈脈衝 */}
+                <div className="relative -mt-6 mb-0.5">
+                  <motion.div
+                    className="absolute inset-0 rounded-2xl bg-gold-400"
+                    animate={{ scale: [1, 1.35], opacity: [0.5, 0] }}
+                    transition={{ duration: 1.6, repeat: Infinity, ease: 'easeOut' }}
+                  />
+                  <motion.div
+                    className="absolute inset-0 rounded-2xl bg-gold-300"
+                    animate={{ scale: [1, 1.6], opacity: [0.3, 0] }}
+                    transition={{ duration: 1.6, repeat: Infinity, ease: 'easeOut', delay: 0.3 }}
+                  />
+                  <motion.div
+                    whileTap={{ scale: 0.9 }}
+                    className="relative w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg"
+                    style={{ background: 'linear-gradient(135deg, #e8c96a 0%, #c9a84c 50%, #a87c2a 100%)', boxShadow: '0 4px 20px rgba(201,168,76,0.6)' }}
+                  >
+                    <motion.div
+                      animate={{ rotate: [0, 15, -15, 0] }}
+                      transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
+                    >
+                      <Zap className="w-7 h-7 text-white drop-shadow" strokeWidth={2.5} fill="white" />
+                    </motion.div>
+                  </motion.div>
                 </div>
-                <span className="text-[10px] font-semibold text-gold-500">{label}</span>
+                <span className="text-[10px] font-bold text-gold-600 tracking-wide">閃電任務</span>
               </Link>
             );
           }
