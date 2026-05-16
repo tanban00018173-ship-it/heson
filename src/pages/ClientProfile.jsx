@@ -1,24 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { createPortal } from 'react-dom';
 import { Link, useNavigate } from "react-router-dom";
 import ClientBottomNav from "@/components/dashboard/ClientBottomNav";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, Save, User, Home, X, ShoppingBag, Calendar, LogOut, Edit2 } from "lucide-react";
+import { Loader2, Save, User, Home, ShoppingBag, Calendar, LogOut, Edit2, ChevronRight, HelpCircle, MessageSquare, Shield, Phone, FileText } from "lucide-react";
 import { toast } from "sonner";
-import { motion } from "framer-motion";
 import { createPageUrl } from "@/utils";
 
 export default function ClientProfile() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [editMode, setEditMode] = useState(false);
   const queryClient = useQueryClient();
   const [formData, setFormData] = useState({
     phone: '',
@@ -32,10 +27,7 @@ export default function ClientProfile() {
   useEffect(() => {
     const loadUser = async () => {
       const isAuth = await base44.auth.isAuthenticated();
-      if (!isAuth) {
-        base44.auth.redirectToLogin();
-        return;
-      }
+      if (!isAuth) { base44.auth.redirectToLogin(); return; }
       const userData = await base44.auth.me();
       setUser(userData);
     };
@@ -76,6 +68,7 @@ export default function ClientProfile() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['clientProfile'] });
       toast.success("資料已更新");
+      setEditMode(false);
     },
   });
 
@@ -86,8 +79,8 @@ export default function ClientProfile() {
 
   if (!user || isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full" />
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <div className="animate-spin w-8 h-8 border-2 border-stone-800 border-t-transparent rounded-full" />
       </div>
     );
   }
@@ -96,267 +89,194 @@ export default function ClientProfile() {
   const avatarLetter = displayName?.[0]?.toUpperCase() || 'U';
 
   return (
-    <div className="min-h-screen bg-stone-50">
-      {/* 漢堡菜單按鈕 (mobile only) */}
-      <button
-        onClick={() => setMenuOpen(true)}
-        className="lg:hidden fixed top-4 right-4 z-30 w-10 h-10 bg-white rounded-full shadow-md flex items-center justify-center hover:shadow-lg transition-shadow"
-      >
-        <User className="w-5 h-5 text-stone-700" />
-      </button>
+    <div className="min-h-screen bg-white flex flex-col">
+      {/* 黑色頭像區 */}
+      <div className="bg-black pt-10 pb-6 px-6 text-white">
+        <div className="flex items-center gap-4">
+          <div className="w-16 h-16 rounded-full bg-stone-700 flex items-center justify-center border-2 border-white/20">
+            <span className="text-2xl font-bold text-white">{avatarLetter}</span>
+          </div>
+          <div className="flex-1">
+            <p className="text-lg font-bold">{displayName}</p>
+            <p className="text-white/40 text-sm">{user?.email}</p>
+          </div>
+          <button
+            onClick={() => navigate('/ClientProfileEdit')}
+            className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors"
+          >
+            <Edit2 className="w-4 h-4 text-white" />
+          </button>
+        </div>
 
-      {/* 漢堡菜單 Portal */}
-      {menuOpen && createPortal(
-        <>
-          <div
-            style={{ position: 'fixed', inset: 0, zIndex: 99999, background: 'rgba(0,0,0,0.35)' }}
-            onClick={() => setMenuOpen(false)}
-          />
-          <div style={{
-            position: 'fixed', top: 0, right: 0, bottom: 0, zIndex: 100000,
-            width: '280px', background: '#fff',
-            boxShadow: '-4px 0 32px rgba(0,0,0,0.15)',
-            display: 'flex', flexDirection: 'column'
-          }}>
-            {/* 頭像區 */}
-            <div className="flex items-center gap-4 p-6 bg-black border-b border-stone-800">
-              <div className="w-14 h-14 rounded-full bg-stone-700 border-2 border-white/20 flex items-center justify-center flex-shrink-0 overflow-hidden">
-                <span className="text-xl font-bold text-white">{avatarLetter}</span>
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-semibold text-white truncate">{displayName}</p>
-                <p className="text-xs text-white/40 mt-0.5 truncate">{user?.email}</p>
-              </div>
-              <button onClick={() => setMenuOpen(false)} className="text-white/40 hover:text-white flex-shrink-0">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+        {/* 訂閱方案統計 */}
+        <div className="grid grid-cols-2 gap-2 mt-5">
+          <div className="bg-white/10 rounded-xl p-3 text-center">
+            <p className="text-base font-bold">{profile?.subscription_plan || '—'}</p>
+            <p className="text-white/40 text-xs">目前方案</p>
+          </div>
+          <div className="bg-white/10 rounded-xl p-3 text-center">
+            <p className="text-base font-bold">{profile?.remaining_visits ?? '—'}</p>
+            <p className="text-white/40 text-xs">剩餘次數</p>
+          </div>
+        </div>
+      </div>
 
-            {/* 選單項目 */}
-            <nav className="flex-1 p-4 space-y-1">
-              {[
-                { to: 'Home', icon: Home, label: '首頁' },
-                { to: 'ClientShop', icon: ShoppingBag, label: '商店' },
-                { to: 'MyBookings', icon: Calendar, label: '我的訂單' },
-                { to: 'ClientProfile', icon: User, label: '個人資料', active: true },
-              ].map(({ to, icon: Icon, label, active }) => (
-                <Link
-                  key={to}
-                  to={createPageUrl(to)}
-                  onClick={() => setMenuOpen(false)}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium transition-colors ${
-                    active ? 'bg-stone-100 text-black font-semibold' : 'text-stone-500 hover:bg-stone-50'
-                  }`}
-                >
-                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${active ? 'bg-black' : 'bg-stone-100'}`}>
-                    <Icon className={`w-4 h-4 ${active ? 'text-white' : 'text-stone-500'}`} />
-                  </div>
-                  {label}
-                </Link>
-              ))}
-            </nav>
+      {/* 內容區 */}
+      <div className="flex-1 overflow-y-auto pb-28">
+        <div className="p-4 space-y-2">
 
-            {/* 登出 */}
-            <div className="p-4 border-t border-stone-100">
+          {/* 居家資訊 */}
+          <div className="bg-white rounded-xl overflow-hidden border border-stone-100">
+            <div className="flex items-center justify-between px-4 pt-4 pb-2">
+              <p className="text-xs font-semibold text-stone-400 uppercase tracking-wider">居家資訊</p>
               <button
-                onClick={() => base44.auth.logout()}
-                className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium text-stone-500 hover:bg-stone-50 w-full transition-colors"
+                onClick={() => setEditMode(!editMode)}
+                className="text-xs text-stone-500 hover:text-stone-800 transition-colors font-medium"
               >
-                <div className="w-8 h-8 rounded-xl bg-stone-100 flex items-center justify-center">
-                  <LogOut className="w-4 h-4 text-stone-500" />
-                </div>
-                登出
+                {editMode ? '取消' : '編輯'}
               </button>
             </div>
-          </div>
-        </>,
-        document.body
-      )}
 
-      <main className="pt-0 pb-28">
-        <div className="p-6 lg:p-8 max-w-2xl mx-auto">
-          {/* Header */}
-          <div className="mb-8">
-            <h1 className="text-2xl font-medium text-stone-800">個人資料</h1>
-            <p className="text-stone-500 mt-1">管理您的帳戶資訊</p>
-          </div>
-
-          {/* User Info Card */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4 }}
-          >
-            <Card className="mb-6 shadow-lg border-0">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center">
-                      <User className="w-8 h-8 text-amber-600" />
-                    </div>
-                    <div>
-                      <h2 className="text-lg font-medium text-stone-800">{displayName}</h2>
-                      <p className="text-stone-500">{user?.email}</p>
-                    </div>
-                  </div>
-                  <Button
-                    size="icon"
-                    onClick={() => navigate('/ClientProfileEdit')}
-                    className="bg-stone-100 hover:bg-stone-200 text-stone-700"
-                  >
-                    <Edit2 className="w-4 h-4" />
-                  </Button>
+            {editMode ? (
+              <form onSubmit={handleSubmit} className="px-4 pb-4 space-y-3">
+                <div>
+                  <Label className="text-xs text-stone-500 mb-1 block">聯絡電話</Label>
+                  <Input
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    placeholder="0912-345-678"
+                    className="rounded-xl"
+                  />
                 </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          {/* Profile Form */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.1 }}
-          >
-            <Card className="shadow-lg border-0">
-              <CardHeader>
-                <CardTitle className="text-lg">聯絡資訊</CardTitle>
-                <CardDescription>
-                  更新您的聯絡方式與服務地址
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleSubmit} className="space-y-6">
-                  {/* Basic Info */}
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="phone">聯絡電話</Label>
-                      <Input
-                        id="phone"
-                        value={formData.phone}
-                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                        placeholder="0912-345-678"
-                        className="rounded-xl"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="housing_type">房屋類型</Label>
-                      <Input
-                        id="housing_type"
-                        value={formData.housing_type}
-                        onChange={(e) => setFormData({ ...formData, housing_type: e.target.value })}
-                        placeholder="例：公寓、大樓、透天"
-                        className="rounded-xl"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="address">服務地址</Label>
+                <div>
+                  <Label className="text-xs text-stone-500 mb-1 block">服務地址</Label>
+                  <Input
+                    value={formData.address}
+                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                    placeholder="完整服務地址"
+                    className="rounded-xl"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-xs text-stone-500 mb-1 block">房屋類型</Label>
                     <Input
-                      id="address"
-                      value={formData.address}
-                      onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                      placeholder="完整服務地址"
+                      value={formData.housing_type}
+                      onChange={(e) => setFormData({ ...formData, housing_type: e.target.value })}
+                      placeholder="公寓、大樓..."
                       className="rounded-xl"
                     />
                   </div>
-
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="square_footage">坪數</Label>
-                      <Input
-                        id="square_footage"
-                        type="number"
-                        value={formData.square_footage}
-                        onChange={(e) => setFormData({ ...formData, square_footage: e.target.value })}
-                        placeholder="例：30"
-                        className="rounded-xl"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="family_members">家庭成員</Label>
-                      <Input
-                        id="family_members"
-                        value={formData.family_members}
-                        onChange={(e) => setFormData({ ...formData, family_members: e.target.value })}
-                        placeholder="例：2 大 1 小"
-                        className="rounded-xl"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Switches */}
-                  <div className="flex items-center justify-between p-4 bg-stone-50 rounded-xl">
-                    <div>
-                      <Label htmlFor="pets" className="cursor-pointer">有寵物</Label>
-                      <p className="text-sm text-stone-500 mt-1">
-                        家中飼養寵物
-                      </p>
-                    </div>
-                    <Switch
-                      id="pets"
-                      checked={formData.has_pets}
-                      onCheckedChange={(checked) => setFormData({ ...formData, has_pets: checked })}
+                  <div>
+                    <Label className="text-xs text-stone-500 mb-1 block">坪數</Label>
+                    <Input
+                      type="number"
+                      value={formData.square_footage}
+                      onChange={(e) => setFormData({ ...formData, square_footage: e.target.value })}
+                      placeholder="30"
+                      className="rounded-xl"
                     />
                   </div>
-
-                  {/* Submit */}
-                  <Button
-                    type="submit"
-                    disabled={saveMutation.isPending}
-                    className="w-full bg-stone-800 hover:bg-stone-900 text-white py-6 rounded-xl text-base"
-                  >
-                    {saveMutation.isPending ? (
-                      <>
-                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                        儲存中...
-                      </>
-                    ) : (
-                      <>
-                        <Save className="mr-2 h-5 w-5" />
-                        儲存資料
-                      </>
-                    )}
-                  </Button>
-                </form>
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          {/* Subscription Info */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.2 }}
-            className="mt-6"
-          >
-            <Card className="shadow-lg border-0">
-              <CardHeader>
-                <CardTitle className="text-lg">訂閱資訊</CardTitle>
-                <CardDescription>
-                  查看您的方案與剩餘次數
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="p-4 bg-stone-50 rounded-xl">
-                    <p className="text-xs text-stone-500 font-semibold uppercase tracking-wide mb-1">目前方案</p>
-                    <p className="font-headline font-bold text-stone-900 text-base">
-                      {profile?.subscription_plan || '無'}
-                    </p>
-                  </div>
-                  <div className="p-4 bg-stone-50 rounded-xl">
-                    <p className="text-xs text-stone-500 font-semibold uppercase tracking-wide mb-1">剩餘次數</p>
-                    <p className="font-headline font-bold text-stone-900 text-base">
-                      {profile?.remaining_visits ?? 0} 次
-                    </p>
-                  </div>
                 </div>
-              </CardContent>
-            </Card>
-          </motion.div>
+                <div>
+                  <Label className="text-xs text-stone-500 mb-1 block">家庭成員</Label>
+                  <Input
+                    value={formData.family_members}
+                    onChange={(e) => setFormData({ ...formData, family_members: e.target.value })}
+                    placeholder="例：2 大 1 小"
+                    className="rounded-xl"
+                  />
+                </div>
+                <div className="flex items-center justify-between py-2">
+                  <Label className="text-sm text-stone-700 cursor-pointer">有寵物</Label>
+                  <Switch
+                    checked={formData.has_pets}
+                    onCheckedChange={(checked) => setFormData({ ...formData, has_pets: checked })}
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={saveMutation.isPending}
+                  className="w-full bg-black text-white py-3 rounded-xl text-sm font-semibold hover:bg-stone-800 transition-colors flex items-center justify-center gap-2"
+                >
+                  {saveMutation.isPending ? (
+                    <><Loader2 className="w-4 h-4 animate-spin" />儲存中...</>
+                  ) : (
+                    <><Save className="w-4 h-4" />儲存資料</>
+                  )}
+                </button>
+              </form>
+            ) : (
+              <div className="border-t border-stone-50">
+                {[
+                  { label: '聯絡電話', value: formData.phone || '尚未填寫' },
+                  { label: '服務地址', value: formData.address || '尚未填寫' },
+                  { label: '房屋類型', value: formData.housing_type || '尚未填寫' },
+                  { label: '坪數', value: formData.square_footage ? `${formData.square_footage} 坪` : '尚未填寫' },
+                  { label: '家庭成員', value: formData.family_members || '尚未填寫' },
+                  { label: '有寵物', value: formData.has_pets ? '是' : '否' },
+                ].map(({ label, value }) => (
+                  <div key={label} className="flex items-center justify-between px-4 py-3 border-b border-stone-50 last:border-0">
+                    <span className="text-sm text-stone-400">{label}</span>
+                    <span className="text-sm font-medium text-stone-800">{value}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* 快速連結 */}
+          <div className="bg-white rounded-xl overflow-hidden border border-stone-100">
+            <p className="px-4 pt-4 pb-2 text-xs font-semibold text-stone-400 uppercase tracking-wider">快速連結</p>
+            {[
+              { icon: Calendar, label: '我的預約', desc: '查看即將到來的服務', to: '/MyBookings' },
+              { icon: FileText, label: '服務紀錄', desc: '過往清潔紀錄與報告', to: '/ClientHistory' },
+            ].map(({ icon: Icon, label, desc, to }) => (
+              <button key={label} onClick={() => navigate(to)}
+                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-stone-50 transition-colors border-t border-stone-50">
+                <div className="w-9 h-9 rounded-lg bg-stone-100 flex items-center justify-center flex-shrink-0">
+                  <Icon className="w-4 h-4 text-stone-600" />
+                </div>
+                <div className="flex-1 text-left">
+                  <p className="text-sm font-medium text-stone-800">{label}</p>
+                  <p className="text-xs text-stone-400">{desc}</p>
+                </div>
+                <ChevronRight className="w-4 h-4 text-stone-300" />
+              </button>
+            ))}
+          </div>
+
+          {/* 幫助 & 支援 */}
+          <div className="bg-white rounded-xl overflow-hidden border border-stone-100">
+            <p className="px-4 pt-4 pb-2 text-xs font-semibold text-stone-400 uppercase tracking-wider">幫助 & 支援</p>
+            {[
+              { icon: HelpCircle, label: '常見問題（FAQ）', to: '/FAQ' },
+              { icon: MessageSquare, label: '聯絡客服' },
+              { icon: Phone, label: '緊急聯絡電話' },
+              { icon: Shield, label: '隱私政策', to: '/PrivacyPolicy' },
+            ].map(({ icon: Icon, label, to }) => (
+              <button key={label} onClick={() => to && navigate(to)}
+                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-stone-50 transition-colors border-t border-stone-50">
+                <div className="w-9 h-9 rounded-lg bg-stone-100 flex items-center justify-center flex-shrink-0">
+                  <Icon className="w-4 h-4 text-stone-600" />
+                </div>
+                <span className="flex-1 text-sm font-medium text-stone-800 text-left">{label}</span>
+                <ChevronRight className="w-4 h-4 text-stone-300" />
+              </button>
+            ))}
+          </div>
+
+          {/* 登出 */}
+          <button onClick={() => base44.auth.logout()}
+            className="w-full bg-white rounded-xl p-4 flex items-center gap-3 border border-stone-100 hover:bg-stone-50 transition-colors">
+            <div className="w-9 h-9 rounded-lg bg-stone-100 flex items-center justify-center">
+              <LogOut className="w-4 h-4 text-stone-500" />
+            </div>
+            <span className="text-sm font-medium text-stone-600">登出</span>
+          </button>
+
         </div>
-      </main>
+      </div>
 
       <ClientBottomNav />
     </div>
