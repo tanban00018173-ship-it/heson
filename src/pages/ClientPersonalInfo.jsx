@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -15,6 +15,86 @@ function maskEmail(email) {
   const [local, domain] = email.split('@');
   if (!domain) return email;
   return local.slice(0, 2) + '***@' + domain;
+}
+
+function WheelColumn({ items, selected, onSelect }) {
+  const ITEM_H = 44;
+  const ref = React.useRef(null);
+
+  useEffect(() => {
+    const idx = items.indexOf(selected);
+    if (ref.current && idx >= 0) {
+      ref.current.scrollTop = idx * ITEM_H;
+    }
+  }, [selected, items]);
+
+  const handleScroll = () => {
+    if (!ref.current) return;
+    const idx = Math.round(ref.current.scrollTop / ITEM_H);
+    if (items[idx] !== undefined) onSelect(items[idx]);
+  };
+
+  return (
+    <div className="relative flex-1 overflow-hidden" style={{ height: ITEM_H * 5 }}>
+      {/* 選中高亮條 */}
+      <div className="absolute left-0 right-0 pointer-events-none z-10"
+        style={{ top: ITEM_H * 2, height: ITEM_H, background: 'rgba(0,0,0,0.06)', borderRadius: 10 }} />
+      <div
+        ref={ref}
+        onScroll={handleScroll}
+        className="overflow-y-scroll h-full scrollbar-hide snap-y snap-mandatory"
+        style={{ scrollSnapType: 'y mandatory', paddingTop: ITEM_H * 2, paddingBottom: ITEM_H * 2 }}
+      >
+        {items.map(item => (
+          <div
+            key={item}
+            className="snap-center flex items-center justify-center text-sm font-medium text-stone-800 cursor-pointer"
+            style={{ height: ITEM_H }}
+            onClick={() => {
+              onSelect(item);
+              const idx = items.indexOf(item);
+              ref.current.scrollTo({ top: idx * ITEM_H, behavior: 'smooth' });
+            }}
+          >
+            {item}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function DateWheelPicker({ value, onChange }) {
+  const now = new Date();
+  const parsed = value ? value.split('-') : [];
+  const [year, setYear] = useState(parsed[0] || String(now.getFullYear() - 25));
+  const [month, setMonth] = useState(parsed[1] || '01');
+  const [day, setDay] = useState(parsed[2] || '01');
+
+  const years = Array.from({ length: 80 }, (_, i) => String(now.getFullYear() - 5 - i));
+  const months = Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, '0'));
+  const daysInMonth = new Date(Number(year), Number(month), 0).getDate();
+  const days = Array.from({ length: daysInMonth }, (_, i) => String(i + 1).padStart(2, '0'));
+
+  useEffect(() => {
+    onChange(`${year}-${month}-${day}`);
+  }, [year, month, day]);
+
+  // 若 day 超出該月天數，自動修正
+  useEffect(() => {
+    if (Number(day) > daysInMonth) setDay(String(daysInMonth).padStart(2, '0'));
+  }, [month, year]);
+
+  return (
+    <div className="flex gap-2 items-center px-2">
+      <WheelColumn items={years} selected={year} onSelect={setYear} />
+      <span className="text-stone-400 text-sm">年</span>
+      <WheelColumn items={months} selected={month} onSelect={setMonth} />
+      <span className="text-stone-400 text-sm">月</span>
+      <WheelColumn items={days} selected={day} onSelect={setDay} />
+      <span className="text-stone-400 text-sm">日</span>
+    </div>
+  );
 }
 
 function EditSheet({ open, title, value, onClose, onSave, inputType = 'text', placeholder = '' }) {
@@ -53,12 +133,7 @@ function EditSheet({ open, title, value, onClose, onSave, inputType = 'text', pl
             ))}
           </div>
         ) : inputType === 'date' ? (
-          <input
-            type="date"
-            value={draft}
-            onChange={e => setDraft(e.target.value)}
-            className="w-full border border-stone-200 rounded-xl px-4 py-3 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-stone-300"
-          />
+          <DateWheelPicker value={draft} onChange={setDraft} />
         ) : (
           <input
             type={inputType}
