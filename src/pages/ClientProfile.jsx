@@ -6,7 +6,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, Save, User, Home, ShoppingBag, Calendar, LogOut, Edit2, ChevronRight, HelpCircle, MessageSquare, Shield, Phone, FileText, LayoutDashboard, Users, Zap } from "lucide-react";
+import { Loader2, Calendar, LogOut, ChevronRight, HelpCircle, MessageSquare, Shield, Phone, FileText, LayoutDashboard, Zap, Settings, ShoppingBag } from "lucide-react";
 import { toast } from "sonner";
 import { createPageUrl } from "@/utils";
 
@@ -91,31 +91,40 @@ export default function ClientProfile() {
   return (
     <div className="min-h-screen bg-white flex flex-col">
       {/* 黑色頭像區 */}
-      <div className="bg-black pt-10 pb-6 px-6 text-white">
-        <div className="flex items-center gap-4">
-          <div className="w-16 h-16 rounded-full bg-stone-700 flex items-center justify-center border-2 border-white/20">
-            <span className="text-2xl font-bold text-white">{avatarLetter}</span>
+      <div className="bg-black pt-8 pb-4 px-6 text-white">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-full bg-stone-700 flex items-center justify-center border-2 border-white/20 flex-shrink-0">
+            <span className="text-lg font-bold text-white">{avatarLetter}</span>
           </div>
-          <div className="flex-1">
-            <p className="text-lg font-bold">{displayName}</p>
-            <p className="text-white/40 text-sm">{user?.email}</p>
+          <div className="flex-1 min-w-0">
+            <p className="text-base font-bold truncate">{displayName}</p>
+            <p className="text-white/40 text-xs truncate">{user?.email}</p>
           </div>
-          <button
-            onClick={() => navigate('/ClientProfileEdit')}
-            className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors"
-          >
-            <Edit2 className="w-4 h-4 text-white" />
-          </button>
+          {/* 右上角三個按鈕 */}
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <button onClick={() => navigate('/ClientProfileEdit')}
+              className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors">
+              <Settings className="w-4 h-4 text-white" />
+            </button>
+            <button onClick={() => navigate('/ClientShop')}
+              className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors">
+              <ShoppingBag className="w-4 h-4 text-white" />
+            </button>
+            <button onClick={() => navigate('/VendorChatPage')}
+              className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors">
+              <MessageSquare className="w-4 h-4 text-white" />
+            </button>
+          </div>
         </div>
 
         {/* 訂閱方案統計 */}
-        <div className="grid grid-cols-2 gap-2 mt-5">
-          <div className="bg-white/10 rounded-xl p-3 text-center">
-            <p className="text-base font-bold">{profile?.subscription_plan || '—'}</p>
+        <div className="grid grid-cols-2 gap-2 mt-4">
+          <div className="bg-white/10 rounded-xl p-2.5 text-center">
+            <p className="text-sm font-bold">{profile?.subscription_plan || '—'}</p>
             <p className="text-white/40 text-xs">目前方案</p>
           </div>
-          <div className="bg-white/10 rounded-xl p-3 text-center">
-            <p className="text-base font-bold">{profile?.remaining_visits ?? '—'}</p>
+          <div className="bg-white/10 rounded-xl p-2.5 text-center">
+            <p className="text-sm font-bold">{profile?.remaining_visits ?? '—'}</p>
             <p className="text-white/40 text-xs">剩餘次數</p>
           </div>
         </div>
@@ -124,106 +133,6 @@ export default function ClientProfile() {
       {/* 內容區 */}
       <div className="flex-1 overflow-y-auto pb-28">
         <div className="p-4 space-y-2">
-
-          {/* 居家資訊 */}
-          <div className="bg-white rounded-xl overflow-hidden border border-stone-100">
-            <div className="flex items-center justify-between px-4 pt-4 pb-2">
-              <p className="text-xs font-semibold text-stone-400 uppercase tracking-wider">居家資訊</p>
-              <button
-                onClick={() => setEditMode(!editMode)}
-                className="text-xs text-stone-500 hover:text-stone-800 transition-colors font-medium"
-              >
-                {editMode ? '取消' : '編輯'}
-              </button>
-            </div>
-
-            {editMode ? (
-              <form onSubmit={handleSubmit} className="px-4 pb-4 space-y-3">
-                <div>
-                  <Label className="text-xs text-stone-500 mb-1 block">聯絡電話</Label>
-                  <Input
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    placeholder="0912-345-678"
-                    className="rounded-xl"
-                  />
-                </div>
-                <div>
-                  <Label className="text-xs text-stone-500 mb-1 block">服務地址</Label>
-                  <Input
-                    value={formData.address}
-                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                    placeholder="完整服務地址"
-                    className="rounded-xl"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <Label className="text-xs text-stone-500 mb-1 block">房屋類型</Label>
-                    <Input
-                      value={formData.housing_type}
-                      onChange={(e) => setFormData({ ...formData, housing_type: e.target.value })}
-                      placeholder="公寓、大樓..."
-                      className="rounded-xl"
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-xs text-stone-500 mb-1 block">坪數</Label>
-                    <Input
-                      type="number"
-                      value={formData.square_footage}
-                      onChange={(e) => setFormData({ ...formData, square_footage: e.target.value })}
-                      placeholder="30"
-                      className="rounded-xl"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <Label className="text-xs text-stone-500 mb-1 block">家庭成員</Label>
-                  <Input
-                    value={formData.family_members}
-                    onChange={(e) => setFormData({ ...formData, family_members: e.target.value })}
-                    placeholder="例：2 大 1 小"
-                    className="rounded-xl"
-                  />
-                </div>
-                <div className="flex items-center justify-between py-2">
-                  <Label className="text-sm text-stone-700 cursor-pointer">有寵物</Label>
-                  <Switch
-                    checked={formData.has_pets}
-                    onCheckedChange={(checked) => setFormData({ ...formData, has_pets: checked })}
-                  />
-                </div>
-                <button
-                  type="submit"
-                  disabled={saveMutation.isPending}
-                  className="w-full bg-black text-white py-3 rounded-xl text-sm font-semibold hover:bg-stone-800 transition-colors flex items-center justify-center gap-2"
-                >
-                  {saveMutation.isPending ? (
-                    <><Loader2 className="w-4 h-4 animate-spin" />儲存中...</>
-                  ) : (
-                    <><Save className="w-4 h-4" />儲存資料</>
-                  )}
-                </button>
-              </form>
-            ) : (
-              <div className="border-t border-stone-50">
-                {[
-                  { label: '聯絡電話', value: formData.phone || '尚未填寫' },
-                  { label: '服務地址', value: formData.address || '尚未填寫' },
-                  { label: '房屋類型', value: formData.housing_type || '尚未填寫' },
-                  { label: '坪數', value: formData.square_footage ? `${formData.square_footage} 坪` : '尚未填寫' },
-                  { label: '家庭成員', value: formData.family_members || '尚未填寫' },
-                  { label: '有寵物', value: formData.has_pets ? '是' : '否' },
-                ].map(({ label, value }) => (
-                  <div key={label} className="flex items-center justify-between px-4 py-3 border-b border-stone-50 last:border-0">
-                    <span className="text-sm text-stone-400">{label}</span>
-                    <span className="text-sm font-medium text-stone-800">{value}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
 
           {/* 快速連結 */}
           <div className="bg-white rounded-xl overflow-hidden border border-stone-100">
