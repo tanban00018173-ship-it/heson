@@ -1,29 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import ClientBottomNav from "@/components/dashboard/ClientBottomNav";
 import { base44 } from "@/api/base44Client";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { Loader2, Calendar, LogOut, ChevronRight, HelpCircle, MessageSquare, MessageCircle, Shield, Phone, FileText, LayoutDashboard, Zap, Settings, ShoppingCart } from "lucide-react";
-import { toast } from "sonner";
-import { createPageUrl } from "@/utils";
+import { useQuery } from "@tanstack/react-query";
+import { Loader2, ChevronRight, LogOut, Settings, ShoppingCart, MessageCircle, LayoutDashboard, Zap, User, FileText, Bell } from "lucide-react";
 import { useCart } from "@/lib/CartContext";
+import CartDrawer from "@/components/home/CartDrawer";
 
 export default function ClientProfile() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
-  const [editMode, setEditMode] = useState(false);
-  const queryClient = useQueryClient();
-  const [formData, setFormData] = useState({
-    phone: '',
-    address: '',
-    housing_type: '',
-    square_footage: '',
-    family_members: '',
-    has_pets: false,
-  });
+  const [isLoadingUser, setIsLoadingUser] = useState(true);
+  const { totalCount, setOpen: setCartOpen } = useCart();
 
   useEffect(() => {
     const loadUser = async () => {
@@ -31,59 +19,22 @@ export default function ClientProfile() {
       if (!isAuth) { base44.auth.redirectToLogin(); return; }
       const userData = await base44.auth.me();
       setUser(userData);
+      setIsLoadingUser(false);
     };
     loadUser();
   }, []);
 
-  const { data: clientProfile, isLoading } = useQuery({
+  const { data: clientProfile = [] } = useQuery({
     queryKey: ['clientProfile', user?.id],
     queryFn: () => base44.entities.ClientProfile.filter({ user_id: user?.id }),
     enabled: !!user?.id,
-    initialData: [],
   });
-
-  useEffect(() => {
-    if (clientProfile?.[0]) {
-      const p = clientProfile[0];
-      setFormData({
-        phone: p.phone || '',
-        address: p.address || '',
-        housing_type: p.housing_type || '',
-        square_footage: p.square_footage || '',
-        family_members: p.family_members || '',
-        has_pets: p.has_pets || false,
-      });
-    }
-  }, [clientProfile]);
-
   const profile = clientProfile?.[0];
 
-  const saveMutation = useMutation({
-    mutationFn: async (data) => {
-      if (profile) {
-        return base44.entities.ClientProfile.update(profile.id, data);
-      } else {
-        return base44.entities.ClientProfile.create({ ...data, user_id: user?.id });
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['clientProfile'] });
-      toast.success("資料已更新");
-      setEditMode(false);
-    },
-  });
-
-  const { totalCount, setOpen: setCartOpen } = useCart();
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    saveMutation.mutate(formData);
-  };
-
-  if (!user || isLoading) {
+  if (isLoadingUser) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
-        <div className="animate-spin w-8 h-8 border-2 border-stone-800 border-t-transparent rounded-full" />
+        <Loader2 className="w-8 h-8 text-stone-400 animate-spin" />
       </div>
     );
   }
@@ -91,135 +42,171 @@ export default function ClientProfile() {
   const displayName = user?.full_name || '訪客';
   const avatarLetter = displayName?.[0]?.toUpperCase() || 'U';
 
-  return (
-    <div className="min-h-screen bg-white flex flex-col">
-      {/* 黑色頭像區 */}
-      <div className="bg-black pt-8 pb-4 px-6 text-white">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-full bg-stone-700 flex items-center justify-center border-2 border-white/20 flex-shrink-0">
-            <span className="text-lg font-bold text-white">{avatarLetter}</span>
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-base font-bold truncate">{displayName}</p>
-            <p className="text-white/40 text-xs truncate">{user?.email}</p>
-          </div>
-          {/* 右上角三個按鈕 */}
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <button onClick={() => navigate('/ClientProfileEdit')}
-              className="w-10 h-10 rounded-2xl bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors">
-              <Settings className="w-5 h-5 text-white" />
-            </button>
-            <button onClick={() => setCartOpen(true)}
-              className="relative w-10 h-10 rounded-2xl bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors">
-              <ShoppingCart className="w-5 h-5 text-white" />
-              {totalCount > 0 && (
-                <span className="absolute -top-1 -right-1 w-5 h-5 bg-gold-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
-                  {totalCount > 9 ? '9+' : totalCount}
-                </span>
-              )}
-            </button>
-            <button onClick={() => navigate('/VendorChatPage')}
-              className="w-10 h-10 rounded-2xl bg-stone-900 flex items-center justify-center hover:bg-stone-700 transition-colors">
-              <MessageCircle className="w-5 h-5 text-white" />
-            </button>
-          </div>
-        </div>
+  // 遮蔽手機號碼
+  const maskedPhone = profile?.phone
+    ? profile.phone.replace(/(\d{4})\d+(\d{2})/, '$1****$2')
+    : '尚未設定';
 
-        {/* 訂閱方案統計 */}
-        <div className="grid grid-cols-2 gap-2 mt-4">
-          <div className="bg-white/10 rounded-xl p-2.5 text-center">
-            <p className="text-sm font-bold">{profile?.subscription_plan || '—'}</p>
-            <p className="text-white/40 text-xs">目前方案</p>
-          </div>
-          <div className="bg-white/10 rounded-xl p-2.5 text-center">
-            <p className="text-sm font-bold">{profile?.remaining_visits ?? '—'}</p>
-            <p className="text-white/40 text-xs">剩餘次數</p>
-          </div>
+  // 遮蔽 email
+  const maskedEmail = user?.email
+    ? user.email.replace(/^(.{2})(.*)(@.*)$/, (_, a, b, c) => a + b.replace(/./g, '*') + c)
+    : '';
+
+  return (
+    <div className="min-h-screen bg-stone-100 flex flex-col">
+
+      {/* 頂部 Header */}
+      <div className="bg-stone-100 px-4 pt-12 pb-2 flex items-center justify-between">
+        <h1 className="text-xl font-bold text-stone-900">我的</h1>
+        <div className="flex items-center gap-2">
+          <button onClick={() => setCartOpen(true)}
+            className="relative w-10 h-10 flex items-center justify-center rounded-2xl bg-white hover:bg-stone-50 transition-colors shadow-sm">
+            <ShoppingCart className="w-5 h-5 text-stone-700" />
+            {totalCount > 0 && (
+              <span className="absolute -top-1 -right-1 w-5 h-5 bg-amber-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                {totalCount > 9 ? '9+' : totalCount}
+              </span>
+            )}
+          </button>
+          <button onClick={() => navigate('/VendorChatPage')}
+            className="w-10 h-10 flex items-center justify-center rounded-2xl bg-stone-900 hover:bg-stone-700 transition-colors shadow-sm">
+            <MessageCircle className="w-5 h-5 text-white" />
+          </button>
         </div>
       </div>
 
-      {/* 內容區 */}
-      <div className="flex-1 overflow-y-auto pb-28">
-        <div className="p-4 space-y-2">
+      <div className="flex-1 overflow-y-auto pb-28 px-4 space-y-4 pt-2">
 
-          {/* 快速連結 */}
-          <div className="bg-white rounded-xl overflow-hidden border border-stone-100">
-            <p className="px-4 pt-4 pb-2 text-xs font-semibold text-stone-400 uppercase tracking-wider">快速連結</p>
-            {[
-              { icon: Calendar, label: '我的預約', desc: '查看即將到來的服務', to: '/MyBookings' },
-              { icon: FileText, label: '服務紀錄', desc: '過往清潔紀錄與報告', to: '/ClientHistory' },
-            ].map(({ icon: Icon, label, desc, to }) => (
-              <button key={label} onClick={() => navigate(to)}
-                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-stone-50 transition-colors border-t border-stone-50">
-                <div className="w-9 h-9 rounded-lg bg-stone-100 flex items-center justify-center flex-shrink-0">
-                  <Icon className="w-4 h-4 text-stone-600" />
-                </div>
-                <div className="flex-1 text-left">
-                  <p className="text-sm font-medium text-stone-800">{label}</p>
-                  <p className="text-xs text-stone-400">{desc}</p>
-                </div>
-                <ChevronRight className="w-4 h-4 text-stone-300" />
-              </button>
-            ))}
-          </div>
-
-          {/* 幫助 & 支援 */}
-          <div className="bg-white rounded-xl overflow-hidden border border-stone-100">
-            <p className="px-4 pt-4 pb-2 text-xs font-semibold text-stone-400 uppercase tracking-wider">幫助 & 支援</p>
-            {[
-              { icon: HelpCircle, label: '常見問題（FAQ）', to: '/FAQ' },
-              { icon: MessageSquare, label: '聯絡客服' },
-              { icon: Phone, label: '緊急聯絡電話' },
-              { icon: Shield, label: '隱私政策', to: '/PrivacyPolicy' },
-            ].map(({ icon: Icon, label, to }) => (
-              <button key={label} onClick={() => to && navigate(to)}
-                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-stone-50 transition-colors border-t border-stone-50">
-                <div className="w-9 h-9 rounded-lg bg-stone-100 flex items-center justify-center flex-shrink-0">
-                  <Icon className="w-4 h-4 text-stone-600" />
-                </div>
-                <span className="flex-1 text-sm font-medium text-stone-800 text-left">{label}</span>
-                <ChevronRight className="w-4 h-4 text-stone-300" />
-              </button>
-            ))}
-          </div>
-
-          {/* 台端切換（僅 admin 或 cleaner 可見） */}
-          {(user?.role === 'admin' || user?.role === 'cleaner') && (
-            <div className="bg-white rounded-xl overflow-hidden border border-gold-200">
-              <p className="px-4 pt-4 pb-2 text-xs font-semibold text-gold-600 uppercase tracking-wider">台端切換</p>
-              {[
-                ...(user?.role === 'admin' ? [
-                  { icon: LayoutDashboard, label: '後台管理', desc: '訂單、派案、報表', to: '/AdminDashboard' },
-                ] : []),
-                { icon: Zap, label: '中台（清潔師）', desc: '任務地圖、接單管理', to: '/CleanerJobs' },
-              ].map(({ icon: Icon, label, desc, to }) => (
-                <button key={label} onClick={() => navigate(to)}
-                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gold-50 transition-colors border-t border-stone-50">
-                  <div className="w-9 h-9 rounded-lg bg-gold-100 flex items-center justify-center flex-shrink-0">
-                    <Icon className="w-4 h-4 text-gold-700" />
-                  </div>
-                  <div className="flex-1 text-left">
-                    <p className="text-sm font-medium text-stone-800">{label}</p>
-                    <p className="text-xs text-stone-400">{desc}</p>
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-gold-400" />
-                </button>
-              ))}
+        {/* 頭像區塊 */}
+        <div className="bg-white rounded-2xl overflow-hidden">
+          <button
+            onClick={() => navigate('/ClientProfileEdit')}
+            className="w-full flex items-center gap-4 px-4 py-4 hover:bg-stone-50 transition-colors"
+          >
+            <div className="w-16 h-16 rounded-full bg-stone-200 flex items-center justify-center flex-shrink-0 border-2 border-stone-100">
+              <span className="text-2xl font-bold text-stone-600">{avatarLetter}</span>
             </div>
-          )}
-
-          {/* 登出 */}
-          <button onClick={() => base44.auth.logout()}
-            className="w-full bg-white rounded-xl p-4 flex items-center gap-3 border border-stone-100 hover:bg-stone-50 transition-colors">
-            <div className="w-9 h-9 rounded-lg bg-stone-100 flex items-center justify-center">
-              <LogOut className="w-4 h-4 text-stone-500" />
+            <div className="flex-1 text-left">
+              <p className="text-base font-bold text-stone-900">{displayName}</p>
+              <p className="text-xs text-stone-400 mt-0.5">修改個人資訊</p>
             </div>
-            <span className="text-sm font-medium text-stone-600">登出</span>
+            <ChevronRight className="w-5 h-5 text-stone-300 flex-shrink-0" />
+          </button>
+        </div>
+
+        {/* 個人資訊群組 */}
+        <div className="bg-white rounded-2xl overflow-hidden">
+          <p className="px-4 pt-3 pb-1 text-xs font-semibold text-stone-400 uppercase tracking-wider">個人資訊</p>
+
+          {/* 名稱 */}
+          <button onClick={() => navigate('/ClientProfileEdit')}
+            className="w-full flex items-center px-4 py-3.5 border-t border-stone-100 hover:bg-stone-50 transition-colors">
+            <span className="text-sm text-stone-800 w-20 flex-shrink-0">名稱</span>
+            <span className="flex-1 text-sm text-stone-500 text-right">{displayName}</span>
+            <ChevronRight className="w-4 h-4 text-stone-300 ml-2 flex-shrink-0" />
           </button>
 
+          {/* 手機號碼 */}
+          <button onClick={() => navigate('/ClientProfileEdit')}
+            className="w-full flex items-center px-4 py-3.5 border-t border-stone-100 hover:bg-stone-50 transition-colors">
+            <span className="text-sm text-stone-800 w-20 flex-shrink-0">手機號碼</span>
+            <span className="flex-1 text-sm text-stone-500 text-right">{maskedPhone}</span>
+            <ChevronRight className="w-4 h-4 text-stone-300 ml-2 flex-shrink-0" />
+          </button>
+
+          {/* 電子郵件 */}
+          <button onClick={() => navigate('/ClientProfileEdit')}
+            className="w-full flex items-center px-4 py-3.5 border-t border-stone-100 hover:bg-stone-50 transition-colors">
+            <span className="text-sm text-stone-800 w-20 flex-shrink-0">電子郵件</span>
+            <span className="flex-1 text-sm text-stone-400 text-right truncate max-w-[160px]">{maskedEmail}</span>
+            <ChevronRight className="w-4 h-4 text-stone-300 ml-2 flex-shrink-0" />
+          </button>
+
+          {/* 地址 */}
+          <button onClick={() => navigate('/ClientProfileEdit')}
+            className="w-full flex items-center px-4 py-3.5 border-t border-stone-100 hover:bg-stone-50 transition-colors">
+            <span className="text-sm text-stone-800 w-20 flex-shrink-0">服務地址</span>
+            <span className={`flex-1 text-sm text-right truncate max-w-[180px] ${profile?.address ? 'text-stone-500' : 'text-amber-500'}`}>
+              {profile?.address || '立即設定'}
+            </span>
+            <ChevronRight className="w-4 h-4 text-stone-300 ml-2 flex-shrink-0" />
+          </button>
         </div>
+
+        {/* 齒輪設定群組 */}
+        <div className="bg-white rounded-2xl overflow-hidden">
+          <p className="px-4 pt-3 pb-1 text-xs font-semibold text-stone-400 uppercase tracking-wider">設定</p>
+
+          <button onClick={() => navigate('/ClientProfileEdit')}
+            className="w-full flex items-center gap-3 px-4 py-3.5 border-t border-stone-100 hover:bg-stone-50 transition-colors">
+            <div className="w-8 h-8 rounded-lg bg-blue-500 flex items-center justify-center flex-shrink-0">
+              <User className="w-4 h-4 text-white" />
+            </div>
+            <span className="flex-1 text-sm text-stone-800 text-left">我的檔案</span>
+            <ChevronRight className="w-4 h-4 text-stone-300 flex-shrink-0" />
+          </button>
+
+          <button onClick={() => navigate('/MyBookings')}
+            className="w-full flex items-center gap-3 px-4 py-3.5 border-t border-stone-100 hover:bg-stone-50 transition-colors">
+            <div className="w-8 h-8 rounded-lg bg-stone-700 flex items-center justify-center flex-shrink-0">
+              <Bell className="w-4 h-4 text-white" />
+            </div>
+            <span className="flex-1 text-sm text-stone-800 text-left">我的設定</span>
+            <ChevronRight className="w-4 h-4 text-stone-300 flex-shrink-0" />
+          </button>
+
+          <button onClick={() => navigate('/ClientProfileEdit')}
+            className="w-full flex items-center gap-3 px-4 py-3.5 border-t border-stone-100 hover:bg-stone-50 transition-colors">
+            <div className="w-8 h-8 rounded-lg bg-amber-500 flex items-center justify-center flex-shrink-0">
+              <Settings className="w-4 h-4 text-white" />
+            </div>
+            <span className="flex-1 text-sm text-stone-800 text-left">我的帳號</span>
+            <ChevronRight className="w-4 h-4 text-stone-300 flex-shrink-0" />
+          </button>
+        </div>
+
+        {/* 台端切換（僅 admin 或 cleaner 可見） */}
+        {(user?.role === 'admin' || user?.role === 'cleaner') && (
+          <div className="bg-white rounded-2xl overflow-hidden">
+            <p className="px-4 pt-3 pb-1 text-xs font-semibold text-amber-600 uppercase tracking-wider">台端切換</p>
+            {user?.role === 'admin' && (
+              <button onClick={() => navigate('/AdminDashboard')}
+                className="w-full flex items-center gap-3 px-4 py-3.5 border-t border-stone-100 hover:bg-stone-50 transition-colors">
+                <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0">
+                  <LayoutDashboard className="w-4 h-4 text-amber-700" />
+                </div>
+                <div className="flex-1 text-left">
+                  <p className="text-sm text-stone-800">後台管理</p>
+                  <p className="text-xs text-stone-400">訂單、派案、報表</p>
+                </div>
+                <ChevronRight className="w-4 h-4 text-stone-300 flex-shrink-0" />
+              </button>
+            )}
+            <button onClick={() => navigate('/CleanerJobs')}
+              className="w-full flex items-center gap-3 px-4 py-3.5 border-t border-stone-100 hover:bg-stone-50 transition-colors">
+              <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0">
+                <Zap className="w-4 h-4 text-amber-700" />
+              </div>
+              <div className="flex-1 text-left">
+                <p className="text-sm text-stone-800">中台（清潔師）</p>
+                <p className="text-xs text-stone-400">任務地圖、接單管理</p>
+              </div>
+              <ChevronRight className="w-4 h-4 text-stone-300 flex-shrink-0" />
+            </button>
+          </div>
+        )}
+
+        {/* 登出 */}
+        <div className="bg-white rounded-2xl overflow-hidden">
+          <button onClick={() => base44.auth.logout()}
+            className="w-full flex items-center px-4 py-3.5 hover:bg-stone-50 transition-colors">
+            <span className="flex-1 text-sm font-medium text-red-500 text-center">登出</span>
+          </button>
+        </div>
+
       </div>
 
+      <CartDrawer />
       <ClientBottomNav />
     </div>
   );
