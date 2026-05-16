@@ -4,7 +4,23 @@ module.exports = {
     content: ["./index.html", "./src/**/*.{ts,tsx,js,jsx}"],
   theme: {
   	extend: {
-  		fontFamily: {
+  	  colors: {
+  	    ...require('tailwindcss/colors'),
+  	    amber: {
+  	      50:  '#fdf9ec',
+  	      100: '#faf0c8',
+  	      200: '#f5de8e',
+  	      300: '#efc85a',
+  	      400: '#e2b93b',
+  	      500: '#C9A227',
+  	      600: '#a8861e',
+  	      700: '#876918',
+  	      800: '#6b5214',
+  	      900: '#4e3b0e',
+  	      950: '#2e220a',
+  	    },
+  	  },
+  	fontFamily: {
   			headline: ['Manrope', 'sans-serif'],
   			body: ['Inter', 'sans-serif'],
   		},

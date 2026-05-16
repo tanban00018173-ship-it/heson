@@ -2,6 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
+/* 金黃色主題色 */
+:root {
+  --gold: #C9A227;
+  --gold-light: #E2B93B;
+  --gold-dark: #A8861E;
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;
