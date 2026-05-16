@@ -38,7 +38,48 @@ function SettingRow({ label, value, placeholder, onClick }) {
   );
 }
 
+// inline 編輯 row（點擊後直接在行內輸入）
+function EditableRow({ label, value, placeholder, fieldKey, onChange }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value || '');
 
+  const handleBlur = () => {
+    onChange(draft);
+    setEditing(false);
+  };
+
+  if (editing) {
+    return (
+      <div className="w-full flex items-center justify-between px-4 py-3 text-left">
+        <span className="text-sm text-stone-800 flex-shrink-0 mr-4">{label}</span>
+        <input
+          autoFocus
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onBlur={handleBlur}
+          onKeyDown={(e) => e.key === 'Enter' && handleBlur()}
+          className="text-sm text-right text-stone-700 bg-transparent outline-none border-b border-stone-300 flex-1"
+          placeholder={placeholder}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <button
+      onClick={() => { setDraft(value || ''); setEditing(true); }}
+      className="w-full flex items-center justify-between px-4 py-3.5 hover:bg-stone-50 transition-colors text-left"
+    >
+      <span className="text-sm text-stone-800">{label}</span>
+      <div className="flex items-center gap-1">
+        <span className={`text-sm ${value ? 'text-stone-600' : 'text-orange-400'}`}>
+          {value || placeholder || '立即設定'}
+        </span>
+        <ChevronRight className="w-4 h-4 text-stone-300 flex-shrink-0" />
+      </div>
+    </button>
+  );
+}
 
 export default function ClientProfileEdit() {
   const navigate = useNavigate();
@@ -146,10 +187,12 @@ export default function ClientProfileEdit() {
               value={displayName}
               placeholder="立即設定"
             />
-            <SettingRow
+            <EditableRow
               label="簡介"
               value={formData.bio}
               placeholder="立即設定"
+              fieldKey="bio"
+              onChange={setField('bio')}
             />
           </div>
         </div>
@@ -158,10 +201,12 @@ export default function ClientProfileEdit() {
         <div className="bg-white rounded-xl mx-4 overflow-hidden mb-4">
           <p className="px-4 pt-3 pb-1 text-xs text-stone-400 font-medium">帳號資訊</p>
           <div className="divide-y divide-stone-100">
-            <SettingRow
+            <EditableRow
               label="手機號碼"
               value={maskPhone(formData.phone)}
               placeholder="立即設定"
+              fieldKey="phone"
+              onChange={setField('phone')}
             />
             <button className="w-full flex items-center justify-between px-4 py-3.5 hover:bg-stone-50 transition-colors">
               <span className="text-sm text-stone-800">電子郵件</span>
@@ -179,10 +224,12 @@ export default function ClientProfileEdit() {
         <div className="bg-white rounded-xl mx-4 overflow-hidden mb-4">
           <p className="px-4 pt-3 pb-1 text-xs text-stone-400 font-medium">服務設定</p>
           <div className="divide-y divide-stone-100">
-            <SettingRow
+            <EditableRow
               label="服務地址"
               value={formData.address}
               placeholder="立即設定"
+              fieldKey="address"
+              onChange={setField('address')}
             />
           </div>
         </div>
