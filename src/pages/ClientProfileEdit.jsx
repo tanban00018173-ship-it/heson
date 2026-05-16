@@ -1,17 +1,85 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Sidebar from "@/components/dashboard/Sidebar";
-import MobileNav from "@/components/dashboard/MobileNav";
 import ClientBottomNav from "@/components/dashboard/ClientBottomNav";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
-import { Button } from "@/components/ui/button";
-import { Loader2, Check, X, ArrowLeft } from "lucide-react";
+import { ArrowLeft, ChevronRight, User, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { motion } from "framer-motion";
+
+// 遮蔽手機號碼
+function maskPhone(phone) {
+  if (!phone) return null;
+  return phone.replace(/^(.{3})(.+)(.{2})$/, (_, a, b, c) => a + '*'.repeat(b.length) + c);
+}
+
+// 遮蔽 email
+function maskEmail(email) {
+  if (!email) return null;
+  const [local, domain] = email.split('@');
+  if (!domain) return email;
+  return local.slice(0, 1) + '***' + local.slice(-1) + '@' + domain;
+}
+
+// 單一 row 元件
+function SettingRow({ label, value, placeholder, onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      className="w-full flex items-center justify-between px-4 py-3.5 hover:bg-stone-50 transition-colors text-left"
+    >
+      <span className="text-sm text-stone-800">{label}</span>
+      <div className="flex items-center gap-1">
+        <span className={`text-sm ${value ? 'text-stone-600' : 'text-orange-400'}`}>
+          {value || placeholder || '立即設定'}
+        </span>
+        <ChevronRight className="w-4 h-4 text-stone-300 flex-shrink-0" />
+      </div>
+    </button>
+  );
+}
+
+// inline 編輯 row（點擊後直接在行內輸入）
+function EditableRow({ label, value, placeholder, fieldKey, onChange }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value || '');
+
+  const handleBlur = () => {
+    onChange(draft);
+    setEditing(false);
+  };
+
+  if (editing) {
+    return (
+      <div className="w-full flex items-center justify-between px-4 py-3 text-left">
+        <span className="text-sm text-stone-800 flex-shrink-0 mr-4">{label}</span>
+        <input
+          autoFocus
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onBlur={handleBlur}
+          onKeyDown={(e) => e.key === 'Enter' && handleBlur()}
+          className="text-sm text-right text-stone-700 bg-transparent outline-none border-b border-stone-300 flex-1"
+          placeholder={placeholder}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <button
+      onClick={() => { setDraft(value || ''); setEditing(true); }}
+      className="w-full flex items-center justify-between px-4 py-3.5 hover:bg-stone-50 transition-colors text-left"
+    >
+      <span className="text-sm text-stone-800">{label}</span>
+      <div className="flex items-center gap-1">
+        <span className={`text-sm ${value ? 'text-stone-600' : 'text-orange-400'}`}>
+          {value || placeholder || '立即設定'}
+        </span>
+        <ChevronRight className="w-4 h-4 text-stone-300 flex-shrink-0" />
+      </div>
+    </button>
+  );
+}
 
 export default function ClientProfileEdit() {
   const navigate = useNavigate();
@@ -20,12 +88,9 @@ export default function ClientProfileEdit() {
   const [formData, setFormData] = useState({
     phone: '',
     address: '',
-    housing_type: '',
-    square_footage: '',
-    family_members: '',
-    has_pets: false,
   });
   const [originalData, setOriginalData] = useState(null);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     const loadUser = async () => {
@@ -47,14 +112,7 @@ export default function ClientProfileEdit() {
   useEffect(() => {
     if (clientProfile?.[0]) {
       const p = clientProfile[0];
-      const data = {
-        phone: p.phone || '',
-        address: p.address || '',
-        housing_type: p.housing_type || '',
-        square_footage: p.square_footage || '',
-        family_members: p.family_members || '',
-        has_pets: p.has_pets || false,
-      };
+      const data = { phone: p.phone || '', address: p.address || '' };
       setFormData(data);
       setOriginalData(data);
     }
@@ -75,126 +133,108 @@ export default function ClientProfileEdit() {
 
   const hasChanges = JSON.stringify(formData) !== JSON.stringify(originalData);
 
+  const setField = (key) => (val) => setFormData(prev => ({ ...prev, [key]: val }));
+
+  const displayName = user?.full_name || '';
+  const avatarLetter = displayName?.[0]?.toUpperCase() || 'U';
+
   return (
-    <div className="min-h-screen bg-[#f6f9ff] flex font-body">
-      <div className="hidden lg:block"><Sidebar userRole="client" userName={user?.full_name} /></div>
-      <MobileNav userRole="client" userName={user?.full_name} />
-
-      <main className="flex-1 pt-16 lg:pt-0">
-        <div className="p-6 lg:p-8 max-w-2xl mx-auto pb-28">
-          {/* Header */}
-          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="mb-8 flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => navigate('/ClientProfile')}
-              className="text-stone-600 hover:bg-stone-100"
+    <div className="min-h-screen bg-stone-100">
+      {/* 頂部導航 */}
+      <div className="bg-white border-b border-stone-200 sticky top-0 z-20">
+        <div className="relative flex items-center justify-center h-12">
+          <button
+            onClick={() => navigate('/ClientProfile')}
+            className="absolute left-3 flex items-center gap-1 text-orange-500 text-sm font-medium"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <h1 className="text-base font-semibold text-stone-900">修改個人資訊</h1>
+          {hasChanges && (
+            <button
+              onClick={() => saveMutation.mutate(formData)}
+              disabled={saveMutation.isPending}
+              className="absolute right-4 text-sm font-semibold text-orange-500"
             >
-              <ArrowLeft className="w-5 h-5" />
-            </Button>
-            <div>
-              <p className="text-xs font-semibold tracking-widest uppercase text-stone-400 font-headline">編輯資訊</p>
-              <h1 className="text-2xl font-headline font-extrabold tracking-tight text-stone-900">修改個人資料</h1>
-            </div>
-          </motion.div>
-
-          {/* Form */}
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
-            <div className="bg-white rounded-3xl border border-[#e8eef6] p-6 mb-5">
-              <p className="text-xs font-semibold tracking-widest uppercase text-stone-400 mb-5">帳戶資訊</p>
-              <div className="space-y-4">
-                <div className="p-4 bg-[#eef4fc] rounded-2xl">
-                  <p className="text-xs text-stone-400 font-semibold uppercase tracking-wide mb-2">聯絡電話</p>
-                  <Input
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    placeholder="0912-345-678"
-                    className="border-0 bg-transparent p-0 h-auto font-semibold text-stone-900 placeholder:text-stone-300 focus-visible:ring-0 text-sm"
-                  />
-                </div>
-                <div className="p-4 bg-[#eef4fc] rounded-2xl">
-                  <p className="text-xs text-stone-400 font-semibold uppercase tracking-wide mb-2">服務地址</p>
-                  <Input
-                    value={formData.address}
-                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                    placeholder="請輸入完整地址"
-                    className="border-0 bg-transparent p-0 h-auto font-semibold text-stone-900 placeholder:text-stone-300 focus-visible:ring-0 text-sm"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-3xl border border-[#e8eef6] p-6 mb-6">
-              <p className="text-xs font-semibold tracking-widest uppercase text-stone-400 mb-5">居家資訊</p>
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="p-4 bg-[#eef4fc] rounded-2xl">
-                    <p className="text-xs text-stone-400 font-semibold uppercase tracking-wide mb-2">房屋類型</p>
-                    <Select value={formData.housing_type} onValueChange={(v) => setFormData({ ...formData, housing_type: v })}>
-                      <SelectTrigger className="border-0 bg-transparent p-0 h-auto font-semibold text-stone-900 text-sm focus:ring-0">
-                        <SelectValue placeholder="請選擇" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="透天">透天厝</SelectItem>
-                        <SelectItem value="公寓">公寓</SelectItem>
-                        <SelectItem value="大樓">大樓</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="p-4 bg-[#eef4fc] rounded-2xl">
-                    <p className="text-xs text-stone-400 font-semibold uppercase tracking-wide mb-2">坪數</p>
-                    <Input
-                      type="number"
-                      value={formData.square_footage}
-                      onChange={(e) => setFormData({ ...formData, square_footage: e.target.value })}
-                      placeholder="例：30"
-                      className="border-0 bg-transparent p-0 h-auto font-semibold text-stone-900 placeholder:text-stone-300 focus-visible:ring-0 text-sm"
-                    />
-                  </div>
-                </div>
-                <div className="p-4 bg-[#eef4fc] rounded-2xl">
-                  <p className="text-xs text-stone-400 font-semibold uppercase tracking-wide mb-2">家庭成員</p>
-                  <Input
-                    value={formData.family_members}
-                    onChange={(e) => setFormData({ ...formData, family_members: e.target.value })}
-                    placeholder="例：2 大 1 小"
-                    className="border-0 bg-transparent p-0 h-auto font-semibold text-stone-900 placeholder:text-stone-300 focus-visible:ring-0 text-sm"
-                  />
-                </div>
-                <div className="flex items-center justify-between p-4 bg-[#eef4fc] rounded-2xl">
-                  <div>
-                    <p className="text-xs text-stone-400 font-semibold uppercase tracking-wide">有寵物</p>
-                    <p className="text-sm text-stone-500 mt-0.5">管理師均接受寵物友善訓練</p>
-                  </div>
-                  <Switch
-                    checked={formData.has_pets}
-                    onCheckedChange={(checked) => setFormData({ ...formData, has_pets: checked })}
-                    className="data-[state=checked]:bg-amber-500"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Actions */}
-            <div className="flex gap-3">
-              <Button
-                onClick={() => saveMutation.mutate(formData)}
-                disabled={saveMutation.isPending || !hasChanges}
-                className="flex-1 bg-[#131b2e] hover:bg-[#1a2438] text-white font-headline font-bold py-6 rounded-2xl disabled:opacity-50"
-              >
-                {saveMutation.isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Check className="w-5 h-5 mr-2" />儲存變更</>}
-              </Button>
-              <Button
-                onClick={() => navigate('/ClientProfile')}
-                variant="outline"
-                className="flex-1 border-2 border-stone-200 text-stone-600 font-headline font-bold py-6 rounded-2xl hover:bg-stone-50"
-              >
-                <X className="w-5 h-5 mr-2" />取消
-              </Button>
-            </div>
-          </motion.div>
+              {saveMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : '儲存'}
+            </button>
+          )}
         </div>
-      </main>
+      </div>
+
+      <div className="pb-28">
+        {/* 頭像區塊 */}
+        <div className="bg-white mt-6 mb-6 py-6 flex flex-col items-center gap-2">
+          <div className="w-20 h-20 rounded-full bg-stone-200 flex items-center justify-center">
+            {displayName ? (
+              <span className="text-3xl font-bold text-stone-500">{avatarLetter}</span>
+            ) : (
+              <User className="w-10 h-10 text-stone-400" />
+            )}
+          </div>
+          <button className="text-sm text-stone-500 flex items-center gap-1">
+            <span>✏️</span>
+            <span>編輯</span>
+          </button>
+        </div>
+
+        {/* 基本資料群組 */}
+        <div className="bg-white rounded-xl mx-4 overflow-hidden mb-4">
+          <p className="px-4 pt-3 pb-1 text-xs text-stone-400 font-medium">基本資料</p>
+          <div className="divide-y divide-stone-100">
+            <SettingRow
+              label="名稱"
+              value={displayName}
+              placeholder="立即設定"
+            />
+            <EditableRow
+              label="簡介"
+              value={formData.bio}
+              placeholder="立即設定"
+              fieldKey="bio"
+              onChange={setField('bio')}
+            />
+          </div>
+        </div>
+
+        {/* 帳號資訊群組 */}
+        <div className="bg-white rounded-xl mx-4 overflow-hidden mb-4">
+          <p className="px-4 pt-3 pb-1 text-xs text-stone-400 font-medium">帳號資訊</p>
+          <div className="divide-y divide-stone-100">
+            <EditableRow
+              label="手機號碼"
+              value={maskPhone(formData.phone)}
+              placeholder="立即設定"
+              fieldKey="phone"
+              onChange={setField('phone')}
+            />
+            <button className="w-full flex items-center justify-between px-4 py-3.5 hover:bg-stone-50 transition-colors">
+              <span className="text-sm text-stone-800">電子郵件</span>
+              <div className="flex items-center gap-1">
+                <span className="text-sm text-stone-400 max-w-[160px] truncate">
+                  {user?.email ? maskEmail(user.email) : ''}
+                </span>
+                <ChevronRight className="w-4 h-4 text-stone-300 flex-shrink-0" />
+              </div>
+            </button>
+          </div>
+        </div>
+
+        {/* 服務地址（保留功能） */}
+        <div className="bg-white rounded-xl mx-4 overflow-hidden mb-4">
+          <p className="px-4 pt-3 pb-1 text-xs text-stone-400 font-medium">服務設定</p>
+          <div className="divide-y divide-stone-100">
+            <EditableRow
+              label="服務地址"
+              value={formData.address}
+              placeholder="立即設定"
+              fieldKey="address"
+              onChange={setField('address')}
+            />
+          </div>
+        </div>
+      </div>
+
       <ClientBottomNav />
     </div>
   );
