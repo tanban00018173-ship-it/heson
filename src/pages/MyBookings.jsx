@@ -294,7 +294,7 @@ export default function MyBookings() {
               {/* 購物車 */}
               <button
                 onClick={() => setCartOpen(true)}
-                className="relative w-10 h-10 flex items-center justify-center rounded-2xl bg-stone-100 hover:bg-stone-200 transition-colors"
+                className="relative w-10 h-10 flex items-center justify-center rounded-full bg-stone-100 hover:bg-stone-200 transition-colors"
               >
                 <ShoppingCart className="w-5 h-5 text-stone-700" />
                 {totalCount > 0 && (
@@ -307,7 +307,7 @@ export default function MyBookings() {
               {/* 聊聊 */}
               <Link
                 to="/VendorChatPage"
-                className="w-10 h-10 flex items-center justify-center rounded-2xl bg-stone-900 hover:bg-stone-700 transition-colors"
+                className="w-10 h-10 flex items-center justify-center rounded-full bg-stone-900 hover:bg-stone-700 transition-colors"
               >
                 <MessageCircle className="w-5 h-5 text-white" />
               </Link>
