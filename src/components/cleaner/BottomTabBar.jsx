@@ -4,7 +4,7 @@ import { Map, ShoppingBag, Award, Users, User } from 'lucide-react';
 const TABS = [
   { id: 'shop',    icon: ShoppingBag, label: '商店' },
   { id: 'skills',  icon: Award,       label: '技能' },
-  { id: 'map',     icon: Map,         label: '地圖',  primary: true },
+  { id: 'map',     icon: Map,         label: '任務',  primary: true },
   { id: 'team',    icon: Users,       label: '訊息' },
   { id: 'profile', icon: User,        label: '我的' },
 ];
