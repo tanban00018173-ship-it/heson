@@ -6,7 +6,7 @@
 export const ROLE_HOME = {
   admin: '/AdminDashboard',
   cleaner: '/CleanerJobs',
-  user: '/Home',
+  user: '/ClientProfile',
 };
 
 /**
@@ -22,5 +22,5 @@ export function getRoleHome(role) {
 export function isPortalPath(pathname, role) {
   if (role === 'admin') return pathname.startsWith('/Admin') || pathname.startsWith('/InternalSpreadsheet') || pathname.startsWith('/PartTime') || pathname.startsWith('/CleanerManagement') || pathname.startsWith('/GoogleSheets') || pathname.startsWith('/SheetSync') || pathname.startsWith('/ServiceCase');
   if (role === 'cleaner') return pathname.startsWith('/Cleaner');
-  return pathname.startsWith('/Client') || pathname.startsWith('/MyBookings') || pathname.startsWith('/BookingForm');
+  return pathname.startsWith('/Client') || pathname.startsWith('/MyBookings') || pathname.startsWith('/BookingForm') || pathname === '/';
 }
