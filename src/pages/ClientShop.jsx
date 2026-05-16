@@ -36,7 +36,7 @@ export default function ClientShop() {
             {/* 第一行：標題 + 購物車 + 聊聊 */}
             <div className="flex items-center gap-2 mb-3">
               <div className="flex items-center gap-2 flex-1">
-                <ShoppingBag className="w-5 h-5 text-amber-500" />
+                <ShoppingBag className="w-5 h-5 text-gold-500" />
                 <h1 className="text-lg font-bold text-stone-900">赫頌商店</h1>
               </div>
               {/* 購物車 */}
@@ -46,7 +46,7 @@ export default function ClientShop() {
               >
                 <ShoppingCart className="w-5 h-5 text-stone-700" />
                 {totalCount > 0 && (
-                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-amber-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-gold-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
                     {totalCount > 9 ? '9+' : totalCount}
                   </span>
                 )}
@@ -66,7 +66,7 @@ export default function ClientShop() {
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 placeholder="搜尋商品..."
-                className="w-full pl-9 pr-4 py-2 text-sm bg-stone-100 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-amber-300 transition-all"
+                className="w-full pl-9 pr-4 py-2 text-sm bg-stone-100 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-gold-300 transition-all"
               />
             </div>
           </div>
@@ -94,7 +94,7 @@ export default function ClientShop() {
 
           {isLoading && (
             <div className="flex justify-center py-16">
-              <div className="w-8 h-8 border-4 border-stone-200 border-t-amber-500 rounded-full animate-spin" />
+              <div className="w-8 h-8 border-4 border-stone-200 border-t-gold-500 rounded-full animate-spin" />
             </div>
           )}
 
@@ -118,7 +118,7 @@ export default function ClientShop() {
                       </div>
                     )}
                     {p.tag && (
-                      <span className="absolute top-2 left-2 bg-amber-500 text-white text-[10px] px-2 py-0.5 font-bold rounded-full">
+                      <span className="absolute top-2 left-2 bg-gold-500 text-white text-[10px] px-2 py-0.5 font-bold rounded-full">
                         {p.tag}
                       </span>
                     )}
@@ -141,7 +141,7 @@ export default function ClientShop() {
                       <button
                         onClick={() => toast.info('商品洽詢請聯繫客服：0906-991-023')}
                         disabled={p.stock === 0}
-                        className="w-8 h-8 bg-amber-500 hover:bg-amber-400 disabled:bg-stone-200 rounded-xl flex items-center justify-center transition-colors shadow-sm"
+                        className="w-8 h-8 bg-gold-500 hover:bg-gold-400 disabled:bg-stone-200 rounded-xl flex items-center justify-center transition-colors shadow-sm"
                       >
                         <ShoppingCart className="w-4 h-4 text-white" />
                       </button>

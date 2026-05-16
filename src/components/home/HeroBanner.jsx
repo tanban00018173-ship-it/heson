@@ -9,7 +9,7 @@ const SLIDES = [
     sub: '居家清潔・到府服務・專業認證',
     cta: '立即預約',
     route: '/ClientBooking',
-    bg: 'from-amber-500 to-orange-500',
+    bg: 'from-gold-500 to-gold-600',
     emoji: '✨',
   },
   {
@@ -84,7 +84,7 @@ export default function HeroBanner() {
           { icon: Zap, label: '極速媒合', sub: '10 分鐘確認' },
         ].map(({ icon: Icon, label, sub }) => (
           <div key={label} className="bg-white rounded-2xl p-3 text-center border border-stone-100">
-            <Icon className="w-4 h-4 text-amber-500 mx-auto mb-1" />
+            <Icon className="w-4 h-4 text-gold-500 mx-auto mb-1" />
             <p className="text-xs font-bold text-stone-800">{label}</p>
             <p className="text-[10px] text-stone-400">{sub}</p>
           </div>

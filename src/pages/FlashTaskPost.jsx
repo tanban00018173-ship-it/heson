@@ -149,21 +149,21 @@ export default function FlashTaskPost() {
           {/* Radar animation */}
           <div className="relative w-40 h-40 mx-auto mb-8">
             {[0, 1, 2].map(i => (
-              <motion.div key={i} className="absolute inset-0 rounded-full border-2 border-amber-500/40"
+              <motion.div key={i} className="absolute inset-0 rounded-full border-2 border-gold-500/40"
                 animate={{ scale: [1, 2.5], opacity: [0.6, 0] }}
                 transition={{ duration: 2, delay: i * 0.6, repeat: Infinity }} />
             ))}
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-16 h-16 bg-amber-500 rounded-full flex items-center justify-center shadow-[0_0_32px_rgba(245,158,11,0.6)]">
+              <div className="w-16 h-16 bg-gold-500 rounded-full flex items-center justify-center shadow-[0_0_32px_rgba(201,168,76,0.6)]">
                 <Zap className="w-8 h-8 text-black" />
               </div>
             </div>
           </div>
           <h2 className="text-2xl font-black text-white mb-2">雷達掃描中...</h2>
-          <p className="text-stone-400 mb-1">尋找方圓 <span className="text-amber-400 font-bold">{searchRadius} 公里</span>內的小幫手</p>
+          <p className="text-stone-400 mb-1">尋找方圓 <span className="text-gold-400 font-bold">{searchRadius} 公里</span>內的小幫手</p>
           <p className="text-stone-500 text-sm mb-6">{String(mins).padStart(2,'0')}:{String(secs).padStart(2,'0')} · {currentTask?.label} · NT${price}</p>
           <div className="bg-white/5 border border-white/10 rounded-2xl px-6 py-3 text-stone-400 text-sm max-w-xs">
-            <p><MapPin className="w-3.5 h-3.5 inline mr-1 text-amber-500" />{address}</p>
+            <p><MapPin className="w-3.5 h-3.5 inline mr-1 text-gold-500" />{address}</p>
           </div>
         </motion.div>
       </div>
@@ -175,8 +175,8 @@ export default function FlashTaskPost() {
     return (
       <div className="fixed inset-0 bg-[#0d0d0d] flex flex-col items-center justify-center text-center px-6">
         <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="max-w-sm w-full">
-          <div className="w-16 h-16 bg-amber-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
-            <AlertTriangle className="w-8 h-8 text-amber-400" />
+          <div className="w-16 h-16 bg-gold-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
+            <AlertTriangle className="w-8 h-8 text-gold-400" />
           </div>
           <h2 className="text-2xl font-black text-white mb-3">目前附近人員滿載</h2>
           <p className="text-stone-400 mb-8 leading-relaxed">
@@ -185,7 +185,7 @@ export default function FlashTaskPost() {
           <button onClick={() => {
             setPrice(p => p + 50);
             setPhase('form');
-          }} className="w-full bg-amber-500 text-black font-black py-4 rounded-2xl text-lg hover:bg-amber-400 transition-colors mb-3 flex items-center justify-center gap-2">
+          }} className="w-full bg-gold-500 text-black font-black py-4 rounded-2xl text-lg hover:bg-gold-400 transition-colors mb-3 flex items-center justify-center gap-2">
             <Plus className="w-5 h-5" /> 一鍵加價 NT${price + 50} 重發
           </button>
           <button onClick={() => navigate('/')} className="w-full text-stone-500 py-3 text-sm hover:text-stone-300 transition-colors">
@@ -235,22 +235,22 @@ export default function FlashTaskPost() {
           <p className="text-xs text-stone-400 font-semibold uppercase tracking-widest mb-3">服務地點</p>
           {gpsLoading ? (
             <div className="flex items-center gap-2 text-stone-400 text-sm">
-              <Loader2 className="w-4 h-4 animate-spin text-amber-500" />
+              <Loader2 className="w-4 h-4 animate-spin text-gold-500" />
               正在取得您的位置...
             </div>
           ) : (
             <div>
               <div className="flex items-start gap-2 mb-2">
-                <MapPin className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
+                <MapPin className="w-4 h-4 text-gold-500 mt-0.5 flex-shrink-0" />
                 <p className="text-white text-sm leading-relaxed">{address || '無法取得 GPS 位置'}</p>
               </div>
               <input
                 value={address}
                 onChange={e => setAddress(e.target.value)}
                 placeholder="或手動輸入地址..."
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white placeholder-stone-600 outline-none focus:border-amber-500/50"
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white placeholder-stone-600 outline-none focus:border-gold-500/50"
               />
-              <button onClick={getGPS} className="flex items-center gap-1 text-xs text-amber-500 mt-2 hover:text-amber-400 transition-colors">
+              <button onClick={getGPS} className="flex items-center gap-1 text-xs text-gold-500 mt-2 hover:text-gold-400 transition-colors">
                 <RefreshCw className="w-3 h-3" /> 重新定位
               </button>
             </div>
@@ -265,12 +265,12 @@ export default function FlashTaskPost() {
               <button key={task.id} onClick={() => { setSelected(task.id); setPrice(task.base); }}
                 className={`flex flex-col items-center gap-2 p-3 rounded-2xl border-2 transition-all ${
                   selected === task.id
-                    ? 'border-amber-400 bg-amber-400/15'
+                    ? 'border-gold-400 bg-gold-400/15'
                     : 'border-white/10 bg-white/5 hover:border-white/25'
                 }`}>
-                <task.Icon className={`w-6 h-6 ${selected === task.id ? 'text-amber-400' : 'text-stone-400'}`} />
-                <span className={`text-xs font-medium ${selected === task.id ? 'text-amber-300' : 'text-stone-400'}`}>{task.label}</span>
-                <span className={`text-[10px] ${selected === task.id ? 'text-amber-400' : 'text-stone-600'}`}>NT${task.base}起</span>
+                <task.Icon className={`w-6 h-6 ${selected === task.id ? 'text-gold-400' : 'text-stone-400'}`} />
+                <span className={`text-xs font-medium ${selected === task.id ? 'text-gold-300' : 'text-stone-400'}`}>{task.label}</span>
+                <span className={`text-[10px] ${selected === task.id ? 'text-gold-400' : 'text-stone-600'}`}>NT${task.base}起</span>
               </button>
             ))}
           </div>
@@ -289,10 +289,10 @@ export default function FlashTaskPost() {
                   <Minus className="w-4 h-4" />
                 </button>
                 <div className="flex-1 text-center">
-                  <span className="text-3xl font-black text-amber-400">NT${price}</span>
+                  <span className="text-3xl font-black text-gold-400">NT${price}</span>
                 </div>
                 <button onClick={() => setPrice(p => p + 50)}
-                  className="w-11 h-11 rounded-xl bg-amber-500 text-black text-xl font-bold hover:bg-amber-400 transition-colors flex items-center justify-center">
+                  className="w-11 h-11 rounded-xl bg-gold-500 text-black text-xl font-bold hover:bg-gold-400 transition-colors flex items-center justify-center">
                   <Plus className="w-4 h-4" />
                 </button>
               </div>
@@ -306,7 +306,7 @@ export default function FlashTaskPost() {
         <button onClick={handleSubmit} disabled={!selected || !address || submitting}
           className={`w-full py-4 rounded-2xl font-black text-lg transition-all flex items-center justify-center gap-2 ${
             selected && address && !submitting
-              ? 'bg-amber-500 text-black hover:bg-amber-400 shadow-[0_0_32px_rgba(245,158,11,0.35)]'
+              ? 'bg-gold-500 text-black hover:bg-gold-400 shadow-[0_0_32px_rgba(201,168,76,0.35)]'
               : 'bg-white/10 text-stone-600 cursor-not-allowed'
           }`}>
           {submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Zap className="w-5 h-5" />}

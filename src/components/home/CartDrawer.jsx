@@ -27,10 +27,10 @@ export default function CartDrawer() {
 
         <div className="flex items-center justify-between px-5 pb-3 pt-1 border-b border-stone-100">
           <div className="flex items-center gap-2">
-            <ShoppingBag className="w-5 h-5 text-amber-500" />
+            <ShoppingBag className="w-5 h-5 text-gold-500" />
             <span className="font-bold text-stone-900">購物車</span>
             {totalCount > 0 && (
-              <span className="bg-amber-100 text-amber-700 text-xs font-bold px-2 py-0.5 rounded-full">{totalCount} 項</span>
+              <span className="bg-gold-100 text-gold-700 text-xs font-bold px-2 py-0.5 rounded-full">{totalCount} 項</span>
             )}
           </div>
           <button onClick={() => setOpen(false)}>
@@ -81,7 +81,7 @@ export default function CartDrawer() {
             </div>
             <button
               onClick={handleCheckout}
-              className="w-full bg-amber-500 hover:bg-amber-400 text-white font-bold py-4 rounded-2xl transition-colors text-sm"
+              className="w-full bg-gold-500 hover:bg-gold-400 text-white font-bold py-4 rounded-2xl transition-colors text-sm"
             >
               前往預約 / 結帳
             </button>

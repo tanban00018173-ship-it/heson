@@ -9,7 +9,7 @@ export default function NotificationBanner({ onAllow }) {
   return (
     <div className="flex items-center gap-3 bg-[#FFF9E6] border border-[#FFE58F] px-4 py-3 mb-3 -mx-4">
       {/* 鈴鐺 icon */}
-      <div className="w-9 h-9 rounded-full bg-amber-400 flex items-center justify-center flex-shrink-0">
+      <div className="w-9 h-9 rounded-full bg-gold-500 flex items-center justify-center flex-shrink-0">
         <Bell className="w-4.5 h-4.5 text-white w-[18px] h-[18px]" />
       </div>
 
@@ -20,7 +20,7 @@ export default function NotificationBanner({ onAllow }) {
         </p>
         <button
           onClick={onAllow}
-          className="text-xs text-orange-500 font-semibold mt-0.5 hover:text-orange-600 transition-colors"
+          className="text-xs text-gold-600 font-semibold mt-0.5 hover:text-gold-700 transition-colors"
         >
           允許
         </button>

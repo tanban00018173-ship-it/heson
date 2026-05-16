@@ -68,7 +68,7 @@ export default function HomeTopBar({ onChatOpen }) { // onChatOpen kept for back
             value={query}
             onChange={e => setQuery(e.target.value)}
             placeholder="搜尋服務或商品…"
-            className="w-full pl-9 pr-10 py-2.5 text-sm bg-stone-100 rounded-2xl outline-none focus:bg-stone-50 focus:ring-2 focus:ring-amber-300 transition-all"
+            className="w-full pl-9 pr-10 py-2.5 text-sm bg-stone-100 rounded-2xl outline-none focus:bg-stone-50 focus:ring-2 focus:ring-gold-300 transition-all"
           />
           {query && (
             <button type="button" onClick={() => setQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2">
@@ -79,7 +79,7 @@ export default function HomeTopBar({ onChatOpen }) { // onChatOpen kept for back
           {suggestion && (
             <button
               type="submit"
-              className="absolute left-9 top-full mt-1.5 bg-amber-50 border border-amber-200 text-amber-700 text-xs px-3 py-1 rounded-full font-medium hover:bg-amber-100 transition-colors z-10 whitespace-nowrap shadow-sm"
+              className="absolute left-9 top-full mt-1.5 bg-gold-50 border border-gold-200 text-gold-700 text-xs px-3 py-1 rounded-full font-medium hover:bg-gold-100 transition-colors z-10 whitespace-nowrap shadow-sm"
             >
               {suggestion} →
             </button>
@@ -93,7 +93,7 @@ export default function HomeTopBar({ onChatOpen }) { // onChatOpen kept for back
         >
           <ShoppingCart className="w-5 h-5 text-stone-700" />
           {totalCount > 0 && (
-            <span className="absolute -top-1 -right-1 w-5 h-5 bg-amber-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+            <span className="absolute -top-1 -right-1 w-5 h-5 bg-gold-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
               {totalCount > 9 ? '9+' : totalCount}
             </span>
           )}

@@ -84,7 +84,7 @@ function BookingCard({ booking, onCancel, onDelete, cancelingId, isUnread, onRea
   return (
     <div
       className={`transition-colors duration-200 overflow-hidden ${
-        isUnread ? 'bg-amber-50' : 'bg-white'
+        isUnread ? 'bg-gold-50' : 'bg-white'
       }`}
     >
       {/* 主列（可點擊展開） */}
@@ -102,7 +102,7 @@ function BookingCard({ booking, onCancel, onDelete, cancelingId, isUnread, onRea
             <p className={`text-sm font-semibold text-stone-800 ${isUnread ? 'font-bold' : ''}`}>
               {booking.service_type}
             </p>
-            {isUnread && <span className="w-2 h-2 bg-amber-500 rounded-full flex-shrink-0" />}
+            {isUnread && <span className="w-2 h-2 bg-gold-500 rounded-full flex-shrink-0" />}
           </div>
           <p className="text-xs text-stone-500 mt-0.5">
             {booking.scheduled_date} · {booking.time_slot?.split(' ')[0]}
@@ -110,7 +110,7 @@ function BookingCard({ booking, onCancel, onDelete, cancelingId, isUnread, onRea
           <p className={`text-xs mt-1 font-medium ${
             booking.status === '已完成' ? 'text-emerald-600' :
             booking.status === '已取消' ? 'text-red-400' :
-            booking.status === '待確認' ? 'text-amber-600' :
+            booking.status === '待確認' ? 'text-gold-600' :
             'text-blue-600'
           }`}>
             {statusIcon[booking.status]} {booking.status}
@@ -298,7 +298,7 @@ export default function MyBookings() {
               >
                 <ShoppingCart className="w-5 h-5 text-stone-700" />
                 {totalCount > 0 && (
-                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-amber-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-gold-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
                     {totalCount > 9 ? '9+' : totalCount}
                   </span>
                 )}
