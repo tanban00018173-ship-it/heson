@@ -139,9 +139,9 @@ export default function ClientProfileEdit() {
   const avatarLetter = displayName?.[0]?.toUpperCase() || 'U';
 
   return (
-    <div className="min-h-screen bg-stone-100">
+    <div className="h-screen bg-stone-100 flex flex-col overflow-hidden">
       {/* 頂部導航 */}
-      <div className="bg-white border-b border-stone-200 sticky top-0 z-20">
+      <div className="bg-white border-b border-stone-200 flex-shrink-0">
         <div className="relative flex items-center justify-center h-12">
           <button
             onClick={() => navigate('/ClientProfile')}
@@ -162,7 +162,7 @@ export default function ClientProfileEdit() {
         </div>
       </div>
 
-      <div className="pb-28">
+      <div className="flex-1 overflow-y-auto pb-28">
         {/* 頭像區塊 */}
         <div className="bg-white mt-6 mb-6 py-6 flex flex-col items-center gap-2">
           <div className="w-20 h-20 rounded-full bg-stone-200 flex items-center justify-center">
