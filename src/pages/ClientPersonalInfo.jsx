@@ -33,9 +33,9 @@ function EditSheet({ open, title, value, onClose, onSave, inputType = 'text', pl
       {/* 面板 */}
       <div className="relative bg-white rounded-t-3xl px-5 pt-5 pb-8 flex flex-col gap-4 animate-in slide-in-from-bottom duration-200">
         {/* 標題列 */}
-        <div className="flex items-center justify-between">
+        <div className="relative flex items-center justify-center">
           <h2 className="text-base font-bold text-stone-900">編輯{title}</h2>
-          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full bg-stone-100 hover:bg-stone-200 transition-colors">
+          <button onClick={onClose} className="absolute right-0 w-8 h-8 flex items-center justify-center rounded-full bg-stone-100 hover:bg-stone-200 transition-colors">
             <X className="w-4 h-4 text-stone-600" />
           </button>
         </div>
