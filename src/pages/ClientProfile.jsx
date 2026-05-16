@@ -3,27 +3,18 @@ import { Link, useNavigate } from "react-router-dom";
 import ClientBottomNav from "@/components/dashboard/ClientBottomNav";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { Loader2, Calendar, LogOut, ChevronRight, HelpCircle, MessageSquare, MessageCircle, Shield, Phone, FileText, LayoutDashboard, Zap, Settings, ShoppingCart } from "lucide-react";
 import { toast } from "sonner";
-import { createPageUrl } from "@/utils";
 import { useCart } from "@/lib/CartContext";
+import PersonalInfoDrawer from "@/components/profile/PersonalInfoDrawer";
+import CartDrawer from "@/components/home/CartDrawer";
 
 export default function ClientProfile() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
-  const [editMode, setEditMode] = useState(false);
+  const [showPersonalInfo, setShowPersonalInfo] = useState(false);
   const queryClient = useQueryClient();
-  const [formData, setFormData] = useState({
-    phone: '',
-    address: '',
-    housing_type: '',
-    square_footage: '',
-    family_members: '',
-    has_pets: false,
-  });
+
 
   useEffect(() => {
     const loadUser = async () => {
@@ -42,43 +33,9 @@ export default function ClientProfile() {
     initialData: [],
   });
 
-  useEffect(() => {
-    if (clientProfile?.[0]) {
-      const p = clientProfile[0];
-      setFormData({
-        phone: p.phone || '',
-        address: p.address || '',
-        housing_type: p.housing_type || '',
-        square_footage: p.square_footage || '',
-        family_members: p.family_members || '',
-        has_pets: p.has_pets || false,
-      });
-    }
-  }, [clientProfile]);
-
   const profile = clientProfile?.[0];
 
-  const saveMutation = useMutation({
-    mutationFn: async (data) => {
-      if (profile) {
-        return base44.entities.ClientProfile.update(profile.id, data);
-      } else {
-        return base44.entities.ClientProfile.create({ ...data, user_id: user?.id });
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['clientProfile'] });
-      toast.success("資料已更新");
-      setEditMode(false);
-    },
-  });
-
   const { totalCount, setOpen: setCartOpen } = useCart();
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    saveMutation.mutate(formData);
-  };
 
   if (!user || isLoading) {
     return (
@@ -96,9 +53,12 @@ export default function ClientProfile() {
       {/* 黑色頭像區 */}
       <div className="bg-black pt-8 pb-4 px-6 text-white">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-full bg-stone-700 flex items-center justify-center border-2 border-white/20 flex-shrink-0">
+          <button
+            onClick={() => setShowPersonalInfo(true)}
+            className="w-12 h-12 rounded-full bg-stone-700 flex items-center justify-center border-2 border-white/20 flex-shrink-0 hover:bg-stone-600 transition-colors"
+          >
             <span className="text-lg font-bold text-white">{avatarLetter}</span>
-          </div>
+          </button>
           <div className="flex-1 min-w-0">
             <p className="text-base font-bold truncate">{displayName}</p>
             <p className="text-white/40 text-xs truncate">{user?.email}</p>
@@ -221,6 +181,13 @@ export default function ClientProfile() {
       </div>
 
       <ClientBottomNav />
+      <CartDrawer />
+      <PersonalInfoDrawer
+        open={showPersonalInfo}
+        onClose={() => setShowPersonalInfo(false)}
+        user={user}
+        profile={profile}
+      />
     </div>
   );
 }
