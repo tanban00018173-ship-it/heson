@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ThumbsUp, ThumbsDown, HelpCircle, MessageSquare, Camera, ChevronRight, Award, FileText, LogOut, Shield, Phone } from 'lucide-react';
+import { ThumbsUp, ThumbsDown, HelpCircle, MessageSquare, Camera, ChevronRight, Award, FileText, LogOut, Shield, Phone, LayoutDashboard, Users, Zap } from 'lucide-react';
 import { base44 } from "@/api/base44Client";
 
 const MIN_REVIEWS = 50;
@@ -185,6 +185,29 @@ export default function ProfileTab({ user, cleanerProfile, stats = {} }) {
             </button>
           ))}
         </div>
+
+        {/* 台端切換（僅 admin 可見） */}
+        {user?.role === 'admin' && (
+          <div className="bg-white rounded-xl overflow-hidden border border-gold-200">
+            <p className="px-4 pt-4 pb-2 text-xs font-semibold text-gold-600 uppercase tracking-wider">台端切換</p>
+            {[
+              { icon: LayoutDashboard, label: '後台管理', desc: '訂單、派案、報表', to: '/AdminDashboard' },
+              { icon: Users, label: '前台（客戶端）', desc: '客戶首頁與服務', to: '/Home' },
+            ].map(({ icon: Icon, label, desc, to }) => (
+              <button key={label} onClick={() => window.location.href = to}
+                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gold-50 transition-colors border-t border-stone-50">
+                <div className="w-9 h-9 rounded-lg bg-gold-100 flex items-center justify-center flex-shrink-0">
+                  <Icon className="w-4 h-4 text-gold-700" />
+                </div>
+                <div className="flex-1 text-left">
+                  <p className="text-sm font-medium text-stone-800">{label}</p>
+                  <p className="text-xs text-stone-400">{desc}</p>
+                </div>
+                <ChevronRight className="w-4 h-4 text-gold-400" />
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* 登出 */}
         <button onClick={() => base44.auth.logout()}
