@@ -28,10 +28,10 @@ export default function ClientBottomNav() {
           if (primary) {
             return (
               <Link key={id} to={href} className="flex-1 flex flex-col items-center justify-center py-2 relative">
-                <div className="w-12 h-12 bg-gold-500 rounded-2xl flex items-center justify-center shadow-lg shadow-gold-500/40 -mt-5 mb-0.5">
-                  <Icon className="w-6 h-6 text-white" strokeWidth={2.5} />
+                <div className="w-12 h-12 bg-black rounded-2xl flex items-center justify-center shadow-lg shadow-black/40 -mt-5 mb-0.5" style={{background: 'linear-gradient(135deg, #1a1a1a 0%, #333 100%)'}}>
+                  <Icon className="w-6 h-6 text-yellow-400" strokeWidth={2.5} />
                 </div>
-                <span className="text-[10px] font-semibold text-gold-500">{label}</span>
+                <span className="text-[10px] font-semibold text-yellow-500">{label}</span>
               </Link>
             );
           }
