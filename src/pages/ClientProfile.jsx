@@ -6,9 +6,10 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, Calendar, LogOut, ChevronRight, HelpCircle, MessageSquare, Shield, Phone, FileText, LayoutDashboard, Zap, Settings, ShoppingCart } from "lucide-react";
+import { Loader2, Calendar, LogOut, ChevronRight, HelpCircle, MessageSquare, MessageCircle, Shield, Phone, FileText, LayoutDashboard, Zap, Settings, ShoppingCart } from "lucide-react";
 import { toast } from "sonner";
 import { createPageUrl } from "@/utils";
+import { useCart } from "@/lib/CartContext";
 
 export default function ClientProfile() {
   const navigate = useNavigate();
@@ -72,6 +73,8 @@ export default function ClientProfile() {
     },
   });
 
+  const { totalCount, setOpen: setCartOpen } = useCart();
+
   const handleSubmit = (e) => {
     e.preventDefault();
     saveMutation.mutate(formData);
@@ -103,16 +106,21 @@ export default function ClientProfile() {
           {/* 右上角三個按鈕 */}
           <div className="flex items-center gap-2 flex-shrink-0">
             <button onClick={() => navigate('/ClientProfileEdit')}
-              className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors">
-              <Settings className="w-4 h-4 text-white" />
+              className="w-10 h-10 rounded-2xl bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors">
+              <Settings className="w-5 h-5 text-white" />
             </button>
-            <button onClick={() => navigate('/ClientShop')}
-              className="relative w-9 h-9 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors">
-              <ShoppingCart className="w-4 h-4 text-white" />
+            <button onClick={() => setCartOpen(true)}
+              className="relative w-10 h-10 rounded-2xl bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors">
+              <ShoppingCart className="w-5 h-5 text-white" />
+              {totalCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-5 h-5 bg-gold-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                  {totalCount > 9 ? '9+' : totalCount}
+                </span>
+              )}
             </button>
             <button onClick={() => navigate('/VendorChatPage')}
-              className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors">
-              <MessageSquare className="w-4 h-4 text-white" />
+              className="w-10 h-10 rounded-2xl bg-stone-900 flex items-center justify-center hover:bg-stone-700 transition-colors">
+              <MessageCircle className="w-5 h-5 text-white" />
             </button>
           </div>
         </div>
