@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Search, ShoppingCart, MessageCircle, X } from 'lucide-react';
+import { Search, ShoppingCart, MessageCircle, X, LayoutGrid } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useCart } from '@/lib/CartContext';
+import { base44 } from '@/api/base44Client';
 
 // keyword → route mapping
 const SEARCH_ROUTES = [
@@ -25,12 +26,27 @@ function resolveRoute(query) {
   return `/ServiceInquiry?q=${encodeURIComponent(query)}`;
 }
 
+const PORTAL_LINKS = [
+  { label: '後台', path: '/AdminDashboard', roles: ['admin'], color: 'bg-red-500' },
+  { label: '中台', path: '/CleanerJobs',    roles: ['admin', 'cleaner'], color: 'bg-blue-500' },
+];
+
 export default function HomeTopBar({ onChatOpen }) { // onChatOpen kept for backwards compat
   const [query, setQuery] = useState('');
   const [suggestion, setSuggestion] = useState('');
+  const [userRole, setUserRole] = useState(null);
+  const [portalOpen, setPortalOpen] = useState(false);
   const navigate = useNavigate();
   const { totalCount, setOpen: setCartOpen } = useCart();
   const inputRef = useRef(null);
+
+  useEffect(() => {
+    base44.auth.isAuthenticated().then(ok => {
+      if (ok) base44.auth.me().then(u => setUserRole(u?.role));
+    });
+  }, []);
+
+  const visiblePortals = PORTAL_LINKS.filter(p => p.roles.includes(userRole));
 
   useEffect(() => {
     if (!query.trim()) { setSuggestion(''); return; }
@@ -106,6 +122,36 @@ export default function HomeTopBar({ onChatOpen }) { // onChatOpen kept for back
         >
           <MessageCircle className="w-5 h-5 text-white" />
         </Link>
+
+        {/* Portal Switcher — admin/cleaner only */}
+        {visiblePortals.length > 0 && (
+          <div className="relative">
+            <button
+              onClick={() => setPortalOpen(o => !o)}
+              className="w-10 h-10 flex items-center justify-center rounded-2xl bg-stone-800 hover:bg-stone-700 transition-colors"
+              title="台端切換"
+            >
+              <LayoutGrid className="w-4.5 h-4.5 text-white w-[18px] h-[18px]" />
+            </button>
+            {portalOpen && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setPortalOpen(false)} />
+                <div className="absolute top-full mt-1.5 right-0 z-50 bg-white border border-stone-200 rounded-xl shadow-lg overflow-hidden min-w-[120px]">
+                  {visiblePortals.map(p => (
+                    <button
+                      key={p.path}
+                      onClick={() => { navigate(p.path); setPortalOpen(false); }}
+                      className="w-full flex items-center gap-2 px-4 py-2.5 text-xs font-semibold hover:bg-stone-50 transition-colors text-left text-stone-700"
+                    >
+                      <span className={`w-2 h-2 rounded-full ${p.color}`} />
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
