@@ -1,80 +1,62 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import Sidebar from "@/components/dashboard/Sidebar";
+import MobileNav from "@/components/dashboard/MobileNav";
+import ClientBottomNav from "@/components/dashboard/ClientBottomNav";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, ChevronRight, User } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Button } from "@/components/ui/button";
+import { Loader2, Check, X, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
-import ClientBottomNav from "@/components/dashboard/ClientBottomNav";
-
-function FieldRow({ label, value, placeholder, onTap, valueColor }) {
-  return (
-    <button
-      onClick={onTap}
-      className="w-full flex items-center px-4 py-3.5 bg-white hover:bg-stone-50 transition-colors border-t border-stone-100 first:border-t-0"
-    >
-      <span className="text-sm text-stone-800 flex-shrink-0 w-24 text-left">{label}</span>
-      <span className={`flex-1 text-sm text-right truncate mr-2 ${valueColor || (value ? 'text-stone-500' : 'text-orange-500')}`}>
-        {value || placeholder || '立即設定'}
-      </span>
-      <ChevronRight className="w-4 h-4 text-stone-300 flex-shrink-0" />
-    </button>
-  );
-}
-
-function GroupCard({ title, children }) {
-  return (
-    <div className="mx-4 mb-3">
-      {title && <p className="text-xs text-stone-400 px-1 mb-1">{title}</p>}
-      <div className="bg-white rounded-2xl overflow-hidden border border-stone-100">
-        {children}
-      </div>
-    </div>
-  );
-}
-
-function EditSheet({ field, label, value, onSave, onClose }) {
-  const [val, setVal] = useState(value || '');
-  return (
-    <div className="fixed inset-0 z-50 flex items-end bg-black/40" onClick={onClose}>
-      <div className="w-full bg-white rounded-t-3xl p-6 pb-10" onClick={e => e.stopPropagation()}>
-        <p className="text-base font-bold text-stone-900 mb-4">{label}</p>
-        <input
-          autoFocus
-          value={val}
-          onChange={e => setVal(e.target.value)}
-          className="w-full border border-stone-200 rounded-xl px-4 py-3 text-sm text-stone-800 outline-none focus:border-stone-400"
-          placeholder={`請輸入${label}`}
-        />
-        <div className="flex gap-3 mt-4">
-          <button onClick={onClose} className="flex-1 py-3 rounded-xl border border-stone-200 text-sm font-medium text-stone-600">取消</button>
-          <button onClick={() => { onSave(val); onClose(); }} className="flex-1 py-3 rounded-xl bg-black text-white text-sm font-bold">儲存</button>
-        </div>
-      </div>
-    </div>
-  );
-}
+import { motion } from "framer-motion";
 
 export default function ClientProfileEdit() {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const [user, setUser] = useState(null);
-  const [editing, setEditing] = useState(null); // { field, label }
-  const [formData, setFormData] = useState({ phone: '', address: '' });
+  const queryClient = useQueryClient();
+  const [formData, setFormData] = useState({
+    phone: '',
+    address: '',
+    housing_type: '',
+    square_footage: '',
+    family_members: '',
+    has_pets: false,
+  });
+  const [originalData, setOriginalData] = useState(null);
 
   useEffect(() => {
-    base44.auth.me().then(setUser);
+    const loadUser = async () => {
+      const isAuth = await base44.auth.isAuthenticated();
+      if (!isAuth) { base44.auth.redirectToLogin(); return; }
+      const userData = await base44.auth.me();
+      setUser(userData);
+    };
+    loadUser();
   }, []);
 
-  const { data: clientProfile = [] } = useQuery({
+  const { data: clientProfile } = useQuery({
     queryKey: ['clientProfile', user?.id],
     queryFn: () => base44.entities.ClientProfile.filter({ user_id: user?.id }),
     enabled: !!user?.id,
+    initialData: [],
   });
 
   useEffect(() => {
     if (clientProfile?.[0]) {
       const p = clientProfile[0];
-      setFormData({ phone: p.phone || '', address: p.address || '' });
+      const data = {
+        phone: p.phone || '',
+        address: p.address || '',
+        housing_type: p.housing_type || '',
+        square_footage: p.square_footage || '',
+        family_members: p.family_members || '',
+        has_pets: p.has_pets || false,
+      };
+      setFormData(data);
+      setOriginalData(data);
     }
   }, [clientProfile]);
 
@@ -86,99 +68,133 @@ export default function ClientProfileEdit() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['clientProfile'] });
-      toast.success('已儲存');
+      toast.success("資料已更新");
+      navigate('/ClientProfile');
     },
   });
 
-  const handleSave = (field, value) => {
-    const updated = { ...formData, [field]: value };
-    setFormData(updated);
-    saveMutation.mutate(updated);
-  };
-
-  const avatarLetter = user?.full_name?.[0]?.toUpperCase() || 'U';
-
-  // 遮蔽電話
-  const maskedPhone = formData.phone
-    ? formData.phone.replace(/(.{3})(.+)(.{2})/, (_, a, b, c) => a + b.replace(/./g, '*') + c)
-    : '';
-
-  // 遮蔽 email
-  const maskedEmail = user?.email
-    ? user.email.replace(/^(.)(.+)(@.+)$/, (_, a, b, c) => a + b.replace(/./g, '*') + c)
-    : '';
+  const hasChanges = JSON.stringify(formData) !== JSON.stringify(originalData);
 
   return (
-    <div className="min-h-screen bg-stone-100">
+    <div className="min-h-screen bg-[#f6f9ff] flex font-body">
+      <div className="hidden lg:block"><Sidebar userRole="client" userName={user?.full_name} /></div>
+      <MobileNav userRole="client" userName={user?.full_name} />
 
-      {/* 頂部導航 */}
-      <div className="bg-white border-b border-stone-100 flex items-center px-4 py-3 sticky top-0 z-20">
-        <button onClick={() => navigate('/ClientProfile')} className="p-1 -ml-1 mr-2">
-          <ArrowLeft className="w-5 h-5 text-stone-700" />
-        </button>
-        <h1 className="flex-1 text-center text-base font-bold text-stone-900">修改個人資訊</h1>
-        <div className="w-7" />{/* 平衡用 */}
-      </div>
+      <main className="flex-1 pt-16 lg:pt-0">
+        <div className="p-6 lg:p-8 max-w-2xl mx-auto pb-28">
+          {/* Header */}
+          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="mb-8 flex items-center gap-4">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate('/ClientProfile')}
+              className="text-stone-600 hover:bg-stone-100"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+            <div>
+              <p className="text-xs font-semibold tracking-widest uppercase text-stone-400 font-headline">編輯資訊</p>
+              <h1 className="text-2xl font-headline font-extrabold tracking-tight text-stone-900">修改個人資料</h1>
+            </div>
+          </motion.div>
 
-      {/* 頭像區塊 */}
-      <div className="flex flex-col items-center py-6">
-        <div className="w-20 h-20 rounded-full bg-stone-300 flex items-center justify-center mb-2">
-          <span className="text-3xl font-bold text-white">{avatarLetter}</span>
+          {/* Form */}
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
+            <div className="bg-white rounded-3xl border border-[#e8eef6] p-6 mb-5">
+              <p className="text-xs font-semibold tracking-widest uppercase text-stone-400 mb-5">帳戶資訊</p>
+              <div className="space-y-4">
+                <div className="p-4 bg-[#eef4fc] rounded-2xl">
+                  <p className="text-xs text-stone-400 font-semibold uppercase tracking-wide mb-2">聯絡電話</p>
+                  <Input
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    placeholder="0912-345-678"
+                    className="border-0 bg-transparent p-0 h-auto font-semibold text-stone-900 placeholder:text-stone-300 focus-visible:ring-0 text-sm"
+                  />
+                </div>
+                <div className="p-4 bg-[#eef4fc] rounded-2xl">
+                  <p className="text-xs text-stone-400 font-semibold uppercase tracking-wide mb-2">服務地址</p>
+                  <Input
+                    value={formData.address}
+                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                    placeholder="請輸入完整地址"
+                    className="border-0 bg-transparent p-0 h-auto font-semibold text-stone-900 placeholder:text-stone-300 focus-visible:ring-0 text-sm"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-3xl border border-[#e8eef6] p-6 mb-6">
+              <p className="text-xs font-semibold tracking-widest uppercase text-stone-400 mb-5">居家資訊</p>
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="p-4 bg-[#eef4fc] rounded-2xl">
+                    <p className="text-xs text-stone-400 font-semibold uppercase tracking-wide mb-2">房屋類型</p>
+                    <Select value={formData.housing_type} onValueChange={(v) => setFormData({ ...formData, housing_type: v })}>
+                      <SelectTrigger className="border-0 bg-transparent p-0 h-auto font-semibold text-stone-900 text-sm focus:ring-0">
+                        <SelectValue placeholder="請選擇" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="透天">透天厝</SelectItem>
+                        <SelectItem value="公寓">公寓</SelectItem>
+                        <SelectItem value="大樓">大樓</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="p-4 bg-[#eef4fc] rounded-2xl">
+                    <p className="text-xs text-stone-400 font-semibold uppercase tracking-wide mb-2">坪數</p>
+                    <Input
+                      type="number"
+                      value={formData.square_footage}
+                      onChange={(e) => setFormData({ ...formData, square_footage: e.target.value })}
+                      placeholder="例：30"
+                      className="border-0 bg-transparent p-0 h-auto font-semibold text-stone-900 placeholder:text-stone-300 focus-visible:ring-0 text-sm"
+                    />
+                  </div>
+                </div>
+                <div className="p-4 bg-[#eef4fc] rounded-2xl">
+                  <p className="text-xs text-stone-400 font-semibold uppercase tracking-wide mb-2">家庭成員</p>
+                  <Input
+                    value={formData.family_members}
+                    onChange={(e) => setFormData({ ...formData, family_members: e.target.value })}
+                    placeholder="例：2 大 1 小"
+                    className="border-0 bg-transparent p-0 h-auto font-semibold text-stone-900 placeholder:text-stone-300 focus-visible:ring-0 text-sm"
+                  />
+                </div>
+                <div className="flex items-center justify-between p-4 bg-[#eef4fc] rounded-2xl">
+                  <div>
+                    <p className="text-xs text-stone-400 font-semibold uppercase tracking-wide">有寵物</p>
+                    <p className="text-sm text-stone-500 mt-0.5">管理師均接受寵物友善訓練</p>
+                  </div>
+                  <Switch
+                    checked={formData.has_pets}
+                    onCheckedChange={(checked) => setFormData({ ...formData, has_pets: checked })}
+                    className="data-[state=checked]:bg-amber-500"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-3">
+              <Button
+                onClick={() => saveMutation.mutate(formData)}
+                disabled={saveMutation.isPending || !hasChanges}
+                className="flex-1 bg-[#131b2e] hover:bg-[#1a2438] text-white font-headline font-bold py-6 rounded-2xl disabled:opacity-50"
+              >
+                {saveMutation.isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Check className="w-5 h-5 mr-2" />儲存變更</>}
+              </Button>
+              <Button
+                onClick={() => navigate('/ClientProfile')}
+                variant="outline"
+                className="flex-1 border-2 border-stone-200 text-stone-600 font-headline font-bold py-6 rounded-2xl hover:bg-stone-50"
+              >
+                <X className="w-5 h-5 mr-2" />取消
+              </Button>
+            </div>
+          </motion.div>
         </div>
-        <button className="flex items-center gap-1 text-xs text-stone-500">
-          <User className="w-3.5 h-3.5" />
-          編輯
-        </button>
-      </div>
-
-      {/* 基本資料 */}
-      <GroupCard>
-        <FieldRow
-          label="名稱"
-          value={user?.full_name}
-          placeholder="未設定"
-          onTap={() => {}}
-          valueColor="text-stone-500"
-        />
-        <FieldRow
-          label="地址"
-          value={formData.address}
-          placeholder="立即設定"
-          onTap={() => setEditing({ field: 'address', label: '服務地址' })}
-        />
-      </GroupCard>
-
-      {/* 帳號資訊 */}
-      <GroupCard title="">
-        <FieldRow
-          label="手機號碼"
-          value={maskedPhone}
-          placeholder="立即設定"
-          onTap={() => setEditing({ field: 'phone', label: '手機號碼' })}
-          valueColor="text-stone-500"
-        />
-        <FieldRow
-          label="電子郵件"
-          value={maskedEmail ? (
-            <span>{maskedEmail} <span className="text-orange-500">現在驗證</span></span>
-          ) : null}
-          placeholder="未設定"
-          onTap={() => {}}
-          valueColor="text-stone-500"
-        />
-      </GroupCard>
-
-      {/* 編輯底部 Sheet */}
-      {editing && (
-        <EditSheet
-          field={editing.field}
-          label={editing.label}
-          value={formData[editing.field]}
-          onSave={(val) => handleSave(editing.field, val)}
-          onClose={() => setEditing(null)}
-        />
-      )}
-
+      </main>
       <ClientBottomNav />
     </div>
   );
