@@ -6,7 +6,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, Calendar, LogOut, ChevronRight, HelpCircle, MessageSquare, Shield, Phone, FileText, LayoutDashboard, Zap, Settings, ShoppingBag } from "lucide-react";
+import { Loader2, Calendar, LogOut, ChevronRight, HelpCircle, MessageSquare, Shield, Phone, FileText, LayoutDashboard, Zap, Settings, ShoppingCart } from "lucide-react";
 import { toast } from "sonner";
 import { createPageUrl } from "@/utils";
 
@@ -107,8 +107,8 @@ export default function ClientProfile() {
               <Settings className="w-4 h-4 text-white" />
             </button>
             <button onClick={() => navigate('/ClientShop')}
-              className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors">
-              <ShoppingBag className="w-4 h-4 text-white" />
+              className="relative w-9 h-9 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors">
+              <ShoppingCart className="w-4 h-4 text-white" />
             </button>
             <button onClick={() => navigate('/VendorChatPage')}
               className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors">
