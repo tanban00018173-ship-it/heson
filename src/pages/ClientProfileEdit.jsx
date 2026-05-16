@@ -83,7 +83,7 @@ export default function ClientProfileEdit() {
       </div>
 
       {/* 分類 Tab */}
-      <div className="flex gap-2 px-4 pt-4 pb-2 sticky top-[57px] z-10 bg-[#f2f2f7]">
+      <div className="flex gap-2 px-4 pt-4 pb-2">
         {SECTIONS.map((s) => {
           const Icon = SECTION_ICONS[s];
           const active = activeSection === s;
