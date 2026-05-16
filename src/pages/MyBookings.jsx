@@ -6,7 +6,10 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel,
   AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Calendar, MapPin, Clock, ChevronDown, ChevronUp, Trash2, CheckCircle2, Circle, Loader2 } from 'lucide-react';
+import { Calendar, MapPin, Clock, ChevronDown, ChevronUp, Trash2, CheckCircle2, Circle, Loader2, ShoppingCart, MessageCircle, Bell } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { useCart } from '@/lib/CartContext';
+import CartDrawer from '@/components/home/CartDrawer';
 import { format } from 'date-fns';
 import { zhTW } from 'date-fns/locale';
 import { toast } from 'sonner';
@@ -255,30 +258,87 @@ export default function MyBookings() {
   };
 
   const unreadCount = bookings.filter(b => !readIds.has(b.id)).length;
+  const { totalCount, setOpen: setCartOpen } = useCart();
+
+  const handleRequestNotification = async () => {
+    if (!('Notification' in window)) {
+      toast('此裝置不支援通知功能');
+      return;
+    }
+    const permission = await Notification.requestPermission();
+    if (permission === 'granted') {
+      toast.success('已開啟通知！');
+    } else {
+      toast('請在手機設定中開啟通知權限');
+    }
+  };
+
+  const notifPermission = typeof Notification !== 'undefined' ? Notification.permission : 'default';
 
   return (
     <div className="min-h-screen bg-stone-50">
       <main className="pt-0 pb-28">
         <div className="max-w-2xl mx-auto">
 
-          {/* 頂部黑色 Header */}
-          <div className="bg-black px-5 pt-10 pb-6 text-white">
-            <h1 className="text-xl font-bold">我的預約通知</h1>
-            {profile && (
-              <div className="flex gap-4 mt-3">
-                <div className="bg-white/10 rounded-xl px-4 py-2 flex-1 text-center">
-                  <p className="text-white/40 text-[10px] uppercase tracking-wide">目前方案</p>
-                  <p className="text-white font-bold text-sm mt-0.5">{profile.subscription_plan || '無'}</p>
-                </div>
-                <div className="bg-white/10 rounded-xl px-4 py-2 flex-1 text-center">
-                  <p className="text-white/40 text-[10px] uppercase tracking-wide">剩餘次數</p>
-                  <p className="text-white font-bold text-sm mt-0.5">{profile.remaining_visits ?? 0} 次</p>
-                </div>
-              </div>
-            )}
+          {/* 頂部 Header — 白色，仿蝦皮 */}
+          <div className="bg-white border-b border-stone-100 px-4 pt-10 pb-3 sticky top-0 z-20">
+            <div className="flex items-center justify-between">
+              {/* 購物車 */}
+              <button
+                onClick={() => setCartOpen(true)}
+                className="relative w-10 h-10 flex items-center justify-center rounded-2xl bg-stone-100 hover:bg-stone-200 transition-colors"
+              >
+                <ShoppingCart className="w-5 h-5 text-stone-700" />
+                {totalCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-amber-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                    {totalCount > 9 ? '9+' : totalCount}
+                  </span>
+                )}
+              </button>
+
+              {/* 標題置中 */}
+              <h1 className="text-lg font-bold text-stone-900">通知</h1>
+
+              {/* 聊聊 */}
+              <Link
+                to="/VendorChatPage"
+                className="relative w-10 h-10 flex items-center justify-center rounded-2xl bg-stone-900 hover:bg-stone-700 transition-colors"
+              >
+                <MessageCircle className="w-5 h-5 text-white" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+              </Link>
+            </div>
           </div>
 
           <div className="px-4 pt-4">
+            {/* 允許通知橫幅 */}
+            {notifPermission !== 'granted' && (
+              <div className="flex items-start gap-3 bg-amber-50 border border-amber-100 rounded-2xl px-4 py-3 mb-4">
+                <Bell className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-stone-700 font-medium leading-snug">
+                    允許收到通知以獲得訂單更新進度及優惠
+                  </p>
+                  <button
+                    onClick={handleRequestNotification}
+                    className="text-xs text-blue-600 font-semibold mt-1 hover:text-blue-700 transition-colors"
+                  >
+                    允許
+                  </button>
+                </div>
+                <button
+                  onClick={(e) => e.currentTarget.closest('.bg-amber-50')?.remove()}
+                  className="text-stone-300 hover:text-stone-400 transition-colors flex-shrink-0 text-lg leading-none"
+                >
+                  ×
+                </button>
+              </div>
+            )}
+
             {isLoading && (
               <div className="flex justify-center py-16">
                 <Loader2 className="w-8 h-8 text-stone-400 animate-spin" />
@@ -299,7 +359,7 @@ export default function MyBookings() {
               <>
                 {/* 標題列 + 閱讀全部 */}
                 <div className="flex items-center justify-between mb-3">
-                  <p className="text-xs font-semibold text-stone-400 uppercase tracking-wider">預約更新通知</p>
+                  <p className="text-sm font-semibold text-stone-800">訂單更新通知</p>
                   {unreadCount > 0 && (
                     <button
                       onClick={handleReadAll}
@@ -329,6 +389,7 @@ export default function MyBookings() {
         </div>
       </main>
 
+      <CartDrawer />
       <ClientBottomNav />
 
       <AlertDialog open={!!deleteConfirmId} onOpenChange={(open) => !open && setDeleteConfirmId(null)}>
