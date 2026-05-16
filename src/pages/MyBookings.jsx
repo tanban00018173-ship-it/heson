@@ -6,60 +6,10 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel,
   AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Calendar, MapPin, Clock, ChevronDown, ChevronUp, Trash2, CheckCircle2, Circle, Loader2, Bell, X } from 'lucide-react';
+import { Calendar, MapPin, Clock, ChevronDown, ChevronUp, Trash2, CheckCircle2, Circle, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { zhTW } from 'date-fns/locale';
 import { toast } from 'sonner';
-
-function NotificationBanner() {
-  const [dismissed, setDismissed] = useState(() =>
-    localStorage.getItem('heson_notif_banner_dismissed') === '1'
-  );
-  const [granted, setGranted] = useState(() =>
-    typeof Notification !== 'undefined' && Notification.permission === 'granted'
-  );
-
-  if (dismissed || granted) return null;
-
-  const handleAllow = async () => {
-    if (typeof Notification === 'undefined') {
-      toast.error('此裝置不支援通知功能');
-      return;
-    }
-    const permission = await Notification.requestPermission();
-    if (permission === 'granted') {
-      setGranted(true);
-      toast.success('已開啟通知！');
-    } else {
-      toast('請至裝置設定中允許通知');
-    }
-  };
-
-  const handleDismiss = () => {
-    localStorage.setItem('heson_notif_banner_dismissed', '1');
-    setDismissed(true);
-  };
-
-  return (
-    <div className="mx-4 mt-4 mb-1 bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3 flex items-start gap-3">
-      <Bell className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
-      <div className="flex-1">
-        <p className="text-xs text-stone-700 leading-relaxed">
-          允許收到通知以獲得訂單更新進度及優惠
-        </p>
-        <button
-          onClick={handleAllow}
-          className="text-xs font-bold text-blue-600 mt-1 hover:text-blue-700 transition-colors"
-        >
-          允許
-        </button>
-      </div>
-      <button onClick={handleDismiss} className="text-stone-300 hover:text-stone-500 transition-colors flex-shrink-0">
-        <X className="w-4 h-4" />
-      </button>
-    </div>
-  );
-}
 
 // 狀態進度步驟
 const STATUS_STEPS = ['待確認', '已確認', '進行中', '待結算', '已完成'];
@@ -311,8 +261,22 @@ export default function MyBookings() {
       <main className="pt-0 pb-28">
         <div className="max-w-2xl mx-auto">
 
-          {/* 推播通知橫幅 */}
-          <NotificationBanner />
+          {/* 頂部黑色 Header */}
+          <div className="bg-black px-5 pt-10 pb-6 text-white">
+            <h1 className="text-xl font-bold">我的預約通知</h1>
+            {profile && (
+              <div className="flex gap-4 mt-3">
+                <div className="bg-white/10 rounded-xl px-4 py-2 flex-1 text-center">
+                  <p className="text-white/40 text-[10px] uppercase tracking-wide">目前方案</p>
+                  <p className="text-white font-bold text-sm mt-0.5">{profile.subscription_plan || '無'}</p>
+                </div>
+                <div className="bg-white/10 rounded-xl px-4 py-2 flex-1 text-center">
+                  <p className="text-white/40 text-[10px] uppercase tracking-wide">剩餘次數</p>
+                  <p className="text-white font-bold text-sm mt-0.5">{profile.remaining_visits ?? 0} 次</p>
+                </div>
+              </div>
+            )}
+          </div>
 
           <div className="px-4 pt-4">
             {isLoading && (
@@ -335,7 +299,7 @@ export default function MyBookings() {
               <>
                 {/* 標題列 + 閱讀全部 */}
                 <div className="flex items-center justify-between mb-3">
-                  <p className="text-base font-bold text-stone-800">訂單更新通知</p>
+                  <p className="text-xs font-semibold text-stone-400 uppercase tracking-wider">預約更新通知</p>
                   {unreadCount > 0 && (
                     <button
                       onClick={handleReadAll}
