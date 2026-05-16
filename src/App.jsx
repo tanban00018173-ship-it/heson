@@ -30,6 +30,7 @@ import FlashTaskPost from './pages/FlashTaskPost'
 import AdminUsers from './pages/AdminUsers'
 import ClientShop from './pages/ClientShop'
 import ClientProfileEdit from './pages/ClientProfileEdit'
+import ClientPersonalInfo from './pages/ClientPersonalInfo'
 import VendorChatPage from './pages/VendorChatPage'
 import { CartProvider } from './lib/CartContext'
 import React from 'react';
@@ -143,6 +144,7 @@ const AuthenticatedApp = () => {
       <Route path="/AdminUsers" element={<LayoutWrapper currentPageName="AdminUsers"><AdminUsers /></LayoutWrapper>} />
       <Route path="/ClientShop" element={<ClientShop />} />
       <Route path="/ClientProfileEdit" element={<LayoutWrapper currentPageName="ClientProfileEdit"><ClientProfileEdit /></LayoutWrapper>} />
+      <Route path="/ClientPersonalInfo" element={<ClientPersonalInfo />} />
       <Route path="/VendorChatPage" element={<VendorChatPage />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>

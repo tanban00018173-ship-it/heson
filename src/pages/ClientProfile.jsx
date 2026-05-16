@@ -2,17 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from "react-router-dom";
 import ClientBottomNav from "@/components/dashboard/ClientBottomNav";
 import { base44 } from "@/api/base44Client";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Loader2, Calendar, LogOut, ChevronRight, HelpCircle, MessageSquare, MessageCircle, Shield, Phone, FileText, LayoutDashboard, Zap, Settings, ShoppingCart } from "lucide-react";
-import { toast } from "sonner";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Calendar, LogOut, ChevronRight, HelpCircle, MessageSquare, MessageCircle, Shield, Phone, FileText, LayoutDashboard, Zap, Settings, ShoppingCart } from "lucide-react";
+
 import { useCart } from "@/lib/CartContext";
-import PersonalInfoDrawer from "@/components/profile/PersonalInfoDrawer";
 import CartDrawer from "@/components/home/CartDrawer";
 
 export default function ClientProfile() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
-  const [showPersonalInfo, setShowPersonalInfo] = useState(false);
   const queryClient = useQueryClient();
 
 
@@ -54,7 +52,7 @@ export default function ClientProfile() {
       <div className="bg-black pt-8 pb-4 px-6 text-white">
         <div className="flex items-center gap-3">
           <button
-            onClick={() => setShowPersonalInfo(true)}
+            onClick={() => navigate('/ClientPersonalInfo')}
             className="w-12 h-12 rounded-full bg-stone-700 flex items-center justify-center border-2 border-white/20 flex-shrink-0 hover:bg-stone-600 transition-colors"
           >
             <span className="text-lg font-bold text-white">{avatarLetter}</span>
@@ -182,12 +180,6 @@ export default function ClientProfile() {
 
       <ClientBottomNav />
       <CartDrawer />
-      <PersonalInfoDrawer
-        open={showPersonalInfo}
-        onClose={() => setShowPersonalInfo(false)}
-        user={user}
-        profile={profile}
-      />
     </div>
   );
 }
