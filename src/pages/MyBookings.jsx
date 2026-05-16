@@ -83,8 +83,8 @@ function BookingCard({ booking, onCancel, onDelete, cancelingId, isUnread, onRea
 
   return (
     <div
-      className={`rounded-2xl border transition-colors duration-200 overflow-hidden ${
-        isUnread ? 'bg-amber-50 border-amber-100' : 'bg-white border-stone-100'
+      className={`transition-colors duration-200 overflow-hidden ${
+        isUnread ? 'bg-amber-50' : 'bg-white'
       }`}
     >
       {/* 主列（可點擊展開） */}
@@ -284,8 +284,12 @@ export default function MyBookings() {
           {/* 頂部 Header — 與首頁相同佈局 */}
           <div className="bg-white border-b border-stone-100 px-4 py-3 sticky top-0 z-20">
             <div className="flex items-center gap-2">
-              {/* 標題（佔滿左側空間） */}
-              <h1 className="flex-1 text-lg font-bold text-stone-900">通知</h1>
+              {/* 佔位（左側平衡） */}
+              <div className="flex-1" />
+              {/* 標題置中 */}
+              <h1 className="text-lg font-bold text-stone-900">通知</h1>
+              {/* 右側按鈕區（flex-1 讓標題真正置中） */}
+              <div className="flex-1 flex items-center justify-end gap-2">
 
               {/* 購物車 */}
               <button
@@ -307,61 +311,63 @@ export default function MyBookings() {
               >
                 <MessageCircle className="w-5 h-5 text-white" />
               </Link>
+              </div>
             </div>
           </div>
 
-          <div className="px-4 pt-4">
-            {/* 允許通知橫幅 */}
-            {notifPermission !== 'granted' && (
+          {/* 允許通知橫幅 */}
+          {notifPermission !== 'granted' && (
+            <div className="px-4 pt-4">
               <NotificationBanner onAllow={handleRequestNotification} />
-            )}
+            </div>
+          )}
 
-            {isLoading && (
-              <div className="flex justify-center py-16">
-                <Loader2 className="w-8 h-8 text-stone-400 animate-spin" />
+          {isLoading && (
+            <div className="flex justify-center py-16">
+              <Loader2 className="w-8 h-8 text-stone-400 animate-spin" />
+            </div>
+          )}
+
+          {!isLoading && bookings.length === 0 && (
+            <div className="text-center py-16">
+              <Calendar className="w-12 h-12 text-stone-200 mx-auto mb-4" />
+              <p className="text-stone-400 text-sm mb-4">目前沒有任何預約</p>
+              <a href="/BookingForm" className="inline-block bg-black text-white text-sm font-semibold px-6 py-2.5 rounded-full hover:bg-stone-800 transition-colors">
+                立即預約
+              </a>
+            </div>
+          )}
+
+          {!isLoading && bookings.length > 0 && (
+            <>
+              {/* 標題列 + 閱讀全部 */}
+              <div className="flex items-center justify-between px-4 pt-4 mb-2">
+                <p className="text-sm font-semibold text-stone-800">訂單更新通知</p>
+                <button
+                  onClick={handleReadAll}
+                  disabled={unreadCount === 0}
+                  className={`text-xs font-semibold transition-colors ${unreadCount > 0 ? 'text-black hover:text-stone-500' : 'text-stone-300 cursor-default'}`}
+                >
+                  {unreadCount > 0 ? `閱讀全部（${unreadCount}）` : '閱讀全部'}
+                </button>
               </div>
-            )}
 
-            {!isLoading && bookings.length === 0 && (
-              <div className="text-center py-16">
-                <Calendar className="w-12 h-12 text-stone-200 mx-auto mb-4" />
-                <p className="text-stone-400 text-sm mb-4">目前沒有任何預約</p>
-                <a href="/BookingForm" className="inline-block bg-black text-white text-sm font-semibold px-6 py-2.5 rounded-full hover:bg-stone-800 transition-colors">
-                  立即預約
-                </a>
+              {/* 卡片列表：貼齊左右，無縫隙，以分隔線隔開 */}
+              <div className="divide-y divide-stone-100">
+                {bookings.map((booking) => (
+                  <BookingCard
+                    key={booking.id}
+                    booking={booking}
+                    onCancel={handleCancelBooking}
+                    onDelete={(id) => setDeleteConfirmId(id)}
+                    cancelingId={cancelingId}
+                    isUnread={!readIds.has(booking.id)}
+                    onRead={handleRead}
+                  />
+                ))}
               </div>
-            )}
-
-            {!isLoading && bookings.length > 0 && (
-              <>
-                {/* 標題列 + 閱讀全部 */}
-                <div className="flex items-center justify-between mb-3">
-                  <p className="text-sm font-semibold text-stone-800">訂單更新通知</p>
-                  <button
-                    onClick={handleReadAll}
-                    disabled={unreadCount === 0}
-                    className={`text-xs font-semibold transition-colors ${unreadCount > 0 ? 'text-black hover:text-stone-500' : 'text-stone-300 cursor-default'}`}
-                  >
-                    {unreadCount > 0 ? `閱讀全部（${unreadCount}）` : '閱讀全部'}
-                  </button>
-                </div>
-
-                <div className="space-y-2">
-                  {bookings.map((booking) => (
-                    <BookingCard
-                      key={booking.id}
-                      booking={booking}
-                      onCancel={handleCancelBooking}
-                      onDelete={(id) => setDeleteConfirmId(id)}
-                      cancelingId={cancelingId}
-                      isUnread={!readIds.has(booking.id)}
-                      onRead={handleRead}
-                    />
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
+            </>
+          )}
         </div>
       </main>
 
