@@ -61,8 +61,8 @@ export default function ClientPersonalInfo() {
         <h1 className="flex-1 text-center text-base font-bold text-stone-900 -ml-9">個人資訊</h1>
       </div>
 
-      <div className="flex-1 px-4 pt-6 pb-32 space-y-4">
-        {/* 頭像區 */}
+      {/* 固定頭像區 */}
+      <div className="bg-[#f2f2f7] px-4 pt-6 pb-3">
         <div className="flex flex-col items-center py-6 bg-white rounded-2xl">
           <div className="w-20 h-20 rounded-full bg-stone-800 flex items-center justify-center mb-3">
             <span className="text-3xl font-bold text-white">{avatarLetter}</span>
@@ -70,7 +70,10 @@ export default function ClientPersonalInfo() {
           <p className="text-base font-bold text-stone-900">{displayName}</p>
           <p className="text-xs text-stone-400 mt-0.5">{maskEmail(user?.email)}</p>
         </div>
+      </div>
 
+      {/* 捲動內容區 */}
+      <div className="flex-1 overflow-y-auto px-4 pb-32 space-y-4">
         {/* 基本資料 */}
         <div className="bg-white rounded-2xl overflow-hidden">
           <p className="px-4 pt-4 pb-1 text-xs font-semibold text-stone-400 uppercase tracking-wider">基本資料</p>
