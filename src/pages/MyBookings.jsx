@@ -10,6 +10,7 @@ import { Calendar, MapPin, Clock, ChevronDown, ChevronUp, Trash2, CheckCircle2, 
 import { Link } from 'react-router-dom';
 import { useCart } from '@/lib/CartContext';
 import CartDrawer from '@/components/home/CartDrawer';
+import NotificationBanner from '@/components/NotificationBanner';
 import { format } from 'date-fns';
 import { zhTW } from 'date-fns/locale';
 import { toast } from 'sonner';
@@ -312,26 +313,7 @@ export default function MyBookings() {
           <div className="px-4 pt-4">
             {/* 允許通知橫幅 */}
             {notifPermission !== 'granted' && (
-              <div className="flex items-start gap-3 bg-amber-50 border border-amber-100 rounded-2xl px-4 py-3 mb-4">
-                <Bell className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs text-stone-700 font-medium leading-snug">
-                    允許收到通知以獲得訂單更新進度及優惠
-                  </p>
-                  <button
-                    onClick={handleRequestNotification}
-                    className="text-xs text-blue-600 font-semibold mt-1 hover:text-blue-700 transition-colors"
-                  >
-                    允許
-                  </button>
-                </div>
-                <button
-                  onClick={(e) => e.currentTarget.closest('.bg-amber-50')?.remove()}
-                  className="text-stone-300 hover:text-stone-400 transition-colors flex-shrink-0 text-lg leading-none"
-                >
-                  ×
-                </button>
-              </div>
+              <NotificationBanner onAllow={handleRequestNotification} />
             )}
 
             {isLoading && (
