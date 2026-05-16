@@ -355,14 +355,13 @@ export default function MyBookings() {
                 {/* 標題列 + 閱讀全部 */}
                 <div className="flex items-center justify-between mb-3">
                   <p className="text-sm font-semibold text-stone-800">訂單更新通知</p>
-                  {unreadCount > 0 && (
-                    <button
-                      onClick={handleReadAll}
-                      className="text-xs text-black font-semibold hover:text-stone-500 transition-colors"
-                    >
-                      閱讀全部（{unreadCount}）
-                    </button>
-                  )}
+                  <button
+                    onClick={handleReadAll}
+                    disabled={unreadCount === 0}
+                    className={`text-xs font-semibold transition-colors ${unreadCount > 0 ? 'text-black hover:text-stone-500' : 'text-stone-300 cursor-default'}`}
+                  >
+                    {unreadCount > 0 ? `閱讀全部（${unreadCount}）` : '閱讀全部'}
+                  </button>
                 </div>
 
                 <div className="space-y-2">
