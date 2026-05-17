@@ -5,16 +5,9 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, ChevronRight } from "lucide-react";
 import ClientBottomNav from "@/components/dashboard/ClientBottomNav";
 import EditSheet from "@/components/profile/EditSheet";
+import RegionPicker, { TW_DATA } from "@/components/profile/RegionPicker";
 
-// 台灣城市區域與郵遞區號
-const TW_DATA = {
-  '台北市': { '中正區': '100', '大同區': '103', '中山區': '104', '松山區': '105', '大安區': '106', '萬華區': '108', '信義區': '110', '士林區': '111', '北投區': '112', '內湖區': '114', '南港區': '115', '文山區': '116' },
-  '新北市': { '板橋區': '220', '三重區': '241', '中和區': '235', '永和區': '234', '新莊區': '242', '新店區': '231', '樹林區': '238', '鶯歌區': '239', '三峽區': '237', '淡水區': '251', '汐止區': '221', '瑞芳區': '224', '土城區': '236', '蘆洲區': '247', '五股區': '248', '泰山區': '243', '林口區': '244', '深坑區': '222', '石碇區': '223', '坪林區': '232', '三芝區': '252', '石門區': '253', '八里區': '249', '平溪區': '226', '雙溪區': '227', '貢寮區': '228', '金山區': '208', '萬里區': '207', '烏來區': '233' },
-  '桃園市': { '桃園區': '330', '中壢區': '320', '大溪區': '335', '楊梅區': '326', '蘆竹區': '338', '大園區': '337', '龜山區': '333', '八德區': '334', '龍潭區': '325', '平鎮區': '324', '新屋區': '327', '觀音區': '328', '復興區': '336' },
-  '台中市': { '中區': '400', '東區': '401', '南區': '402', '西區': '403', '北區': '404', '北屯區': '406', '西屯區': '407', '南屯區': '408', '太平區': '411', '大里區': '412', '霧峰區': '413', '烏日區': '414', '豐原區': '420', '后里區': '421', '石岡區': '422', '東勢區': '423', '和平區': '424', '新社區': '426', '潭子區': '427', '大雅區': '428', '神岡區': '429', '大肚區': '432', '沙鹿區': '433', '龍井區': '434', '梧棲區': '435', '清水區': '436', '大甲區': '437', '外埔區': '438', '大安區': '439' },
-  '台南市': { '中西區': '700', '東區': '701', '南區': '702', '北區': '704', '安平區': '708', '安南區': '709', '永康區': '710', '歸仁區': '711', '新化區': '712', '左鎮區': '713', '玉井區': '714', '楠西區': '715', '南化區': '716', '仁德區': '717', '關廟區': '718', '龍崎區': '719', '官田區': '720', '麻豆區': '721', '佳里區': '722', '西港區': '723', '七股區': '724', '將軍區': '725', '學甲區': '726', '北門區': '727', '新營區': '730', '後壁區': '731', '白河區': '732', '東山區': '733', '六甲區': '734', '下營區': '735', '柳營區': '736', '鹽水區': '737', '善化區': '741', '大內區': '742', '山上區': '743', '新市區': '744', '安定區': '745' },
-  '高雄市': { '新興區': '800', '前金區': '801', '苓雅區': '802', '鹽埕區': '803', '鼓山區': '804', '旗津區': '805', '前鎮區': '806', '三民區': '807', '楠梓區': '811', '小港區': '812', '左營區': '813', '仁武區': '814', '大社區': '815', '岡山區': '820', '路竹區': '821', '阿蓮區': '822', '田寮區': '823', '燕巢區': '824', '橋頭區': '825', '梓官區': '826', '彌陀區': '827', '永安區': '828', '湖內區': '829', '鳳山區': '830', '大寮區': '831', '林園區': '832', '鳥松區': '833', '大樹區': '840', '旗山區': '842', '美濃區': '843', '六龜區': '844', '內門區': '845', '杉林區': '846', '甲仙區': '847', '桃源區': '848', '那瑪夏區': '849', '茂林區': '851', '茄萣區': '852' },
-};
+
 
 const CLEANING_TYPES = ['居家地址', '公司地址', '其他地址'];
 const PICKUP_TYPES = ['超商取貨地址'];
@@ -59,6 +52,7 @@ export default function ClientAddressForm() {
   });
   const [saving, setSaving] = useState(false);
   const [editField, setEditField] = useState(null);
+  const [showRegionPicker, setShowRegionPicker] = useState(false);
 
   useEffect(() => {
     base44.auth.isAuthenticated().then(auth => {
@@ -124,8 +118,6 @@ export default function ClientAddressForm() {
   };
 
   const typeOptions = CLEANING_TYPES.includes(form.address_type) ? CLEANING_TYPES : PICKUP_TYPES;
-  const cities = Object.keys(TW_DATA);
-  const districts = Object.keys(TW_DATA[form.city] || {});
 
   return (
     <div className="min-h-screen bg-[#f2f2f7] flex flex-col">
@@ -144,12 +136,16 @@ export default function ClientAddressForm() {
       <div className="flex-1 overflow-y-auto pb-36">
         {/* 地址類型 */}
         <p className="px-4 py-3 text-xs font-semibold text-stone-400 uppercase tracking-wider bg-[#f2f2f7]">地址類型</p>
-        <div className="bg-white rounded-none overflow-hidden">
-          <RowItem
-            label="類型"
-            value={form.address_type}
-            onEdit={() => setEditField({ key: 'address_type', title: '地址類型', value: form.address_type, inputType: 'select', options: typeOptions })}
-          />
+        <div className="bg-white px-4 py-3 flex gap-2 flex-wrap">
+          {typeOptions.map(type => (
+            <button
+              key={type}
+              onClick={() => setForm(f => ({ ...f, address_type: type }))}
+              className={`px-4 py-2 rounded-full text-sm font-medium border transition-colors ${form.address_type === type ? 'bg-stone-900 text-white border-stone-900' : 'bg-white text-stone-600 border-stone-200 hover:bg-stone-50'}`}
+            >
+              {type}
+            </button>
+          ))}
         </div>
 
         {/* 收件人資訊 */}
@@ -164,10 +160,18 @@ export default function ClientAddressForm() {
         {/* 地址資訊 */}
         <p className="px-4 py-3 text-xs font-semibold text-stone-400 uppercase tracking-wider bg-[#f2f2f7]">地址資訊</p>
         <div className="bg-white rounded-none overflow-hidden">
-          <RowItem label="城市" value={form.city}
-            onEdit={() => setEditField({ key: 'city', title: '城市', value: form.city, inputType: 'dropdown', options: cities })} />
-          <RowItem label="區" value={form.district}
-            onEdit={() => setEditField({ key: 'district', title: '區', value: form.district, inputType: 'dropdown', options: districts })} />
+          <button
+            onClick={() => setShowRegionPicker(true)}
+            className="w-full flex items-center justify-between px-4 py-3.5 border-b border-stone-50 hover:bg-stone-50 transition-colors"
+          >
+            <span className="text-sm text-stone-500">城市／區</span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-sm font-medium text-stone-800">
+                {form.city && form.district ? `${form.city} ${form.district}` : '—'}
+              </span>
+              <ChevronRight className="w-4 h-4 text-stone-300 flex-shrink-0" />
+            </div>
+          </button>
           <button className="w-full flex items-center justify-between px-4 py-3.5 border-b border-stone-50 last:border-0 cursor-default">
             <span className="text-sm text-stone-500">郵遞區號</span>
             <span className="text-sm font-medium text-stone-400">{form.postal_code || '—'}</span>
@@ -208,6 +212,17 @@ export default function ClientAddressForm() {
       </div>
 
       <ClientBottomNav />
+
+      <RegionPicker
+        open={showRegionPicker}
+        city={form.city}
+        district={form.district}
+        onClose={() => setShowRegionPicker(false)}
+        onConfirm={({ city, district, postal_code }) => {
+          setForm(f => ({ ...f, city, district, postal_code }));
+          setShowRegionPicker(false);
+        }}
+      />
 
       {/* EditSheet */}
       <EditSheet
