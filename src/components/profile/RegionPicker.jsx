@@ -106,8 +106,8 @@ export default function RegionPicker({ open, city: initCity, district: initDistr
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        {/* 已選地區 */}
-        <div className="bg-white px-4 pt-4 pb-3 mb-2">
+        {/* 已選地區 - 有選縣市才顯示 */}
+        {selectedCity && <div className="bg-white px-4 pt-4 pb-3 mb-2">
           <div className="flex items-center justify-between mb-3">
             <span className="text-xs text-stone-400">已選地區</span>
             <button onClick={handleReset} className="text-xs text-stone-400 hover:text-stone-600">重設</button>
@@ -136,10 +136,10 @@ export default function RegionPicker({ open, city: initCity, district: initDistr
               </div>
             </div>
           </div>
-        </div>
+        </div>}
 
-        {/* GPS button */}
-        <div className="bg-white mb-2 px-4 py-3">
+        {/* GPS button - 未選縣市才顯示 */}
+        {!selectedCity && <div className="bg-white mb-2 px-4 py-3">
           <button
             onClick={handleGPS}
             disabled={locating}
@@ -152,7 +152,7 @@ export default function RegionPicker({ open, city: initCity, district: initDistr
               {locating ? '定位中...' : '使用我的當前位置'}
             </span>
           </button>
-        </div>
+        </div>}
 
         {/* City list */}
         {!selectedCity && (
