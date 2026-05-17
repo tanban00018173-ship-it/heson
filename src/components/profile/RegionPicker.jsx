@@ -113,19 +113,19 @@ export default function RegionPicker({ open, city: initCity, district: initDistr
             <button onClick={handleReset} className="text-xs text-stone-400 hover:text-stone-600">重設</button>
           </div>
           {/* Timeline */}
-          <div className="flex flex-col gap-0">
+          <div className="flex flex-col">
             {/* City row */}
-            <div className="flex items-center gap-3 py-2">
-              <div className="w-2.5 h-2.5 rounded-full border-2 border-stone-300 flex-shrink-0" />
+            <div className="flex items-center gap-3 py-2 px-1">
+              <div className="w-3 h-3 rounded-full border-2 border-stone-300 flex-shrink-0" />
               <span className={`text-sm ${selectedCity ? 'text-stone-800 font-medium' : 'text-stone-300'}`}>
                 {selectedCity || '請選擇縣市'}
               </span>
             </div>
-            {/* Connector line */}
-            <div className="ml-[4px] w-0.5 h-3 bg-stone-200" />
+            {/* Connector line — aligned under dot center (dot center = px-1 + half dot = 4+6=10px) */}
+            <div className="ml-[10px] w-px h-3 bg-stone-200" />
             {/* District row */}
-            <div className={`flex items-center gap-3 py-2 px-3 rounded-xl border ${!selectedCity ? 'border-stone-200 bg-stone-50' : 'border-red-100 bg-red-50'}`}>
-              <div className={`w-2.5 h-2.5 rounded-full border-2 flex-shrink-0 ${selectedDistrict ? 'border-red-500 bg-red-500' : 'border-red-400'}`} />
+            <div className={`flex items-center gap-3 py-2.5 px-3 rounded-xl border ${!selectedCity ? 'border-stone-200 bg-stone-50' : 'border-red-100 bg-red-50'}`}>
+              <div className={`w-3 h-3 rounded-full border-2 flex-shrink-0 ${selectedDistrict ? 'border-red-500 bg-red-500' : 'border-red-400'}`} />
               <span className={`text-sm font-medium ${selectedDistrict ? 'text-red-600' : 'text-red-500'}`}>
                 {selectedDistrict || '選擇行政區'}
               </span>
