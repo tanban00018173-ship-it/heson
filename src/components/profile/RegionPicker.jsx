@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ArrowLeft, MapPin } from 'lucide-react';
+import { base44 } from '@/api/base44Client';
 
 const TW_DATA = {
   '台北市': { '中正區': '100', '大同區': '103', '中山區': '104', '松山區': '105', '大安區': '106', '萬華區': '108', '信義區': '110', '士林區': '111', '北投區': '112', '內湖區': '114', '南港區': '115', '文山區': '116' },
@@ -89,13 +90,16 @@ export default function RegionPicker({ open, city: initCity, district: initDistr
   };
 
   const handleGPS = () => {
+    if (!navigator.geolocation) return;
     setLocating(true);
-    navigator.geolocation?.getCurrentPosition(
+    navigator.geolocation.getCurrentPosition(
       async (pos) => {
         try {
           const { latitude, longitude } = pos.coords;
+          const keyRes = await base44.functions.invoke('getGoogleMapsKey', {});
+          const apiKey = keyRes.data?.key || keyRes.data?.apiKey || '';
           const res = await fetch(
-            `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&language=zh-TW&key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY || ''}`
+            `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&language=zh-TW&key=${apiKey}`
           );
           const data = await res.json();
           const components = data.results?.[0]?.address_components || [];
@@ -103,7 +107,6 @@ export default function RegionPicker({ open, city: initCity, district: initDistr
           const distComp = components.find(c => c.types.includes('administrative_area_level_3') || c.types.includes('administrative_area_level_2'));
           const cityName = cityComp?.long_name || '';
           const distName = distComp?.long_name || '';
-          // try to match
           const matchedCity = cities.find(c => cityName.includes(c) || c.includes(cityName));
           if (matchedCity) {
             setSelectedCity(matchedCity);
@@ -117,7 +120,8 @@ export default function RegionPicker({ open, city: initCity, district: initDistr
         } catch {}
         setLocating(false);
       },
-      () => setLocating(false)
+      () => setLocating(false),
+      { enableHighAccuracy: true, timeout: 10000 }
     );
   };
 
