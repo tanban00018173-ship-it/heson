@@ -518,7 +518,12 @@ export default function FlashTaskPost() {
         initialLng={newAddr.gps_lng}
         onClose={() => setNewAddrStep('form')}
         onSave={({ street, gps_lat, gps_lng, city: newCity, district: newDistrict }) => {
-          setNewAddr(f => ({ ...f, street, gps_lat, gps_lng, city: newCity || f.city, district: newDistrict || f.district }));
+          setNewAddr(f => {
+            const resolvedCity = newCity || f.city;
+            const resolvedDistrict = newDistrict || f.district;
+            const postal_code = TW_DATA[resolvedCity]?.[resolvedDistrict] || f.postal_code;
+            return { ...f, street, gps_lat, gps_lng, city: resolvedCity, district: resolvedDistrict, postal_code };
+          });
           setNewAddrStep('form');
         }}
       />

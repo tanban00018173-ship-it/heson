@@ -89,6 +89,7 @@ export default function RegionPicker({ open, city: initCity, district: initDistr
   const handleDistrictSelect = (district) => {
     const postal = TW_DATA[selectedCity]?.[district] || '';
     onConfirm({ city: selectedCity, district, postal_code: postal });
+    onClose();
   };
 
   const handleReset = () => {
