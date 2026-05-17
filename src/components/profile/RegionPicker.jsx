@@ -170,12 +170,12 @@ export default function RegionPicker({ open, city: initCity, district: initDistr
           <button
             onClick={handleGPS}
             disabled={locating}
-            className="w-full flex items-center gap-3 py-2 hover:bg-stone-50 rounded-xl transition-colors"
+            className="w-full flex items-center justify-center gap-3 py-2 hover:bg-stone-50 rounded-xl transition-colors"
           >
-            <div className="w-8 h-8 bg-blue-50 rounded-full flex items-center justify-center flex-shrink-0">
-              <MapPin className="w-4 h-4 text-blue-500" />
+            <div className="w-8 h-8 bg-stone-100 rounded-full flex items-center justify-center flex-shrink-0">
+              <MapPin className="w-4 h-4 text-stone-700" />
             </div>
-            <span className="text-sm font-medium text-blue-600">
+            <span className="text-sm font-medium text-stone-800">
               {locating ? '定位中...' : '使用我的當前位置'}
             </span>
           </button>
