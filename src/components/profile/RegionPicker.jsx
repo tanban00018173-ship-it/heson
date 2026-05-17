@@ -150,17 +150,26 @@ export default function RegionPicker({ open, city: initCity, district: initDistr
             <button onClick={handleReset} className="text-xs text-stone-400 hover:text-stone-600">重設</button>
           </div>
           {/* Timeline */}
-          <div className="flex gap-3">
-            {/* 左側軸線 */}
-            <div className="flex flex-col items-center w-3 flex-shrink-0">
-              <div className="w-2.5 h-2.5 rounded-full border-2 border-stone-300 mt-[3px] flex-shrink-0" />
-              <div className="w-0.5 flex-1 min-h-[20px] bg-stone-200 my-1" />
-              <div className={`w-2.5 h-2.5 rounded-full border-2 flex-shrink-0 mb-[3px] ${selectedDistrict ? 'border-red-500 bg-red-500' : 'border-red-400'}`} />
+          <div className="flex flex-col">
+            {/* 縣市行 */}
+            <div className="flex items-center gap-3">
+              <div className="w-3 flex items-center justify-center flex-shrink-0">
+                <div className="w-2.5 h-2.5 rounded-full border-2 border-stone-300" />
+              </div>
+              <span className="text-sm text-stone-800 font-medium">{selectedCity}</span>
             </div>
-            {/* 右側文字 */}
-            <div className="flex flex-col flex-1 gap-2">
-              <span className="text-sm text-stone-800 font-medium leading-none">{selectedCity}</span>
-              <span className={`text-sm font-medium leading-none ${selectedDistrict ? 'text-red-500' : 'text-red-400'}`}>
+            {/* 連接線 */}
+            <div className="flex gap-3">
+              <div className="w-3 flex justify-center flex-shrink-0">
+                <div className="w-0.5 h-4 bg-stone-200" />
+              </div>
+            </div>
+            {/* 行政區行 */}
+            <div className="flex items-center gap-3">
+              <div className="w-3 flex items-center justify-center flex-shrink-0">
+                <div className={`w-2.5 h-2.5 rounded-full border-2 ${selectedDistrict ? 'border-red-500 bg-red-500' : 'border-red-400'}`} />
+              </div>
+              <span className={`text-sm font-medium ${selectedDistrict ? 'text-red-500' : 'text-red-400'}`}>
                 {selectedDistrict || '選擇行政區'}
               </span>
             </div>
