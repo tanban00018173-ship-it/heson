@@ -6,7 +6,39 @@ import { Zap, MapPin, Loader2, Check, ArrowLeft, Plus, Minus, UtensilsCrossed, T
 import { toast } from 'sonner';
 import RegionPicker, { TW_DATA } from '@/components/profile/RegionPicker';
 import StreetEditSheet from '@/components/profile/StreetEditSheet';
-import EditSheet from '@/components/profile/EditSheet';
+// 深色版 EditSheet（專供閃電任務頁使用）
+function DarkEditSheet({ open, title, value, onClose, onSave, inputType = 'text', placeholder = '' }) {
+  const [draft, setDraft] = React.useState(value || '');
+  React.useEffect(() => { if (open) setDraft(value || ''); }, [open, value]);
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-[90] flex flex-col justify-end">
+      <div className="absolute inset-0 bg-black/60" onClick={onClose} />
+      <div className="relative bg-[#1a1a1a] rounded-t-3xl px-5 pt-5 pb-8 flex flex-col gap-4 animate-in slide-in-from-bottom duration-200">
+        <div className="relative flex items-center justify-center">
+          <h2 className="text-base font-bold text-white">編輯{title}</h2>
+          <button onClick={onClose} className="absolute right-0 w-8 h-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors">
+            <X className="w-4 h-4 text-white" />
+          </button>
+        </div>
+        <input
+          type={inputType}
+          value={draft}
+          onChange={e => setDraft(e.target.value)}
+          placeholder={placeholder}
+          className="w-full border border-white/10 bg-white/5 rounded-xl px-4 py-3 text-sm text-white placeholder:text-stone-500 focus:outline-none focus:ring-2 focus:ring-gold-500/50"
+          autoFocus
+        />
+        <button
+          onClick={() => onSave(draft)}
+          className="w-full bg-gold-500 text-black font-bold py-4 rounded-2xl hover:bg-gold-400 transition-colors"
+        >
+          儲存
+        </button>
+      </div>
+    </div>
+  );
+}
 
 const CLEANING_TYPES = ['居家地址', '公司地址', '其他地址'];
 const ADDRESS_ICONS = {
@@ -476,6 +508,7 @@ export default function FlashTaskPost() {
 
       {/* StreetEditSheet for new address */}
       <StreetEditSheet
+        dark
         open={newAddrStep === 'street'}
         city={newAddr.city}
         district={newAddr.district}
@@ -490,7 +523,7 @@ export default function FlashTaskPost() {
       />
 
       {/* EditSheet for name/phone */}
-      <EditSheet
+      <DarkEditSheet
         open={!!editField}
         title={editField?.title || ''}
         value={editField?.value || ''}
