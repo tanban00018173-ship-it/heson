@@ -261,8 +261,8 @@ export default function ClientAddressForm() {
         initialLat={form.gps_lat}
         initialLng={form.gps_lng}
         onClose={() => setShowStreetEdit(false)}
-        onSave={({ street, gps_lat, gps_lng }) => {
-          setForm(f => ({ ...f, street, gps_lat, gps_lng }));
+        onSave={({ street, gps_lat, gps_lng, city: newCity, district: newDistrict }) => {
+          setForm(f => ({ ...f, street, gps_lat, gps_lng, city: newCity || f.city, district: newDistrict || f.district }));
           setShowStreetEdit(false);
         }}
       />

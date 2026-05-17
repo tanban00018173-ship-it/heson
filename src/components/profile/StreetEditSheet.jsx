@@ -21,6 +21,26 @@ async function geocodeAddress(address, apiKey) {
   return null;
 }
 
+async function reverseGeocodeCoords(lat, lng, apiKey) {
+  const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&language=zh-TW&key=${apiKey}`;
+  const res = await fetch(url);
+  const data = await res.json();
+  if (data.status === 'OK' && data.results?.[0]) {
+    const components = data.results[0].address_components;
+    let city = '', district = '';
+    for (const comp of components) {
+      if (comp.types.includes('administrative_area_level_1')) {
+        city = comp.long_name;
+      }
+      if (comp.types.includes('administrative_area_level_3')) {
+        district = comp.long_name;
+      }
+    }
+    return { city, district };
+  }
+  return null;
+}
+
 function loadGoogleMapsScript(apiKey) {
   return new Promise((resolve) => {
     if (window.google?.maps) { resolve(); return; }
@@ -52,6 +72,8 @@ export default function StreetEditSheet({ open, city, district, initialStreet, i
   const [mapStatus, setMapStatus] = useState('idle'); // idle | loading | ready | error
   const [position, setPosition] = useState(null);
   const [geocodedFor, setGeocodedFor] = useState(''); // track what address was last geocoded
+  const [detectedCity, setDetectedCity] = useState(null);
+  const [detectedDistrict, setDetectedDistrict] = useState(null);
 
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null);
@@ -65,6 +87,8 @@ export default function StreetEditSheet({ open, city, district, initialStreet, i
       setMapStatus('idle');
       setPosition(initialLat && initialLng ? { lat: initialLat, lng: initialLng } : null);
       setGeocodedFor('');
+      setDetectedCity(null);
+      setDetectedDistrict(null);
       mapRef.current = null;
       markerRef.current = null;
     }
@@ -85,10 +109,22 @@ export default function StreetEditSheet({ open, city, district, initialStreet, i
         zoomControl: true,
         gestureHandling: 'greedy',
       });
-      // 監聽地圖停止移動，讀取中心點座標
-      mapRef.current.addListener('idle', () => {
+      // 監聽地圖停止移動，讀取中心點座標並反向地理編碼
+      mapRef.current.addListener('idle', async () => {
         const c = mapRef.current.getCenter();
-        setPosition({ lat: c.lat(), lng: c.lng() });
+        const newPos = { lat: c.lat(), lng: c.lng() };
+        setPosition(newPos);
+        // 反向地理編碼
+        try {
+          const apiKey = await getApiKey();
+          const result = await reverseGeocodeCoords(newPos.lat, newPos.lng, apiKey);
+          if (result) {
+            setDetectedCity(result.city);
+            setDetectedDistrict(result.district);
+          }
+        } catch (e) {
+          console.error('Reverse geocode error', e);
+        }
       });
     } else {
       mapRef.current.setCenter(center);
@@ -142,6 +178,8 @@ export default function StreetEditSheet({ open, city, district, initialStreet, i
       street,
       gps_lat: position?.lat ?? null,
       gps_lng: position?.lng ?? null,
+      city: detectedCity || city,
+      district: detectedDistrict || district,
     });
   };
 
@@ -211,14 +249,24 @@ export default function StreetEditSheet({ open, city, district, initialStreet, i
 
         {/* Map status info */}
         {mapStatus === 'ready' && position && (
-          <div className="px-5 pb-2 flex-shrink-0 flex items-center justify-between">
-            <div className="flex items-center gap-1.5">
-              <CheckCircle2 className="w-3.5 h-3.5 text-green-500" />
-              <span className="text-xs text-stone-500">滑動地圖可調整位置</span>
+          <div className="px-5 pb-2 flex-shrink-0 space-y-1.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <CheckCircle2 className="w-3.5 h-3.5 text-green-500" />
+                <span className="text-xs text-stone-500">滑動地圖可調整位置</span>
+              </div>
+              <button onClick={() => doGeocode(street)} className="flex items-center gap-1 text-xs text-stone-400 hover:text-stone-600">
+                <RefreshCw className="w-3 h-3" />重新定位
+              </button>
             </div>
-            <button onClick={() => doGeocode(street)} className="flex items-center gap-1 text-xs text-stone-400 hover:text-stone-600">
-              <RefreshCw className="w-3 h-3" />重新定位
-            </button>
+            {/* 警告：座標與選定城市/區不符 */}
+            {detectedCity && (detectedCity !== city || detectedDistrict !== district) && (
+              <div className="p-2 bg-amber-50 border border-amber-200 rounded-lg">
+                <p className="text-xs text-amber-700">
+                  ⚠️ 座標位置在 <strong>{detectedCity}{detectedDistrict}</strong>，與選定的 <strong>{city}{district}</strong> 不同。儲存時將自動更新城市/區資訊。
+                </p>
+              </div>
+            )}
           </div>
         )}
 
