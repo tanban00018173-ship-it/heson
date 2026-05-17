@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, ChevronRight, Plus, MapPin } from "lucide-react";
+import { ArrowLeft, ChevronRight, Plus, MapPin, Home, Building2, HelpCircle, ShoppingBag } from "lucide-react";
 import ClientBottomNav from "@/components/dashboard/ClientBottomNav";
 
 const CLEANING_TYPES = ['居家地址', '公司地址', '其他地址'];
@@ -18,6 +18,13 @@ const TYPE_LABELS = {
   '公司地址': '公司地址',
   '其他地址': '其他地址',
   '超商取貨地址': '超商取貨地址',
+};
+
+const TYPE_ICONS = {
+  '居家地址': Home,
+  '公司地址': Building2,
+  '其他地址': HelpCircle,
+  '超商取貨地址': ShoppingBag,
 };
 
 export default function ClientAddressList() {
@@ -41,13 +48,15 @@ export default function ClientAddressList() {
   const cleaningAddresses = addresses.filter(a => CLEANING_TYPES.includes(a.address_type));
   const pickupAddresses = addresses.filter(a => PICKUP_TYPES.includes(a.address_type));
 
-  const AddressCard = ({ address }) => (
+  const AddressCard = ({ address }) => {
+    const IconComponent = TYPE_ICONS[address.address_type] || MapPin;
+    return (
     <button
       onClick={() => navigate(`/ClientAddressForm?id=${address.id}`)}
       className="w-full flex items-center justify-between px-4 py-3.5 border-b border-stone-100 last:border-0 hover:bg-stone-50 transition-colors"
     >
       <div className="flex items-start gap-3 text-left flex-1 min-w-0">
-        <MapPin className="w-4 h-4 text-stone-400 mt-0.5 flex-shrink-0" />
+        <IconComponent className="w-4 h-4 text-stone-400 mt-0.5 flex-shrink-0" />
         <div className="min-w-0">
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium text-stone-800">{address.full_name}</span>
@@ -64,6 +73,7 @@ export default function ClientAddressList() {
       <ChevronRight className="w-4 h-4 text-stone-300 flex-shrink-0 ml-2" />
     </button>
   );
+  };
 
   const AddSection = ({ section, type, items }) => (
     <div key={section}>
