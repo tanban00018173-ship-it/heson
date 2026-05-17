@@ -70,7 +70,7 @@ export default function ClientProfileEdit() {
         {SECTIONS.map(section => (
           <div key={section.key}>
             {/* 母項目標題 — 灰底，不在白卡內 */}
-            <p className="px-4 pt-5 pb-1.5 text-xs font-semibold text-stone-400 uppercase tracking-wider bg-[#f2f2f7]">
+            <p className="px-4 py-3 text-xs font-semibold text-stone-400 uppercase tracking-wider bg-[#f2f2f7]">
               {section.label}
             </p>
             {/* 子項目白色列表，貼齊左右 */}
