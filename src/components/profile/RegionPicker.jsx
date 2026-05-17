@@ -185,9 +185,9 @@ export default function RegionPicker({ open, city: initCity, district: initDistr
             {/* 行政區行 */}
             <div className="flex items-center gap-3">
               <div className="w-3 flex items-center justify-center flex-shrink-0">
-                <div className={`w-2.5 h-2.5 rounded-full border-2 ${selectedDistrict ? 'border-stone-800 bg-stone-800' : 'border-stone-400'}`} />
+                <div className={`w-2.5 h-2.5 rounded-full border-2 ${selectedDistrict ? 'border-red-500 bg-red-500' : 'border-red-400'}`} />
               </div>
-              <span className={`text-sm font-medium ${selectedDistrict ? 'text-stone-800' : 'text-stone-400'}`}>
+              <span className={`text-sm font-medium ${selectedDistrict ? 'text-red-500' : 'text-red-400'}`}>
                 {selectedDistrict || '選擇行政區'}
               </span>
             </div>
