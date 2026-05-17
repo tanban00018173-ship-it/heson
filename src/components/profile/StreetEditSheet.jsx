@@ -261,7 +261,7 @@ export default function StreetEditSheet({ open, city, district, initialStreet, i
               </button>
             </div>
             {/* 警告：座標與選定城市/區不符 */}
-            {detectedCity && (detectedCity !== city || detectedDistrict !== district) && (
+            {city && district && detectedCity && (detectedCity !== city || detectedDistrict !== district) && (
               <div className="p-2 bg-amber-50 border border-amber-200 rounded-lg">
                 <p className="text-xs text-amber-700">
                   ⚠️ 座標位置在 <strong>{detectedCity}{detectedDistrict}</strong>，與選定的 <strong>{city}{district}</strong> 不同。儲存時將自動更新城市/區資訊。
