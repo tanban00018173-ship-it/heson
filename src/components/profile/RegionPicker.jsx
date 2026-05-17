@@ -97,7 +97,8 @@ export default function RegionPicker({ open, city: initCity, district: initDistr
         try {
           const { latitude, longitude } = pos.coords;
           const keyRes = await base44.functions.invoke('getGoogleMapsKey', {});
-          const apiKey = keyRes.data?.key || keyRes.data?.apiKey || '';
+          const apiKey = keyRes.data?.key || '';
+          if (!apiKey) { setLocating(false); return; }
           const res = await fetch(
             `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&language=zh-TW&key=${apiKey}`
           );
@@ -109,19 +110,22 @@ export default function RegionPicker({ open, city: initCity, district: initDistr
           const distName = distComp?.long_name || '';
           const matchedCity = cities.find(c => cityName.includes(c) || c.includes(cityName));
           if (matchedCity) {
-            setSelectedCity(matchedCity);
             const matchedDist = Object.keys(TW_DATA[matchedCity]).find(d => distName.includes(d) || d.includes(distName));
             if (matchedDist) {
               const postal = TW_DATA[matchedCity][matchedDist];
+              setLocating(false);
               onConfirm({ city: matchedCity, district: matchedDist, postal_code: postal });
               return;
             }
+            setSelectedCity(matchedCity);
           }
-        } catch {}
+        } catch (e) {
+          console.error('GPS error', e);
+        }
         setLocating(false);
       },
-      () => setLocating(false),
-      { enableHighAccuracy: true, timeout: 10000 }
+      (err) => { console.error('Geolocation error', err); setLocating(false); },
+      { enableHighAccuracy: false, timeout: 15000, maximumAge: 60000 }
     );
   };
 
