@@ -3,39 +3,41 @@ import { MapPin, Loader2, RefreshCw, Move, Pencil, CheckCircle2 } from 'lucide-r
 import { Button } from '@/components/ui/button';
 import { base44 } from '@/api/base44Client';
 
-// Inject Leaflet CSS once
-function useLeafletCSS() {
-  useEffect(() => {
-    if (document.getElementById('leaflet-css')) return;
-    const link = document.createElement('link');
-    link.id = 'leaflet-css';
-    link.rel = 'stylesheet';
-    link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-    document.head.appendChild(link);
-  }, []);
-}
-
-let _cachedApiKey = null;
+let cachedApiKey = null;
 async function getApiKey() {
-  if (_cachedApiKey) return _cachedApiKey;
+  if (cachedApiKey) return cachedApiKey;
   const res = await base44.functions.invoke('getGoogleMapsKey', {});
-  _cachedApiKey = res.data?.key || '';
-  return _cachedApiKey;
+  cachedApiKey = res.data?.key || '';
+  return cachedApiKey;
 }
 
-async function geocodeAddress(address) {
-  const apiKey = await getApiKey();
-  if (!apiKey) return null;
+async function geocodeWithGoogle(address, apiKey) {
   const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&language=zh-TW&region=TW&key=${apiKey}`;
   const res = await fetch(url);
   const data = await res.json();
-  const loc = data.results?.[0]?.geometry?.location;
-  if (loc) return { lat: loc.lat, lng: loc.lng };
+  if (data.status === 'OK' && data.results?.[0]) {
+    const loc = data.results[0].geometry.location;
+    return { lat: loc.lat, lng: loc.lng };
+  }
   return null;
 }
 
+// Inject Google Maps script
+function loadGoogleMapsScript(apiKey) {
+  return new Promise((resolve) => {
+    if (window.google?.maps) { resolve(); return; }
+    const existing = document.getElementById('google-maps-script');
+    if (existing) { existing.addEventListener('load', resolve); return; }
+    const script = document.createElement('script');
+    script.id = 'google-maps-script';
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&language=zh-TW`;
+    script.async = true;
+    script.onload = resolve;
+    document.head.appendChild(script);
+  });
+}
+
 export default function AddressMap({ address, onLocationChange }) {
-  useLeafletCSS();
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const markerRef = useRef(null);
@@ -44,57 +46,59 @@ export default function AddressMap({ address, onLocationChange }) {
   const [confirmed, setConfirmed] = useState(false);
 
   const setupMap = useCallback(async (lat, lng, zoom = 17) => {
-    const L = (await import('leaflet')).default;
-    delete L.Icon.Default.prototype._getIconUrl;
-    L.Icon.Default.mergeOptions({
-      iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-      iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-      shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-    });
+    const apiKey = await getApiKey();
+    await loadGoogleMapsScript(apiKey);
+    if (!containerRef.current || !window.google?.maps) return;
 
-    if (!containerRef.current) return;
+    const center = { lat, lng };
 
     if (!mapRef.current) {
-      mapRef.current = L.map(containerRef.current).setView([lat, lng], zoom);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap',
-        maxZoom: 19,
-      }).addTo(mapRef.current);
+      mapRef.current = new window.google.maps.Map(containerRef.current, {
+        center,
+        zoom,
+        disableDefaultUI: true,
+        zoomControl: true,
+        gestureHandling: 'cooperative',
+      });
 
-      mapRef.current.on('click', (e) => {
+      mapRef.current.addListener('click', (e) => {
         if (confirmed) return;
-        const coords = { lat: e.latlng.lat, lng: e.latlng.lng };
-        markerRef.current?.setLatLng([coords.lat, coords.lng]);
+        const coords = { lat: e.latLng.lat(), lng: e.latLng.lng() };
+        markerRef.current?.setPosition(coords);
         setPosition(coords);
         setStatus('manual');
         onLocationChange?.(coords);
       });
     } else {
-      mapRef.current.setView([lat, lng], zoom);
+      mapRef.current.setCenter(center);
+      mapRef.current.setZoom(zoom);
     }
 
     if (markerRef.current) {
-      markerRef.current.setLatLng([lat, lng]);
+      markerRef.current.setPosition(center);
     } else {
-      markerRef.current = L.marker([lat, lng], { draggable: true }).addTo(mapRef.current);
-      markerRef.current.on('dragend', (e) => {
+      markerRef.current = new window.google.maps.Marker({
+        position: center,
+        map: mapRef.current,
+        draggable: true,
+      });
+      markerRef.current.addListener('dragend', () => {
         if (confirmed) return;
-        const { lat: newLat, lng: newLng } = e.target.getLatLng();
-        const coords = { lat: newLat, lng: newLng };
+        const pos = markerRef.current.getPosition();
+        const coords = { lat: pos.lat(), lng: pos.lng() };
         setPosition(coords);
         setStatus('manual');
         onLocationChange?.(coords);
       });
     }
-
-    setTimeout(() => mapRef.current?.invalidateSize(), 150);
-  }, [onLocationChange]);
+  }, [onLocationChange, confirmed]);
 
   const doGeocode = useCallback(async () => {
     if (!address || address.length < 5) return;
     setStatus('loading');
     try {
-      const result = await geocodeAddress(address);
+      const apiKey = await getApiKey();
+      const result = await geocodeWithGoogle(address, apiKey);
       if (result) {
         setPosition(result);
         setStatus('found');
@@ -102,7 +106,6 @@ export default function AddressMap({ address, onLocationChange }) {
         await setupMap(result.lat, result.lng, 17);
       } else {
         setStatus('error');
-        // Show Taiwan map for manual click
         await setupMap(23.97, 120.97, 8);
       }
     } catch {
@@ -111,25 +114,18 @@ export default function AddressMap({ address, onLocationChange }) {
     }
   }, [address, setupMap, onLocationChange]);
 
-  // Reset confirmed when address changes
-  useEffect(() => {
-    setConfirmed(false);
-  }, [address]);
+  useEffect(() => { setConfirmed(false); }, [address]);
 
   useEffect(() => {
-    if (!address || address.length < 5) {
-      setStatus('idle');
-      return;
-    }
+    if (!address || address.length < 5) { setStatus('idle'); return; }
     const t = setTimeout(doGeocode, 1200);
     return () => clearTimeout(t);
   }, [address, doGeocode]);
 
   useEffect(() => {
     return () => {
-      mapRef.current?.remove();
-      mapRef.current = null;
       markerRef.current = null;
+      mapRef.current = null;
     };
   }, []);
 
@@ -157,7 +153,7 @@ export default function AddressMap({ address, onLocationChange }) {
             <span className="text-red-500">無法自動定位，請點擊地圖手動標記</span>
           )}
         </div>
-          <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1">
           {status !== 'loading' && !confirmed && (
             <Button type="button" variant="ghost" size="sm"
               className="h-6 text-xs px-2 text-stone-500 hover:text-stone-700"
@@ -168,14 +164,14 @@ export default function AddressMap({ address, onLocationChange }) {
           {position && status !== 'loading' && !confirmed && (
             <Button type="button" size="sm"
               className="h-6 text-xs px-3 bg-green-600 hover:bg-green-700 text-white rounded-lg"
-              onClick={() => { setConfirmed(true); markerRef.current?.dragging?.disable(); }}>
+              onClick={() => { setConfirmed(true); markerRef.current?.setDraggable(false); }}>
               <CheckCircle2 className="w-3 h-3 mr-1" />確認位置
             </Button>
           )}
           {confirmed && (
             <Button type="button" variant="outline" size="sm"
               className="h-6 text-xs px-3 text-amber-600 border-amber-300 hover:bg-amber-50 rounded-lg"
-              onClick={() => { setConfirmed(false); markerRef.current?.dragging?.enable(); }}>
+              onClick={() => { setConfirmed(false); markerRef.current?.setDraggable(true); }}>
               <Pencil className="w-3 h-3 mr-1" />編輯位置
             </Button>
           )}
