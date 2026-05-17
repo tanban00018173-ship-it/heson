@@ -55,6 +55,7 @@ export default function ClientAddressForm() {
   const [editField, setEditField] = useState(null);
   const [showRegionPicker, setShowRegionPicker] = useState(false);
   const [showMapModal, setShowMapModal] = useState(false);
+  const [pendingSave, setPendingSave] = useState(false);
 
   useEffect(() => {
     base44.auth.isAuthenticated().then(auth => {
@@ -73,7 +74,7 @@ export default function ClientAddressForm() {
     if (existingAddress?.[0]) setForm({ ...existingAddress[0] });
   }, [existingAddress]);
 
-  const handleSave = async () => {
+  const doSave = async () => {
     if (!user) return;
     setSaving(true);
     const data = { ...form, user_id: user.id };
@@ -96,6 +97,47 @@ export default function ClientAddressForm() {
     queryClient.invalidateQueries({ queryKey: ['userAddresses', user.id] });
     navigate('/ClientAddressList');
     setSaving(false);
+  };
+
+  const handleSave = async () => {
+    if (!user) return;
+    // 若有街道但尚未確認 GPS，先開地圖讓用戶確認
+    if (form.street && !form.gps_lat) {
+      setPendingSave(true);
+      setShowMapModal(true);
+      return;
+    }
+    await doSave();
+  };
+
+  const handleMapConfirm = async ({ lat, lng }) => {
+    const updatedForm = { ...form, gps_lat: lat, gps_lng: lng };
+    setForm(updatedForm);
+    setShowMapModal(false);
+    if (pendingSave) {
+      setPendingSave(false);
+      // 用 updatedForm 直接儲存，不等 state 更新
+      if (!user) return;
+      setSaving(true);
+      const data = { ...updatedForm, user_id: user.id };
+      if (updatedForm.is_default) {
+        const allAddresses = await base44.entities.UserAddress.filter({ user_id: user.id });
+        const isCleaning = CLEANING_TYPES.includes(updatedForm.address_type);
+        const toReset = allAddresses.filter(a => {
+          const aIsCleaning = CLEANING_TYPES.includes(a.address_type);
+          return aIsCleaning === isCleaning && a.id !== addressId && a.is_default;
+        });
+        await Promise.all(toReset.map(a => base44.entities.UserAddress.update(a.id, { is_default: false })));
+      }
+      if (addressId) {
+        await base44.entities.UserAddress.update(addressId, data);
+      } else {
+        await base44.entities.UserAddress.create(data);
+      }
+      queryClient.invalidateQueries({ queryKey: ['userAddresses', user.id] });
+      navigate('/ClientAddressList');
+      setSaving(false);
+    }
   };
 
   const handleDelete = async () => {
@@ -245,11 +287,8 @@ export default function ClientAddressForm() {
         address={`${form.city}${form.district}${form.street}`}
         initialLat={form.gps_lat}
         initialLng={form.gps_lng}
-        onClose={() => setShowMapModal(false)}
-        onConfirm={({ lat, lng }) => {
-          setForm(f => ({ ...f, gps_lat: lat, gps_lng: lng }));
-          setShowMapModal(false);
-        }}
+        onClose={() => { setShowMapModal(false); setPendingSave(false); }}
+        onConfirm={handleMapConfirm}
       />
 
       <RegionPicker
