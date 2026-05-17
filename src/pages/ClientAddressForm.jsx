@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, ChevronRight, MapPin } from "lucide-react";
+import { ArrowLeft, ChevronRight, MapPin, Store } from "lucide-react";
 import ClientBottomNav from "@/components/dashboard/ClientBottomNav";
 import EditSheet from "@/components/profile/EditSheet";
 import RegionPicker, { TW_DATA } from "@/components/profile/RegionPicker";
 import AddressMapModal from "@/components/AddressMapModal";
 import StreetEditSheet from "@/components/profile/StreetEditSheet";
+import SevenElevenPicker from "@/components/profile/SevenElevenPicker";
 
 
 
@@ -58,6 +59,7 @@ export default function ClientAddressForm() {
   const [showMapModal, setShowMapModal] = useState(false);
   const [pendingSave, setPendingSave] = useState(false);
   const [showStreetEdit, setShowStreetEdit] = useState(false);
+  const [showSevenEleven, setShowSevenEleven] = useState(false);
 
   useEffect(() => {
     base44.auth.isAuthenticated().then(auth => {
@@ -158,6 +160,11 @@ export default function ClientAddressForm() {
   };
 
   const typeOptions = CLEANING_TYPES.includes(form.address_type) ? CLEANING_TYPES : PICKUP_TYPES;
+  const isPickup = PICKUP_TYPES.includes(form.address_type);
+
+  const handleSevenElevenSelect = ({ storeName, city, district, postal_code, street, gps_lat, gps_lng }) => {
+    setForm(f => ({ ...f, city, district, postal_code, street, gps_lat, gps_lng }));
+  };
 
   return (
     <div className="min-h-screen bg-[#f2f2f7] flex flex-col">
@@ -197,8 +204,36 @@ export default function ClientAddressForm() {
             onEdit={() => setEditField({ key: 'phone', title: '手機號碼', value: form.phone, inputType: 'tel', placeholder: '請輸入手機號碼' })} />
         </div>
 
+        {/* 取貨地址：搜尋門市按鈕 */}
+        {isPickup && (
+          <>
+            <p className="px-4 py-3 text-xs font-semibold text-stone-400 uppercase tracking-wider bg-[#f2f2f7]">搜尋門市</p>
+            <div className="bg-white px-4 py-3">
+              <button
+                onClick={() => setShowSevenEleven(true)}
+                className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl border-2 border-dashed border-stone-200 hover:border-green-400 hover:bg-green-50 transition-colors"
+              >
+                <div className="w-9 h-9 bg-green-50 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <Store className="w-5 h-5 text-green-600" />
+                </div>
+                <div className="text-left">
+                  <p className="text-sm font-semibold text-stone-800">
+                    {form.street ? form.street : '搜尋 7-ELEVEN 門市'}
+                  </p>
+                  {form.city && form.district && (
+                    <p className="text-xs text-stone-400 mt-0.5">{form.city}{form.district}</p>
+                  )}
+                  {!form.street && (
+                    <p className="text-xs text-stone-400 mt-0.5">輸入門市名稱或地區快速選擇</p>
+                  )}
+                </div>
+              </button>
+            </div>
+          </>
+        )}
+
         {/* 地址資訊 */}
-        <p className="px-4 py-3 text-xs font-semibold text-stone-400 uppercase tracking-wider bg-[#f2f2f7]">地址資訊</p>
+        <p className="px-4 py-3 text-xs font-semibold text-stone-400 uppercase tracking-wider bg-[#f2f2f7]">{isPickup ? '門市地址（可微調）' : '地址資訊'}</p>
         <div className="bg-white rounded-none overflow-hidden">
           <button
             onClick={() => setShowRegionPicker(true)}
@@ -274,6 +309,17 @@ export default function ClientAddressForm() {
         initialLng={form.gps_lng}
         onClose={() => { setShowMapModal(false); setPendingSave(false); }}
         onConfirm={handleMapConfirm}
+      />
+
+      <SevenElevenPicker
+        open={showSevenEleven}
+        onClose={() => setShowSevenEleven(false)}
+        onSelect={(data) => {
+          handleSevenElevenSelect(data);
+          setShowSevenEleven(false);
+          // 選完門市後自動開啟地圖確認
+          setTimeout(() => setShowStreetEdit(true), 300);
+        }}
       />
 
       <RegionPicker
