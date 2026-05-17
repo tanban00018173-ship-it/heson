@@ -32,9 +32,10 @@ async function reverseGeocodeCoords(lat, lng, apiKey) {
       if (comp.types.includes('administrative_area_level_1')) {
         city = comp.long_name;
       }
-      // 只取 level_3（鄉鎮市區），不取 level_4（村里）
-      if (comp.types.length === 2 && comp.types.includes('administrative_area_level_3') && comp.types.includes('political')) {
+      // 只取 level_3（鄉鎮市區），排除包含 level_4（村里）的結果
+      if (comp.types.includes('administrative_area_level_3') && !comp.types.includes('administrative_area_level_4')) {
         district = comp.long_name;
+        break; // 找到後立即停止，避免後續結果覆蓋
       }
     }
     return { city, district };
