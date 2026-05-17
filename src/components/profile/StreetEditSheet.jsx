@@ -32,19 +32,26 @@ async function reverseGeocodeCoords(lat, lng, apiKey) {
     for (const result of data.results) {
       const components = result.address_components;
       let resultCity = '', resultDistrict = '';
+      let hasVillage = false;
       
       for (const comp of components) {
         if (comp.types.includes('administrative_area_level_1')) {
           resultCity = comp.long_name;
         }
-        // 只取不包含 level_4（村里）的 level_3
-        if (comp.types.includes('administrative_area_level_3') && !comp.types.includes('administrative_area_level_4')) {
+        // 優先取 level_2（城市），如果沒有才取 level_3（鄉鎮市區）
+        if (comp.types.includes('administrative_area_level_2')) {
           resultDistrict = comp.long_name;
+        } else if (comp.types.includes('administrative_area_level_3') && !resultDistrict) {
+          resultDistrict = comp.long_name;
+        }
+        // 檢查是否包含 level_4（村里）
+        if (comp.types.includes('administrative_area_level_4')) {
+          hasVillage = true;
         }
       }
       
-      // 找到完整的城市+行政區就返回
-      if (resultCity && resultDistrict) {
+      // 優先選擇不含村里的結果
+      if (resultCity && resultDistrict && !hasVillage) {
         return { city: resultCity, district: resultDistrict };
       }
     }
