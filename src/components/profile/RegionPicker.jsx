@@ -122,6 +122,7 @@ export default function RegionPicker({ open, city: initCity, district: initDistr
               const postal = TW_DATA[matchedCity][matchedDist];
               setLocating(false);
               onConfirm({ city: matchedCity, district: matchedDist, postal_code: postal });
+              onClose();
               return;
             }
             setSelectedCity(matchedCity);
