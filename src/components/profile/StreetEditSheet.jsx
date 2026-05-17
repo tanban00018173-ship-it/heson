@@ -25,19 +25,30 @@ async function reverseGeocodeCoords(lat, lng, apiKey) {
   const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&language=zh-TW&key=${apiKey}`;
   const res = await fetch(url);
   const data = await res.json();
-  if (data.status === 'OK' && data.results?.[0]) {
-    const components = data.results[0].address_components;
+  if (data.status === 'OK' && data.results?.length > 0) {
     let city = '', district = '';
-    for (const comp of components) {
-      if (comp.types.includes('administrative_area_level_1')) {
-        city = comp.long_name;
+    
+    // 遍歷所有結果，找最合適的城市和行政區
+    for (const result of data.results) {
+      const components = result.address_components;
+      let resultCity = '', resultDistrict = '';
+      
+      for (const comp of components) {
+        if (comp.types.includes('administrative_area_level_1')) {
+          resultCity = comp.long_name;
+        }
+        // 只取不包含 level_4（村里）的 level_3
+        if (comp.types.includes('administrative_area_level_3') && !comp.types.includes('administrative_area_level_4')) {
+          resultDistrict = comp.long_name;
+        }
       }
-      // 只取 level_3（鄉鎮市區），排除包含 level_4（村里）的結果
-      if (comp.types.includes('administrative_area_level_3') && !comp.types.includes('administrative_area_level_4')) {
-        district = comp.long_name;
-        break; // 找到後立即停止，避免後續結果覆蓋
+      
+      // 找到完整的城市+行政區就返回
+      if (resultCity && resultDistrict) {
+        return { city: resultCity, district: resultDistrict };
       }
     }
+    
     return { city, district };
   }
   return null;
