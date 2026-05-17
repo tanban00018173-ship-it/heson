@@ -1,8 +1,8 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import ClientBottomNav from "@/components/dashboard/ClientBottomNav";
 import { base44 } from "@/api/base44Client";
-import { ArrowLeft, ChevronRight } from "lucide-react";
+import { ArrowLeft, ChevronRight, MessageCircle } from "lucide-react";
 import { useEffect, useState } from 'react';
 
 const SECTIONS = [
@@ -58,11 +58,17 @@ export default function ClientProfileEdit() {
       <div className="bg-white border-b border-stone-100 px-4 py-3 flex items-center sticky top-0 z-20">
         <button
           onClick={() => navigate('/ClientProfile')}
-          className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-stone-100 transition-colors mr-2"
+          className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-stone-100 transition-colors"
         >
           <ArrowLeft className="w-5 h-5 text-stone-700" />
         </button>
-        <h1 className="flex-1 text-center text-base font-bold text-stone-900 -ml-9">設定</h1>
+        <h1 className="flex-1 text-center text-base font-bold text-stone-900">設定</h1>
+        <Link
+          to="/VendorChatPage"
+          className="w-10 h-10 flex items-center justify-center rounded-2xl bg-stone-900 hover:bg-stone-700 transition-colors"
+        >
+          <MessageCircle className="w-5 h-5 text-white" />
+        </Link>
       </div>
 
       {/* 捲動內容 */}
