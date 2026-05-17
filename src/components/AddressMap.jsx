@@ -57,45 +57,25 @@ function buildEnglishQuery(address) {
   return eng + ', Taiwan';
 }
 
-async function nominatimQuery(q) {
-  const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=1&countrycodes=tw`;
-  const res = await fetch(url, { headers: { 'User-Agent': 'HesonBooking/1.0' } });
-  const data = await res.json();
-  if (data && data[0]) return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
-  return null;
+let _cachedGoogleKey = null;
+async function getGoogleApiKey() {
+  if (_cachedGoogleKey) return _cachedGoogleKey;
+  const { base44 } = await import('@/api/base44Client');
+  const res = await base44.functions.invoke('getGoogleMapsKey', {});
+  _cachedGoogleKey = res.data?.key || '';
+  return _cachedGoogleKey;
 }
 
-// Try multiple geocoding strategies
 async function geocodeAddress(address) {
-  // Strategy 1: full Chinese address
-  let result = await nominatimQuery(address);
-  if (result) return result;
-
-  // Strategy 2: English transliteration
-  const engQuery = buildEnglishQuery(address);
-  result = await nominatimQuery(engQuery);
-  if (result) return result;
-
-  // Strategy 3: city + district only (fallback to district center)
-  for (const [zh, en] of Object.entries(DISTRICT_EN)) {
-    if (address.includes(zh)) {
-      for (const [zhC, enC] of Object.entries(CITY_EN)) {
-        if (address.includes(zhC)) {
-          result = await nominatimQuery(`${en}, ${enC}, Taiwan`);
-          if (result) return result;
-        }
-      }
-    }
+  const apiKey = await getGoogleApiKey();
+  if (!apiKey) return null;
+  const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&language=zh-TW&region=TW&key=${apiKey}`;
+  const res = await fetch(url);
+  const data = await res.json();
+  if (data.status === 'OK' && data.results?.[0]) {
+    const { lat, lng } = data.results[0].geometry.location;
+    return { lat, lng };
   }
-
-  // Strategy 4: city only
-  for (const [zh, en] of Object.entries(CITY_EN)) {
-    if (address.includes(zh)) {
-      result = await nominatimQuery(`${en}, Taiwan`);
-      if (result) return result;
-    }
-  }
-
   return null;
 }
 
