@@ -150,7 +150,7 @@ export default function RegionPicker({ open, city: initCity, district: initDistr
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#f2f2f7] flex flex-col">
+    <div className="fixed inset-0 z-[90] bg-[#f2f2f7] flex flex-col">
       {/* Header */}
       <div className="bg-white border-b border-stone-100 px-4 py-3 flex items-center sticky top-0 z-10">
         <button onClick={onClose} className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-stone-100 transition-colors">

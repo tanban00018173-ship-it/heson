@@ -206,7 +206,7 @@ export default function StreetEditSheet({ open, city, district, initialStreet, i
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col justify-end">
+    <div className="fixed inset-0 z-[90] flex flex-col justify-end">
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
       <div className="relative bg-white rounded-t-3xl flex flex-col animate-in slide-in-from-bottom duration-200" style={{ maxHeight: '90vh' }}>
         {/* Header */}

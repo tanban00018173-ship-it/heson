@@ -146,7 +146,7 @@ export default function EditSheet({ open, title, value, onClose, onSave, inputTy
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col justify-end">
+    <div className="fixed inset-0 z-[90] flex flex-col justify-end">
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
       <div className="relative bg-white rounded-t-3xl px-5 pt-5 pb-8 flex flex-col gap-4 animate-in slide-in-from-bottom duration-200">
         <div className="relative flex items-center justify-center">
