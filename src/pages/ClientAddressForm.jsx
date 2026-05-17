@@ -7,6 +7,7 @@ import ClientBottomNav from "@/components/dashboard/ClientBottomNav";
 import EditSheet from "@/components/profile/EditSheet";
 import RegionPicker, { TW_DATA } from "@/components/profile/RegionPicker";
 import AddressMapModal from "@/components/AddressMapModal";
+import StreetEditSheet from "@/components/profile/StreetEditSheet";
 
 
 
@@ -56,6 +57,7 @@ export default function ClientAddressForm() {
   const [showRegionPicker, setShowRegionPicker] = useState(false);
   const [showMapModal, setShowMapModal] = useState(false);
   const [pendingSave, setPendingSave] = useState(false);
+  const [showStreetEdit, setShowStreetEdit] = useState(false);
 
   useEffect(() => {
     base44.auth.isAuthenticated().then(auth => {
@@ -101,12 +103,6 @@ export default function ClientAddressForm() {
 
   const handleSave = async () => {
     if (!user) return;
-    // 若有街道但尚未確認 GPS，先開地圖讓用戶確認
-    if (form.street && !form.gps_lat) {
-      setPendingSave(true);
-      setShowMapModal(true);
-      return;
-    }
     await doSave();
   };
 
@@ -221,33 +217,8 @@ export default function ClientAddressForm() {
             <span className="text-sm font-medium text-stone-400">{form.postal_code || '—'}</span>
           </button>
           <RowItem label="街道,巷弄,門號" value={form.street}
-            onEdit={() => setEditField({ key: 'street', title: '街道地址', value: form.street, inputType: 'text', placeholder: '街道、巷弄、門號、樓層' })} />
+            onEdit={() => setShowStreetEdit(true)} />
         </div>
-
-        {/* 地圖定位 */}
-        {form.street && (
-          <div className="bg-white px-4 py-4 mt-2">
-            <button
-              onClick={() => setShowMapModal(true)}
-              className="w-full flex items-center gap-3 py-3 px-4 rounded-xl border border-stone-200 hover:bg-stone-50 transition-colors"
-            >
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${form.gps_lat ? 'bg-green-100' : 'bg-stone-100'}`}>
-                <MapPin className={`w-4 h-4 ${form.gps_lat ? 'text-green-600' : 'text-stone-500'}`} />
-              </div>
-              <div className="flex-1 text-left">
-                <p className="text-sm font-medium text-stone-800">
-                  {form.gps_lat ? '已確認定位' : '點擊確認地圖定位'}
-                </p>
-                {form.gps_lat ? (
-                  <p className="text-xs text-stone-400">{form.gps_lat.toFixed(5)}, {form.gps_lng.toFixed(5)}</p>
-                ) : (
-                  <p className="text-xs text-stone-400">建議設定以提升服務精準度</p>
-                )}
-              </div>
-              <ChevronRight className="w-4 h-4 text-stone-300" />
-            </button>
-          </div>
-        )}
 
         {/* 預設地址開關 */}
         <p className="px-4 py-3 text-xs font-semibold text-stone-400 uppercase tracking-wider bg-[#f2f2f7]">偏好設定</p>
@@ -281,6 +252,20 @@ export default function ClientAddressForm() {
       </div>
 
       <ClientBottomNav />
+
+      <StreetEditSheet
+        open={showStreetEdit}
+        city={form.city}
+        district={form.district}
+        initialStreet={form.street}
+        initialLat={form.gps_lat}
+        initialLng={form.gps_lng}
+        onClose={() => setShowStreetEdit(false)}
+        onSave={({ street, gps_lat, gps_lng }) => {
+          setForm(f => ({ ...f, street, gps_lat, gps_lng }));
+          setShowStreetEdit(false);
+        }}
+      />
 
       <AddressMapModal
         open={showMapModal}
