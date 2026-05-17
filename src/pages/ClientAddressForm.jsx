@@ -150,8 +150,8 @@ export default function ClientAddressForm() {
           ))}
         </div>
 
-        {/* 收件人資訊 */}
-        <p className="px-4 py-3 text-xs font-semibold text-stone-400 uppercase tracking-wider bg-[#f2f2f7]">收件人資訊</p>
+        {/* 聯絡人資訊 */}
+        <p className="px-4 py-3 text-xs font-semibold text-stone-400 uppercase tracking-wider bg-[#f2f2f7]">聯絡人資訊</p>
         <div className="bg-white rounded-none overflow-hidden">
           <RowItem label="全名" value={form.full_name}
             onEdit={() => setEditField({ key: 'full_name', title: '全名', value: form.full_name, inputType: 'text', placeholder: '請輸入全名' })} />
