@@ -85,24 +85,14 @@ export default function StreetEditSheet({ open, city, district, initialStreet, i
         zoomControl: true,
         gestureHandling: 'greedy',
       });
+      // 監聽地圖停止移動，讀取中心點座標
+      mapRef.current.addListener('idle', () => {
+        const c = mapRef.current.getCenter();
+        setPosition({ lat: c.lat(), lng: c.lng() });
+      });
     } else {
       mapRef.current.setCenter(center);
       mapRef.current.setZoom(18);
-    }
-
-    if (markerRef.current) {
-      markerRef.current.setPosition(center);
-    } else {
-      markerRef.current = new window.google.maps.Marker({
-        position: center,
-        map: mapRef.current,
-        draggable: true,
-        animation: window.google.maps.Animation.DROP,
-      });
-      markerRef.current.addListener('dragend', () => {
-        const pos = markerRef.current.getPosition();
-        setPosition({ lat: pos.lat(), lng: pos.lng() });
-      });
     }
 
     setPosition({ lat, lng });
@@ -185,7 +175,7 @@ export default function StreetEditSheet({ open, city, district, initialStreet, i
         </div>
 
         {/* Map area */}
-        <div className="mx-5 mb-3 rounded-2xl overflow-hidden border border-stone-100 flex-shrink-0" style={{ height: 220 }}>
+        <div className="mx-5 mb-3 rounded-2xl overflow-hidden border border-stone-100 flex-shrink-0 relative" style={{ height: 220 }}>
           {mapStatus === 'idle' && (
             <div className="w-full h-full bg-stone-50 flex flex-col items-center justify-center gap-2">
               <MapPin className="w-6 h-6 text-stone-300" />
@@ -211,6 +201,12 @@ export default function StreetEditSheet({ open, city, district, initialStreet, i
             className="w-full h-full"
             style={{ display: mapStatus === 'ready' ? 'block' : 'none' }}
           />
+          {/* 固定中心大頭針 */}
+          {mapStatus === 'ready' && (
+            <div className="absolute inset-0 pointer-events-none flex items-center justify-center" style={{ paddingBottom: 28 }}>
+              <MapPin className="w-8 h-8 text-red-500 drop-shadow-md" style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.35))' }} />
+            </div>
+          )}
         </div>
 
         {/* Map status info */}
@@ -218,7 +214,7 @@ export default function StreetEditSheet({ open, city, district, initialStreet, i
           <div className="px-5 pb-2 flex-shrink-0 flex items-center justify-between">
             <div className="flex items-center gap-1.5">
               <CheckCircle2 className="w-3.5 h-3.5 text-green-500" />
-              <span className="text-xs text-stone-500">拖曳大頭針可調整位置</span>
+              <span className="text-xs text-stone-500">滑動地圖可調整位置</span>
             </div>
             <button onClick={() => doGeocode(street)} className="flex items-center gap-1 text-xs text-stone-400 hover:text-stone-600">
               <RefreshCw className="w-3 h-3" />重新定位
