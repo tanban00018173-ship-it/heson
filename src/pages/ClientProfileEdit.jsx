@@ -11,7 +11,7 @@ const SECTIONS = [
     label: '我的檔案',
     items: [
       { label: '個人資訊', to: '/ClientPersonalInfo' },
-      { label: '我的地址', to: null },
+      { label: '我的地址', to: '/ClientAddressList' },
       { label: '銀行帳號 / 信用卡', to: null },
     ],
   },

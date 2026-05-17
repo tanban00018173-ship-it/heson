@@ -31,6 +31,8 @@ import AdminUsers from './pages/AdminUsers'
 import ClientShop from './pages/ClientShop'
 import ClientProfileEdit from './pages/ClientProfileEdit'
 import ClientPersonalInfo from './pages/ClientPersonalInfo'
+import ClientAddressList from './pages/ClientAddressList'
+import ClientAddressForm from './pages/ClientAddressForm'
 import VendorChatPage from './pages/VendorChatPage'
 import { CartProvider } from './lib/CartContext'
 import React from 'react';
@@ -145,6 +147,8 @@ const AuthenticatedApp = () => {
       <Route path="/ClientShop" element={<ClientShop />} />
       <Route path="/ClientProfileEdit" element={<LayoutWrapper currentPageName="ClientProfileEdit"><ClientProfileEdit /></LayoutWrapper>} />
       <Route path="/ClientPersonalInfo" element={<ClientPersonalInfo />} />
+      <Route path="/ClientAddressList" element={<ClientAddressList />} />
+      <Route path="/ClientAddressForm" element={<ClientAddressForm />} />
       <Route path="/VendorChatPage" element={<VendorChatPage />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
