@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { MapPin, Loader2, RefreshCw, Move, Pencil, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { base44 } from '@/api/base44Client';
 
 // Inject Leaflet CSS once
 function useLeafletCSS() {
@@ -14,88 +15,17 @@ function useLeafletCSS() {
   }, []);
 }
 
-// Romanization helpers for Taiwan addresses
-const CITY_EN = {
-  '台北市': 'Taipei', '臺北市': 'Taipei', '新北市': 'New Taipei', '基隆市': 'Keelung',
-  '桃園市': 'Taoyuan', '新竹市': 'Hsinchu', '新竹縣': 'Hsinchu County',
-  '苗栗縣': 'Miaoli', '台中市': 'Taichung', '臺中市': 'Taichung',
-  '彰化縣': 'Changhua', '南投縣': 'Nantou', '雲林縣': 'Yunlin',
-  '嘉義市': 'Chiayi', '嘉義縣': 'Chiayi County', '台南市': 'Tainan', '臺南市': 'Tainan',
-  '高雄市': 'Kaohsiung', '屏東縣': 'Pingtung', '宜蘭縣': 'Yilan',
-  '花蓮縣': 'Hualien', '台東縣': 'Taitung', '澎湖縣': 'Penghu',
-  '金門縣': 'Kinmen', '連江縣': 'Lienchiang',
-};
-
-const DISTRICT_EN = {
-  '中正區': 'Zhongzheng District', '大同區': 'Datong District', '中山區': 'Zhongshan District',
-  '松山區': 'Songshan District', '大安區': 'Da\'an District', '萬華區': 'Wanhua District',
-  '信義區': 'Xinyi District', '士林區': 'Shilin District', '北投區': 'Beitou District',
-  '內湖區': 'Neihu District', '南港區': 'Nangang District', '文山區': 'Wenshan District',
-  '板橋區': 'Banqiao District', '三重區': 'Sanchong District', '中和區': 'Zhonghe District',
-  '永和區': 'Yonghe District', '新莊區': 'Xinzhuang District', '新店區': 'Xindian District',
-  '淡水區': 'Danshui District', '汐止區': 'Xizhi District', '土城區': 'Tucheng District',
-  '蘆洲區': 'Luzhou District', '樹林區': 'Shulin District', '三峽區': 'Sanxia District',
-  '鶯歌區': 'Yingge District', '林口區': 'Linkou District',
-  '桃園區': 'Taoyuan District', '中壢區': 'Zhongli District', '龜山區': 'Guishan District',
-  '八德區': 'Bade District', '楊梅區': 'Yangmei District', '蘆竹區': 'Luzhu District',
-  '西屯區': 'Xitun District', '南屯區': 'Nantun District', '北屯區': 'Beitun District',
-  '豐原區': 'Fengyuan District', '大里區': 'Dali District', '太平區': 'Taiping District',
-};
-
-// Build an English query from a Taiwan address string
-function buildEnglishQuery(address) {
-  let eng = address;
-  for (const [zh, en] of Object.entries(CITY_EN)) {
-    eng = eng.replace(zh, en + ', ');
-  }
-  for (const [zh, en] of Object.entries(DISTRICT_EN)) {
-    eng = eng.replace(zh, en + ', ');
-  }
-  // Replace common road patterns: 重慶南路一段122號 → just keep numbers and Taiwan
-  // Strip remaining CJK for a cleaner query
-  eng = eng.replace(/[\u4e00-\u9fff]+/g, ' ').replace(/\s+/g, ' ').trim();
-  return eng + ', Taiwan';
-}
-
-async function nominatimQuery(q) {
-  const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=1&countrycodes=tw`;
-  const res = await fetch(url, { headers: { 'User-Agent': 'HesonBooking/1.0' } });
-  const data = await res.json();
-  if (data && data[0]) return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
-  return null;
-}
-
-// Try multiple geocoding strategies
+// Geocode using Google Maps Geocoding API (via backend key)
 async function geocodeAddress(address) {
-  // Strategy 1: full Chinese address
-  let result = await nominatimQuery(address);
-  if (result) return result;
-
-  // Strategy 2: English transliteration
-  const engQuery = buildEnglishQuery(address);
-  result = await nominatimQuery(engQuery);
-  if (result) return result;
-
-  // Strategy 3: city + district only (fallback to district center)
-  for (const [zh, en] of Object.entries(DISTRICT_EN)) {
-    if (address.includes(zh)) {
-      for (const [zhC, enC] of Object.entries(CITY_EN)) {
-        if (address.includes(zhC)) {
-          result = await nominatimQuery(`${en}, ${enC}, Taiwan`);
-          if (result) return result;
-        }
-      }
-    }
-  }
-
-  // Strategy 4: city only
-  for (const [zh, en] of Object.entries(CITY_EN)) {
-    if (address.includes(zh)) {
-      result = await nominatimQuery(`${en}, Taiwan`);
-      if (result) return result;
-    }
-  }
-
+  const keyRes = await base44.functions.invoke('getGoogleMapsKey', {});
+  const apiKey = keyRes.data?.key || '';
+  if (!apiKey) return null;
+  const res = await fetch(
+    `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&language=zh-TW&region=TW&key=${apiKey}`
+  );
+  const data = await res.json();
+  const loc = data.results?.[0]?.geometry?.location;
+  if (loc) return { lat: loc.lat, lng: loc.lng };
   return null;
 }
 
