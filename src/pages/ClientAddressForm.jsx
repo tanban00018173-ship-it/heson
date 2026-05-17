@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, ChevronDown } from "lucide-react";
+import { ArrowLeft, ChevronRight } from "lucide-react";
 import ClientBottomNav from "@/components/dashboard/ClientBottomNav";
+import EditSheet from "@/components/profile/EditSheet";
 
 // 台灣城市區域與郵遞區號
 const TW_DATA = {
@@ -17,11 +18,25 @@ const TW_DATA = {
 
 const CLEANING_TYPES = ['居家地址', '公司地址', '其他地址'];
 const PICKUP_TYPES = ['超商取貨地址'];
-
 const TYPE_OPTIONS = {
   cleaning: ['居家地址', '公司地址', '其他地址'],
   pickup: ['超商取貨地址'],
 };
+
+function RowItem({ label, value, onEdit }) {
+  return (
+    <button
+      onClick={onEdit}
+      className="w-full flex items-center justify-between px-4 py-3.5 border-b border-stone-50 last:border-0 hover:bg-stone-50 transition-colors"
+    >
+      <span className="text-sm text-stone-500">{label}</span>
+      <div className="flex items-center gap-1.5">
+        <span className="text-sm font-medium text-stone-800">{value || '—'}</span>
+        <ChevronRight className="w-4 h-4 text-stone-300 flex-shrink-0" />
+      </div>
+    </button>
+  );
+}
 
 export default function ClientAddressForm() {
   const navigate = useNavigate();
@@ -43,6 +58,7 @@ export default function ClientAddressForm() {
     is_default: false,
   });
   const [saving, setSaving] = useState(false);
+  const [editField, setEditField] = useState(null);
 
   useEffect(() => {
     base44.auth.isAuthenticated().then(auth => {
@@ -51,7 +67,6 @@ export default function ClientAddressForm() {
     });
   }, []);
 
-  // 載入既有地址
   const { data: existingAddress } = useQuery({
     queryKey: ['userAddress', addressId],
     queryFn: () => base44.entities.UserAddress.filter({ id: addressId }),
@@ -59,41 +74,22 @@ export default function ClientAddressForm() {
   });
 
   useEffect(() => {
-    if (existingAddress?.[0]) {
-      setForm({ ...existingAddress[0] });
-    }
+    if (existingAddress?.[0]) setForm({ ...existingAddress[0] });
   }, [existingAddress]);
-
-  // 城市改變時自動填郵遞區號
-  const handleCityChange = (city) => {
-    const districts = TW_DATA[city] || {};
-    const firstDistrict = Object.keys(districts)[0] || '';
-    const postalCode = districts[firstDistrict] || '';
-    setForm(f => ({ ...f, city, district: firstDistrict, postal_code: postalCode }));
-  };
-
-  const handleDistrictChange = (district) => {
-    const postalCode = TW_DATA[form.city]?.[district] || '';
-    setForm(f => ({ ...f, district, postal_code: postalCode }));
-  };
 
   const handleSave = async () => {
     if (!user) return;
     setSaving(true);
-
     const data = { ...form, user_id: user.id };
 
-    // 若設為預設，關閉同類型其他預設
     if (form.is_default) {
       const allAddresses = await base44.entities.UserAddress.filter({ user_id: user.id });
       const isCleaning = CLEANING_TYPES.includes(form.address_type);
-      const sameTypeAddresses = allAddresses.filter(a => {
+      const toReset = allAddresses.filter(a => {
         const aIsCleaning = CLEANING_TYPES.includes(a.address_type);
         return aIsCleaning === isCleaning && a.id !== addressId && a.is_default;
       });
-      await Promise.all(sameTypeAddresses.map(a =>
-        base44.entities.UserAddress.update(a.id, { is_default: false })
-      ));
+      await Promise.all(toReset.map(a => base44.entities.UserAddress.update(a.id, { is_default: false })));
     }
 
     if (addressId) {
@@ -101,7 +97,6 @@ export default function ClientAddressForm() {
     } else {
       await base44.entities.UserAddress.create(data);
     }
-
     queryClient.invalidateQueries({ queryKey: ['userAddresses', user.id] });
     navigate('/ClientAddressList');
     setSaving(false);
@@ -114,26 +109,28 @@ export default function ClientAddressForm() {
     navigate('/ClientAddressList');
   };
 
+  const handleEditSave = (key, newValue) => {
+    if (key === 'city') {
+      const districts = TW_DATA[newValue] || {};
+      const firstDistrict = Object.keys(districts)[0] || '';
+      setForm(f => ({ ...f, city: newValue, district: firstDistrict, postal_code: districts[firstDistrict] || '' }));
+    } else if (key === 'district') {
+      const postalCode = TW_DATA[form.city]?.[newValue] || '';
+      setForm(f => ({ ...f, district: newValue, postal_code: postalCode }));
+    } else {
+      setForm(f => ({ ...f, [key]: newValue }));
+    }
+    setEditField(null);
+  };
+
+  const typeOptions = CLEANING_TYPES.includes(form.address_type) ? CLEANING_TYPES : PICKUP_TYPES;
   const cities = Object.keys(TW_DATA);
   const districts = Object.keys(TW_DATA[form.city] || {});
-  const typeOptions = CLEANING_TYPES.includes(form.address_type)
-    ? CLEANING_TYPES
-    : PICKUP_TYPES;
-
-  const InputField = ({ label, children }) => (
-    <div className="flex items-center px-4 py-3.5 border-b border-stone-100 last:border-0">
-      <span className="text-sm text-stone-500 w-28 flex-shrink-0">{label}</span>
-      {children}
-    </div>
-  );
 
   return (
     <div className="min-h-screen bg-[#f2f2f7] flex flex-col">
       <div className="bg-white border-b border-stone-100 px-4 py-3 flex items-center sticky top-0 z-20">
-        <button
-          onClick={() => navigate(-1)}
-          className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-stone-100 transition-colors"
-        >
+        <button onClick={() => navigate(-1)} className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-stone-100 transition-colors">
           <ArrowLeft className="w-5 h-5 text-stone-700" />
         </button>
         <h1 className="flex-1 text-center text-base font-bold text-stone-900">地址</h1>
@@ -147,83 +144,36 @@ export default function ClientAddressForm() {
       <div className="flex-1 overflow-y-auto pb-36">
         {/* 地址類型 */}
         <p className="px-4 py-3 text-xs font-semibold text-stone-400 uppercase tracking-wider bg-[#f2f2f7]">地址類型</p>
-        <div className="bg-white">
-          {typeOptions.map(type => (
-            <button
-              key={type}
-              onClick={() => setForm(f => ({ ...f, address_type: type }))}
-              className="w-full flex items-center justify-between px-4 py-3.5 border-b border-stone-100 last:border-0 hover:bg-stone-50 transition-colors"
-            >
-              <span className="text-sm font-medium text-stone-800">{type}</span>
-              <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${form.address_type === type ? 'border-stone-900 bg-stone-900' : 'border-stone-300'}`}>
-                {form.address_type === type && <div className="w-2 h-2 rounded-full bg-white" />}
-              </div>
-            </button>
-          ))}
+        <div className="bg-white rounded-none overflow-hidden">
+          <RowItem
+            label="類型"
+            value={form.address_type}
+            onEdit={() => setEditField({ key: 'address_type', title: '地址類型', value: form.address_type, inputType: 'select', options: typeOptions })}
+          />
         </div>
 
         {/* 收件人資訊 */}
         <p className="px-4 py-3 text-xs font-semibold text-stone-400 uppercase tracking-wider bg-[#f2f2f7]">收件人資訊</p>
-        <div className="bg-white">
-          <InputField label="全名">
-            <input
-              type="text"
-              value={form.full_name}
-              onChange={e => setForm(f => ({ ...f, full_name: e.target.value }))}
-              placeholder="請輸入全名"
-              className="flex-1 text-sm text-stone-800 focus:outline-none placeholder-stone-300"
-            />
-          </InputField>
-          <InputField label="手機號碼">
-            <input
-              type="tel"
-              value={form.phone}
-              onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
-              placeholder="請輸入手機號碼"
-              className="flex-1 text-sm text-stone-800 focus:outline-none placeholder-stone-300"
-            />
-          </InputField>
+        <div className="bg-white rounded-none overflow-hidden">
+          <RowItem label="全名" value={form.full_name}
+            onEdit={() => setEditField({ key: 'full_name', title: '全名', value: form.full_name, inputType: 'text', placeholder: '請輸入全名' })} />
+          <RowItem label="手機號碼" value={form.phone}
+            onEdit={() => setEditField({ key: 'phone', title: '手機號碼', value: form.phone, inputType: 'tel', placeholder: '請輸入手機號碼' })} />
         </div>
 
         {/* 地址資訊 */}
         <p className="px-4 py-3 text-xs font-semibold text-stone-400 uppercase tracking-wider bg-[#f2f2f7]">地址資訊</p>
-        <div className="bg-white">
-          <InputField label="城市">
-            <div className="flex-1 relative">
-              <select
-                value={form.city}
-                onChange={e => handleCityChange(e.target.value)}
-                className="w-full text-sm text-stone-800 focus:outline-none appearance-none bg-transparent pr-6"
-              >
-                {cities.map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
-              <ChevronDown className="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 pointer-events-none" />
-            </div>
-          </InputField>
-          <InputField label="區">
-            <div className="flex-1 relative">
-              <select
-                value={form.district}
-                onChange={e => handleDistrictChange(e.target.value)}
-                className="w-full text-sm text-stone-800 focus:outline-none appearance-none bg-transparent pr-6"
-              >
-                {districts.map(d => <option key={d} value={d}>{d}</option>)}
-              </select>
-              <ChevronDown className="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 pointer-events-none" />
-            </div>
-          </InputField>
-          <InputField label="郵遞區號">
-            <span className="flex-1 text-sm text-stone-400">{form.postal_code}</span>
-          </InputField>
-          <InputField label="街道,巷弄,門號">
-            <input
-              type="text"
-              value={form.street}
-              onChange={e => setForm(f => ({ ...f, street: e.target.value }))}
-              placeholder="街道、巷弄、門號、樓層"
-              className="flex-1 text-sm text-stone-800 focus:outline-none placeholder-stone-300"
-            />
-          </InputField>
+        <div className="bg-white rounded-none overflow-hidden">
+          <RowItem label="城市" value={form.city}
+            onEdit={() => setEditField({ key: 'city', title: '城市', value: form.city, inputType: 'dropdown', options: cities })} />
+          <RowItem label="區" value={form.district}
+            onEdit={() => setEditField({ key: 'district', title: '區', value: form.district, inputType: 'dropdown', options: districts })} />
+          <button className="w-full flex items-center justify-between px-4 py-3.5 border-b border-stone-50 last:border-0 cursor-default">
+            <span className="text-sm text-stone-500">郵遞區號</span>
+            <span className="text-sm font-medium text-stone-400">{form.postal_code || '—'}</span>
+          </button>
+          <RowItem label="街道,巷弄,門號" value={form.street}
+            onEdit={() => setEditField({ key: 'street', title: '街道地址', value: form.street, inputType: 'text', placeholder: '街道、巷弄、門號、樓層' })} />
         </div>
 
         {/* 預設地址開關 */}
@@ -258,6 +208,18 @@ export default function ClientAddressForm() {
       </div>
 
       <ClientBottomNav />
+
+      {/* EditSheet */}
+      <EditSheet
+        open={!!editField}
+        title={editField?.title || ''}
+        value={editField?.value || ''}
+        inputType={editField?.inputType || 'text'}
+        placeholder={editField?.placeholder || ''}
+        options={editField?.options || []}
+        onClose={() => setEditField(null)}
+        onSave={(v) => handleEditSave(editField?.key, v)}
+      />
     </div>
   );
 }
