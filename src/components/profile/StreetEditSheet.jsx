@@ -32,7 +32,8 @@ async function reverseGeocodeCoords(lat, lng, apiKey) {
       if (comp.types.includes('administrative_area_level_1')) {
         city = comp.long_name;
       }
-      if (comp.types.includes('administrative_area_level_3')) {
+      // 只取 level_3（鄉鎮市區），不取 level_4（村里）
+      if (comp.types.includes('administrative_area_level_3') && !comp.types.includes('administrative_area_level_4')) {
         district = comp.long_name;
       }
     }
