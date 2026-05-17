@@ -44,9 +44,9 @@ export default function ClientAddressForm() {
     address_type: defaultType,
     full_name: '',
     phone: '',
-    city: '台北市',
-    district: '中正區',
-    postal_code: '100',
+    city: '',
+    district: '',
+    postal_code: '',
     street: '',
     is_default: false,
   });
