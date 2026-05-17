@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ArrowLeft, MapPin } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 
@@ -62,6 +62,13 @@ export default function RegionPicker({ open, city: initCity, district: initDistr
   const [selectedCity, setSelectedCity] = useState(initCity || '');
   const [selectedDistrict, setSelectedDistrict] = useState(initDistrict || '');
   const [locating, setLocating] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      setSelectedCity(initCity || '');
+      setSelectedDistrict(initDistrict || '');
+    }
+  }, [open, initCity, initDistrict]);
 
   const cities = Object.keys(TW_DATA);
   const districts = selectedCity ? Object.keys(TW_DATA[selectedCity]) : [];
