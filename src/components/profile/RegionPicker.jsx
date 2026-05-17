@@ -112,12 +112,22 @@ export default function RegionPicker({ open, city: initCity, district: initDistr
           const data = await res.json();
           const components = data.results?.[0]?.address_components || [];
           const cityComp = components.find(c => c.types.includes('administrative_area_level_1'));
-          const distComp = components.find(c => c.types.includes('administrative_area_level_3') || c.types.includes('administrative_area_level_2'));
+          // 嘗試多個 level 找行政區
+          const distComp = components.find(c => c.types.includes('administrative_area_level_3'))
+            || components.find(c => c.types.includes('administrative_area_level_2'))
+            || components.find(c => c.types.includes('locality'));
           const cityName = cityComp?.long_name || '';
           const distName = distComp?.long_name || '';
           const matchedCity = cities.find(c => cityName.includes(c) || c.includes(cityName));
           if (matchedCity) {
-            const matchedDist = Object.keys(TW_DATA[matchedCity]).find(d => distName.includes(d) || d.includes(distName));
+            const distKeys = Object.keys(TW_DATA[matchedCity]);
+            // 嘗試所有 address_components 找符合的行政區
+            let matchedDist = null;
+            const allNames = components.map(c => c.long_name);
+            for (const name of allNames) {
+              const found = distKeys.find(d => name.includes(d) || d.includes(name));
+              if (found) { matchedDist = found; break; }
+            }
             if (matchedDist) {
               const postal = TW_DATA[matchedCity][matchedDist];
               setLocating(false);
