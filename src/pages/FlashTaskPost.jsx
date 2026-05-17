@@ -2,8 +2,15 @@ import React, { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Zap, MapPin, Loader2, Check, ArrowLeft, Plus, Minus, UtensilsCrossed, Trash2, WashingMachine, Package, RefreshCw, AlertTriangle } from 'lucide-react';
+import { Zap, MapPin, Loader2, Check, ArrowLeft, Plus, Minus, UtensilsCrossed, Trash2, WashingMachine, Package, RefreshCw, AlertTriangle, Home, Building2, HelpCircle, ChevronDown } from 'lucide-react';
 import { toast } from 'sonner';
+
+const CLEANING_TYPES = ['居家地址', '公司地址', '其他地址'];
+const ADDRESS_ICONS = {
+  '居家地址': Home,
+  '公司地址': Building2,
+  '其他地址': HelpCircle,
+};
 
 const FLASH_TASKS = [
   { id: 'dishes',  Icon: UtensilsCrossed, label: '洗碗',   base: 200 },
@@ -22,6 +29,8 @@ export default function FlashTaskPost() {
   const [gpsLoading, setGpsLoading] = useState(false);
   const [gpsLat, setGpsLat] = useState(null);
   const [gpsLng, setGpsLng] = useState(null);
+  const [savedAddresses, setSavedAddresses] = useState([]);
+  const [showAddressPicker, setShowAddressPicker] = useState(false);
 
   // Read pre-selected task from URL
   const params = new URLSearchParams(window.location.search);
@@ -42,7 +51,13 @@ export default function FlashTaskPost() {
   useEffect(() => {
     base44.auth.isAuthenticated().then(ok => {
       if (!ok) { base44.auth.redirectToLogin(); return; }
-      base44.auth.me().then(u => setUser(u));
+      base44.auth.me().then(u => {
+        setUser(u);
+        // 載入已儲存的清潔地址
+        base44.entities.UserAddress.filter({ user_id: u.id }).then(addrs => {
+          setSavedAddresses(addrs.filter(a => CLEANING_TYPES.includes(a.address_type)));
+        });
+      });
     });
   }, []);
 
@@ -232,7 +247,17 @@ export default function FlashTaskPost() {
 
         {/* GPS 定位 */}
         <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
-          <p className="text-xs text-stone-400 font-semibold uppercase tracking-widest mb-3">服務地點</p>
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-xs text-stone-400 font-semibold uppercase tracking-widest">服務地點</p>
+            {savedAddresses.length > 0 && (
+              <button
+                onClick={() => setShowAddressPicker(true)}
+                className="flex items-center gap-1 text-xs text-gold-400 hover:text-gold-300 transition-colors"
+              >
+                選擇已儲存地址 <ChevronDown className="w-3 h-3" />
+              </button>
+            )}
+          </div>
           {gpsLoading ? (
             <div className="flex items-center gap-2 text-stone-400 text-sm">
               <Loader2 className="w-4 h-4 animate-spin text-gold-500" />
@@ -314,6 +339,55 @@ export default function FlashTaskPost() {
         </button>
         <p className="text-center text-[11px] text-stone-600 mt-2">任務無人接單將自動退款 · 0 手續費</p>
       </div>
+
+      {/* 已儲存地址選擇器 */}
+      <AnimatePresence>
+        {showAddressPicker && (
+          <motion.div className="fixed inset-0 z-50 flex flex-col justify-end" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <div className="absolute inset-0 bg-black/60" onClick={() => setShowAddressPicker(false)} />
+            <motion.div
+              className="relative bg-[#1a1a1a] rounded-t-3xl pb-8"
+              initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+            >
+              <div className="px-5 pt-5 pb-3 flex items-center justify-between">
+                <h2 className="text-base font-bold text-white">選擇服務地址</h2>
+                <button onClick={() => setShowAddressPicker(false)} className="w-8 h-8 bg-white/10 rounded-full flex items-center justify-center">
+                  <ArrowLeft className="w-4 h-4 text-white rotate-180" />
+                </button>
+              </div>
+              <div className="px-5 space-y-2 max-h-72 overflow-y-auto">
+                {savedAddresses.map(addr => {
+                  const Icon = ADDRESS_ICONS[addr.address_type] || HelpCircle;
+                  const fullAddr = `${addr.city}${addr.district}${addr.street}`;
+                  return (
+                    <button
+                      key={addr.id}
+                      onClick={() => {
+                        setAddress(fullAddr);
+                        if (addr.gps_lat) setGpsLat(addr.gps_lat);
+                        if (addr.gps_lng) setGpsLng(addr.gps_lng);
+                        setShowAddressPicker(false);
+                      }}
+                      className="w-full flex items-start gap-3 p-3.5 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-gold-500/40 transition-all text-left"
+                    >
+                      <div className="w-9 h-9 bg-gold-500/15 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <Icon className="w-4.5 h-4.5 text-gold-400" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs text-stone-400 mb-0.5">{addr.address_type}{addr.is_default ? ' · 預設' : ''}</p>
+                        <p className="text-sm text-white font-medium truncate">{addr.full_name}</p>
+                        <p className="text-xs text-stone-400 truncate">{fullAddr}</p>
+                      </div>
+                      {addr.gps_lat && <MapPin className="w-3.5 h-3.5 text-gold-500 flex-shrink-0 mt-1 ml-auto" />}
+                    </button>
+                  );
+                })}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
