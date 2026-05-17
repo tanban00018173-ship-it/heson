@@ -116,19 +116,17 @@ export default function RegionPicker({ open, city: initCity, district: initDistr
           <div className="flex flex-col gap-0">
             <div className="flex gap-3">
               {/* 左側時間軸 */}
-              <div className="flex flex-col items-center pt-2.5">
-                <div className="w-2.5 h-2.5 rounded-full border-2 border-stone-300 flex-shrink-0" />
-                <div className="w-0.5 flex-1 bg-stone-200 my-1" style={{ minHeight: 16 }} />
-                <div className={`w-2.5 h-2.5 rounded-full border-2 flex-shrink-0 ${selectedDistrict ? 'border-red-500 bg-red-500' : 'border-red-400'}`} />
-              </div>
               {/* 右側文字 */}
               <div className="flex flex-col flex-1 gap-1">
-                <div className="py-1.5">
+                <div className="flex items-center gap-3">
+                  <div className="w-2.5 h-2.5 rounded-full border-2 border-stone-300 flex-shrink-0" />
                   <span className={`text-sm ${selectedCity ? 'text-stone-800 font-medium' : 'text-stone-300'}`}>
                     {selectedCity || '請選擇縣市'}
                   </span>
                 </div>
-                <div className={`flex items-center px-3 py-2 rounded-xl border ${!selectedCity ? 'border-stone-200 bg-stone-50' : 'border-red-100 bg-red-50'}`}>
+                <div className="ml-[5px] w-0.5 h-3 bg-stone-200" />
+                <div className={`flex items-center gap-3 px-3 py-2 rounded-xl border ${!selectedCity ? 'border-stone-200 bg-stone-50' : 'border-red-100 bg-red-50'}`}>
+                  <div className={`w-2.5 h-2.5 rounded-full border-2 flex-shrink-0 ${selectedDistrict ? 'border-red-500 bg-red-500' : 'border-red-400'}`} />
                   <span className={`text-sm font-medium ${selectedDistrict ? 'text-red-600' : 'text-red-500'}`}>
                     {selectedDistrict || '選擇行政區'}
                   </span>
@@ -158,15 +156,25 @@ export default function RegionPicker({ open, city: initCity, district: initDistr
         {!selectedCity && (
           <div className="bg-white">
             <p className="px-4 py-2 text-xs font-semibold text-stone-400 uppercase tracking-wider bg-[#f2f2f7]">縣市</p>
-            {cities.map(city => (
-              <button
-                key={city}
-                onClick={() => handleCitySelect(city)}
-                className="w-full flex items-center px-4 py-4 border-b border-stone-50 last:border-0 hover:bg-stone-50 transition-colors"
-              >
-                <span className="text-sm text-stone-800">{city}</span>
-              </button>
-            ))}
+            {Object.entries(
+              cities.reduce((acc, city) => {
+                const key = city[0];
+                if (!acc[key]) acc[key] = [];
+                acc[key].push(city);
+                return acc;
+              }, {})
+            ).sort(([a], [b]) => a.localeCompare(b, 'zh-TW')).map(([initial, group]) =>
+              group.map((city, i) => (
+                <button
+                  key={city}
+                  onClick={() => handleCitySelect(city)}
+                  className="w-full flex items-center px-4 py-4 border-b border-stone-50 last:border-0 hover:bg-stone-50 transition-colors"
+                >
+                  <span className="w-8 text-sm text-stone-300 flex-shrink-0">{i === 0 ? initial : ''}</span>
+                  <span className="text-sm text-stone-800">{city}</span>
+                </button>
+              ))
+            )}
           </div>
         )}
 
