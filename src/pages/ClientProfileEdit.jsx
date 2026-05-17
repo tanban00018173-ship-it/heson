@@ -66,35 +66,40 @@ export default function ClientProfileEdit() {
       </div>
 
       {/* 捲動內容 */}
-      <div className="flex-1 overflow-y-auto px-4 pt-4 pb-36 space-y-4">
+      <div className="flex-1 overflow-y-auto pb-36">
         {SECTIONS.map(section => (
-          <div key={section.key} className="bg-white rounded-2xl overflow-hidden">
-            {/* 母項目標題 */}
-            <p className="px-4 pt-4 pb-1 text-xs font-semibold text-stone-400 uppercase tracking-wider">
+          <div key={section.key}>
+            {/* 母項目標題 — 灰底，不在白卡內 */}
+            <p className="px-4 pt-5 pb-1.5 text-xs font-semibold text-stone-400 uppercase tracking-wider bg-[#f2f2f7]">
               {section.label}
             </p>
-            {section.items.map((item, idx) => (
-              <button
-                key={idx}
-                onClick={() => item.to && navigate(item.to)}
-                className={`w-full flex items-center justify-between px-4 py-3.5 border-t border-stone-50 hover:bg-stone-50 transition-colors ${!item.to ? 'opacity-60 cursor-default' : ''}`}
-              >
-                <span className={`text-sm font-medium ${item.danger ? 'text-red-500' : 'text-stone-800'}`}>
-                  {item.label}
-                </span>
-                <ChevronRight className="w-4 h-4 text-stone-300 flex-shrink-0" />
-              </button>
-            ))}
+            {/* 子項目白色列表，貼齊左右 */}
+            <div className="bg-white">
+              {section.items.map((item, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => item.to && navigate(item.to)}
+                  className={`w-full flex items-center justify-between px-4 py-3.5 border-b border-stone-100 last:border-0 hover:bg-stone-50 transition-colors ${!item.to ? 'opacity-50 cursor-default' : ''}`}
+                >
+                  <span className={`text-sm font-medium ${item.danger ? 'text-red-500' : 'text-stone-800'}`}>
+                    {item.label}
+                  </span>
+                  <ChevronRight className="w-4 h-4 text-stone-300 flex-shrink-0" />
+                </button>
+              ))}
+            </div>
           </div>
         ))}
 
         {/* 登出 */}
-        <button
-          onClick={() => base44.auth.logout()}
-          className="w-full bg-stone-900 text-white font-bold py-4 rounded-2xl hover:bg-stone-700 transition-colors"
-        >
-          登出
-        </button>
+        <div className="px-4 pt-6 pb-4">
+          <button
+            onClick={() => base44.auth.logout()}
+            className="w-full bg-stone-900 text-white font-bold py-4 rounded-2xl hover:bg-stone-700 transition-colors"
+          >
+            登出
+          </button>
+        </div>
       </div>
 
       <ClientBottomNav />
