@@ -6,6 +6,7 @@ import { ArrowLeft, ChevronRight } from "lucide-react";
 import ClientBottomNav from "@/components/dashboard/ClientBottomNav";
 import EditSheet from "@/components/profile/EditSheet";
 import RegionPicker, { TW_DATA } from "@/components/profile/RegionPicker";
+import AddressMap from "@/components/AddressMap";
 
 
 
@@ -179,6 +180,16 @@ export default function ClientAddressForm() {
           <RowItem label="街道,巷弄,門號" value={form.street}
             onEdit={() => setEditField({ key: 'street', title: '街道地址', value: form.street, inputType: 'text', placeholder: '街道、巷弄、門號、樓層' })} />
         </div>
+
+        {/* 地圖定位 */}
+        {form.street && (
+          <div className="bg-white px-4 py-4 mt-2">
+            <AddressMap
+              address={`${form.city}${form.district}${form.street}`}
+              onLocationChange={({ lat, lng }) => setForm(f => ({ ...f, gps_lat: lat, gps_lng: lng }))}
+            />
+          </div>
+        )}
 
         {/* 預設地址開關 */}
         <p className="px-4 py-3 text-xs font-semibold text-stone-400 uppercase tracking-wider bg-[#f2f2f7]">偏好設定</p>
