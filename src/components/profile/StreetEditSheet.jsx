@@ -21,6 +21,23 @@ async function geocodeAddress(address, apiKey) {
   return null;
 }
 
+async function reverseGeocodeCoords(lat, lng, apiKey) {
+  const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&language=zh-TW&region=TW&key=${apiKey}`;
+  const res = await fetch(url);
+  const data = await res.json();
+  if (data.status === 'OK' && data.results?.[0]) {
+    const components = data.results[0].address_components;
+    const cityComp = components.find(c => c.types.includes('administrative_area_level_1'));
+    const distComp = components.find(c => c.types.includes('administrative_area_level_3'))
+      || components.find(c => c.types.includes('administrative_area_level_2'));
+    return {
+      city: cityComp?.long_name || '',
+      district: distComp?.long_name || '',
+    };
+  }
+  return null;
+}
+
 function loadGoogleMapsScript(apiKey) {
   return new Promise((resolve) => {
     if (window.google?.maps) { resolve(); return; }
@@ -52,11 +69,14 @@ export default function StreetEditSheet({ open, city, district, initialStreet, i
   const [mapStatus, setMapStatus] = useState('idle'); // idle | loading | ready | error
   const [position, setPosition] = useState(null);
   const [geocodedFor, setGeocodedFor] = useState(''); // track what address was last geocoded
+  const [displayCity, setDisplayCity] = useState(city || '');
+  const [displayDistrict, setDisplayDistrict] = useState(district || '');
 
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null);
   const markerRef = useRef(null);
   const debounceRef = useRef(null);
+  const reverseGeocodeRef = useRef(null);
 
   // Reset state when sheet opens
   useEffect(() => {
@@ -65,10 +85,12 @@ export default function StreetEditSheet({ open, city, district, initialStreet, i
       setMapStatus('idle');
       setPosition(initialLat && initialLng ? { lat: initialLat, lng: initialLng } : null);
       setGeocodedFor('');
+      setDisplayCity(city || '');
+      setDisplayDistrict(district || '');
       mapRef.current = null;
       markerRef.current = null;
     }
-  }, [open]);
+  }, [open, city, district]);
 
   const initMap = useCallback(async (lat, lng) => {
     const apiKey = await getApiKey();
@@ -88,7 +110,22 @@ export default function StreetEditSheet({ open, city, district, initialStreet, i
       // 監聽地圖停止移動，讀取中心點座標
       mapRef.current.addListener('idle', () => {
         const c = mapRef.current.getCenter();
-        setPosition({ lat: c.lat(), lng: c.lng() });
+        const newPos = { lat: c.lat(), lng: c.lng() };
+        setPosition(newPos);
+        // 反向地理編碼以更新城市/區
+        clearTimeout(reverseGeocodeRef.current);
+        reverseGeocodeRef.current = setTimeout(async () => {
+          try {
+            const apiKey = await getApiKey();
+            const result = await reverseGeocodeCoords(newPos.lat, newPos.lng, apiKey);
+            if (result?.city || result?.district) {
+              setDisplayCity(result.city || displayCity);
+              setDisplayDistrict(result.district || displayDistrict);
+            }
+          } catch (e) {
+            console.error('Reverse geocode error:', e);
+          }
+        }, 500);
       });
     } else {
       mapRef.current.setCenter(center);
@@ -104,7 +141,7 @@ export default function StreetEditSheet({ open, city, district, initialStreet, i
     setMapStatus('loading');
     try {
       const apiKey = await getApiKey();
-      const fullAddress = `${city}${district}${addressStr}`;
+      const fullAddress = `${displayCity}${displayDistrict}${addressStr}`;
       const result = await geocodeAddress(fullAddress, apiKey);
       if (result) {
         setGeocodedFor(addressStr);
@@ -115,7 +152,7 @@ export default function StreetEditSheet({ open, city, district, initialStreet, i
     } catch {
       setMapStatus('error');
     }
-  }, [city, district, initMap]);
+  }, [displayCity, displayDistrict, initMap]);
 
   // Show initial map if we have existing coords
   useEffect(() => {
@@ -169,8 +206,8 @@ export default function StreetEditSheet({ open, city, district, initialStreet, i
             className="w-full border border-stone-200 rounded-xl px-4 py-3 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-stone-300"
             autoFocus
           />
-          {city && district && (
-            <p className="text-xs text-stone-400 mt-1.5 pl-1">{city}{district}{street || '...'}</p>
+          {displayCity && displayDistrict && (
+            <p className="text-xs text-stone-400 mt-1.5 pl-1">{displayCity}{displayDistrict}{street || '...'}</p>
           )}
         </div>
 
