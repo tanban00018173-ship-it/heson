@@ -2,11 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, ChevronRight } from "lucide-react";
+import { ArrowLeft, ChevronRight, MapPin } from "lucide-react";
 import ClientBottomNav from "@/components/dashboard/ClientBottomNav";
 import EditSheet from "@/components/profile/EditSheet";
 import RegionPicker, { TW_DATA } from "@/components/profile/RegionPicker";
-import AddressMap from "@/components/AddressMap";
+import AddressMapModal from "@/components/AddressMapModal";
 
 
 
@@ -54,6 +54,7 @@ export default function ClientAddressForm() {
   const [saving, setSaving] = useState(false);
   const [editField, setEditField] = useState(null);
   const [showRegionPicker, setShowRegionPicker] = useState(false);
+  const [showMapModal, setShowMapModal] = useState(false);
 
   useEffect(() => {
     base44.auth.isAuthenticated().then(auth => {
@@ -184,10 +185,25 @@ export default function ClientAddressForm() {
         {/* 地圖定位 */}
         {form.street && (
           <div className="bg-white px-4 py-4 mt-2">
-            <AddressMap
-              address={`${form.city}${form.district}${form.street}`}
-              onLocationChange={({ lat, lng }) => setForm(f => ({ ...f, gps_lat: lat, gps_lng: lng }))}
-            />
+            <button
+              onClick={() => setShowMapModal(true)}
+              className="w-full flex items-center gap-3 py-3 px-4 rounded-xl border border-stone-200 hover:bg-stone-50 transition-colors"
+            >
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${form.gps_lat ? 'bg-green-100' : 'bg-stone-100'}`}>
+                <MapPin className={`w-4 h-4 ${form.gps_lat ? 'text-green-600' : 'text-stone-500'}`} />
+              </div>
+              <div className="flex-1 text-left">
+                <p className="text-sm font-medium text-stone-800">
+                  {form.gps_lat ? '已確認定位' : '點擊確認地圖定位'}
+                </p>
+                {form.gps_lat ? (
+                  <p className="text-xs text-stone-400">{form.gps_lat.toFixed(5)}, {form.gps_lng.toFixed(5)}</p>
+                ) : (
+                  <p className="text-xs text-stone-400">建議設定以提升服務精準度</p>
+                )}
+              </div>
+              <ChevronRight className="w-4 h-4 text-stone-300" />
+            </button>
           </div>
         )}
 
@@ -223,6 +239,18 @@ export default function ClientAddressForm() {
       </div>
 
       <ClientBottomNav />
+
+      <AddressMapModal
+        open={showMapModal}
+        address={`${form.city}${form.district}${form.street}`}
+        initialLat={form.gps_lat}
+        initialLng={form.gps_lng}
+        onClose={() => setShowMapModal(false)}
+        onConfirm={({ lat, lng }) => {
+          setForm(f => ({ ...f, gps_lat: lat, gps_lng: lng }));
+          setShowMapModal(false);
+        }}
+      />
 
       <RegionPicker
         open={showRegionPicker}
