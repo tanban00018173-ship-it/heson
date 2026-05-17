@@ -271,32 +271,43 @@ export default function FlashTaskPost() {
         {/* 服務地點 */}
         <button
           onClick={() => setShowAddressPicker(true)}
-          className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-left hover:border-gold-500/40 transition-colors"
+          className="w-full text-left group"
         >
-          <div className="flex items-center justify-between mb-3">
-            <p className="text-xs text-stone-400 font-semibold uppercase tracking-widest">服務地點</p>
-            <span className="text-xs text-gold-400 flex items-center gap-1">變更 <ChevronRight className="w-3 h-3" /></span>
+          <p className="text-xs text-stone-500 font-semibold uppercase tracking-widest mb-2 px-1">服務地點</p>
+          <div className={`rounded-2xl p-4 border transition-all ${selectedAddrObj ? 'bg-white/5 border-white/10 group-hover:border-gold-500/50' : 'bg-white/3 border-dashed border-white/15 group-hover:border-gold-500/40'}`}>
+            {selectedAddrObj ? (
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 bg-gold-500/20 rounded-2xl flex items-center justify-center flex-shrink-0">
+                  {React.createElement(ADDRESS_ICONS[selectedAddrObj.address_type] || HelpCircle, { className: 'w-5 h-5 text-gold-400' })}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <p className="text-sm font-bold text-white truncate">{selectedAddrObj.full_name}</p>
+                    {selectedAddrObj.is_default && (
+                      <span className="text-[10px] font-semibold bg-gold-500/20 text-gold-400 px-1.5 py-0.5 rounded-full flex-shrink-0">預設</span>
+                    )}
+                  </div>
+                  <p className="text-xs text-stone-400 truncate">{address}</p>
+                  <p className="text-[11px] text-stone-600 mt-0.5">{selectedAddrObj.address_type}</p>
+                </div>
+                <div className="flex flex-col items-center gap-1 flex-shrink-0">
+                  {selectedAddrObj.gps_lat && <MapPin className="w-3.5 h-3.5 text-gold-500" />}
+                  <ChevronRight className="w-4 h-4 text-stone-600 group-hover:text-gold-400 transition-colors" />
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center gap-3 py-1">
+                <div className="w-11 h-11 bg-white/5 rounded-2xl flex items-center justify-center flex-shrink-0">
+                  <MapPin className="w-5 h-5 text-stone-600" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-stone-400">選擇或新增服務地址</p>
+                  <p className="text-xs text-stone-600 mt-0.5">點此設定清潔地點</p>
+                </div>
+                <ChevronRight className="w-4 h-4 text-stone-600 flex-shrink-0" />
+              </div>
+            )}
           </div>
-          {selectedAddrObj ? (
-            <div className="flex items-start gap-3">
-              <div className="w-9 h-9 bg-gold-500/15 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5">
-                {React.createElement(ADDRESS_ICONS[selectedAddrObj.address_type] || HelpCircle, { className: 'w-4 h-4 text-gold-400' })}
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs text-stone-400 mb-0.5">{selectedAddrObj.address_type}{selectedAddrObj.is_default ? ' · 預設' : ''}</p>
-                <p className="text-sm text-white font-medium">{selectedAddrObj.full_name}</p>
-                <p className="text-xs text-stone-400 mt-0.5">{address}</p>
-              </div>
-              {selectedAddrObj.gps_lat && <MapPin className="w-3.5 h-3.5 text-gold-500 flex-shrink-0 mt-1 ml-auto" />}
-            </div>
-          ) : (
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 bg-white/5 rounded-xl flex items-center justify-center flex-shrink-0">
-                <MapPin className="w-4 h-4 text-stone-500" />
-              </div>
-              <p className="text-sm text-stone-500">點此選擇或新增服務地址</p>
-            </div>
-          )}
         </button>
 
         {/* 任務類型 */}
