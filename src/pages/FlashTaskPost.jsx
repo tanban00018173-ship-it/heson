@@ -496,6 +496,7 @@ export default function FlashTaskPost() {
 
       {/* RegionPicker for new address */}
       <RegionPicker
+        dark
         open={newAddrStep === 'region'}
         city={newAddr.city}
         district={newAddr.district}

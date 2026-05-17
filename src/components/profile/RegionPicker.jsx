@@ -58,7 +58,7 @@ function sortByStroke(a, b) {
   return getStrokeCount(a[0]) - getStrokeCount(b[0]);
 }
 
-export default function RegionPicker({ open, city: initCity, district: initDistrict, onClose, onConfirm }) {
+export default function RegionPicker({ open, city: initCity, district: initDistrict, onClose, onConfirm, dark = false }) {
   const [selectedCity, setSelectedCity] = useState(initCity || '');
   const [selectedDistrict, setSelectedDistrict] = useState(initDistrict || '');
   const [locating, setLocating] = useState(false);
@@ -149,62 +149,77 @@ export default function RegionPicker({ open, city: initCity, district: initDistr
 
   if (!open) return null;
 
+  // Theme tokens
+  const pageBg     = dark ? 'bg-[#0d0d0d]'    : 'bg-[#f2f2f7]';
+  const headerBg   = dark ? 'bg-[#1a1a1a] border-white/10' : 'bg-white border-stone-100';
+  const backBtn    = dark ? 'hover:bg-white/10' : 'hover:bg-stone-100';
+  const titleCls   = dark ? 'text-white'        : 'text-stone-900';
+  const cardBg     = dark ? 'bg-[#1a1a1a]'     : 'bg-white';
+  const labelCls   = dark ? 'text-stone-500'    : 'text-stone-400';
+  const resetCls   = dark ? 'text-stone-500 hover:text-stone-300' : 'text-stone-400 hover:text-stone-600';
+  const cityLine   = dark ? 'text-stone-300'    : 'text-stone-800';
+  const connLine   = dark ? 'bg-white/10'       : 'bg-stone-200';
+  const citySep    = dark ? 'border-white/5'    : 'border-stone-50';
+  const cityHover  = dark ? 'hover:bg-white/5'  : 'hover:bg-stone-50';
+  const initialCls = dark ? 'text-stone-600'    : 'text-stone-300';
+  const sectionBg  = dark ? 'bg-[#0d0d0d]'     : 'bg-[#f2f2f7]';
+  const gpsBg      = dark ? 'bg-white/5'        : 'bg-stone-100';
+  const gpsIcon    = dark ? 'text-stone-300'    : 'text-stone-700';
+  const gpsText    = dark ? 'text-stone-300'    : 'text-stone-800';
+  const gpsHover   = dark ? 'hover:bg-white/5'  : 'hover:bg-stone-50';
+
   return (
-    <div className="fixed inset-0 z-[90] bg-[#f2f2f7] flex flex-col">
+    <div className={`fixed inset-0 z-[90] ${pageBg} flex flex-col`}>
       {/* Header */}
-      <div className="bg-white border-b border-stone-100 px-4 py-3 flex items-center sticky top-0 z-10">
-        <button onClick={onClose} className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-stone-100 transition-colors">
-          <ArrowLeft className="w-5 h-5 text-stone-700" />
+      <div className={`${headerBg} border-b px-4 py-3 flex items-center sticky top-0 z-10`}>
+        <button onClick={onClose} className={`w-9 h-9 flex items-center justify-center rounded-full ${backBtn} transition-colors`}>
+          <ArrowLeft className={`w-5 h-5 ${dark ? 'text-white' : 'text-stone-700'}`} />
         </button>
-        <h1 className="flex-1 text-center text-base font-bold text-stone-900">選擇你的地區</h1>
+        <h1 className={`flex-1 text-center text-base font-bold ${titleCls}`}>選擇你的地區</h1>
         <div className="w-9" />
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        {/* 已選地區 - 有選縣市才顯示 */}
-        {selectedCity && <div className="bg-white px-4 pt-4 pb-3 mb-2">
+        {/* 已選地區 */}
+        {selectedCity && <div className={`${cardBg} px-4 pt-4 pb-3 mb-2`}>
           <div className="flex items-center justify-between mb-3">
-            <span className="text-xs text-stone-400">已選地區</span>
-            <button onClick={handleReset} className="text-xs text-stone-400 hover:text-stone-600">重設</button>
+            <span className={`text-xs ${labelCls}`}>已選地區</span>
+            <button onClick={handleReset} className={`text-xs ${resetCls}`}>重設</button>
           </div>
-          {/* Timeline */}
           <div className="flex flex-col">
-            {/* 縣市行 */}
             <div className="flex items-center gap-3">
               <div className="w-3 flex items-center justify-center flex-shrink-0">
-                <div className="w-2.5 h-2.5 rounded-full border-2 border-stone-300" />
+                <div className={`w-2.5 h-2.5 rounded-full border-2 ${dark ? 'border-stone-500' : 'border-stone-300'}`} />
               </div>
-              <span className="text-sm text-stone-800 font-medium">{selectedCity}</span>
+              <span className={`text-sm font-medium ${cityLine}`}>{selectedCity}</span>
             </div>
-            {/* 連接線 */}
             <div className="flex gap-3">
               <div className="w-3 flex justify-center flex-shrink-0">
-                <div className="w-0.5 h-4 bg-stone-200" />
+                <div className={`w-0.5 h-4 ${connLine}`} />
               </div>
             </div>
-            {/* 行政區行 */}
             <div className="flex items-center gap-3">
               <div className="w-3 flex items-center justify-center flex-shrink-0">
                 <div className={`w-2.5 h-2.5 rounded-full border-2 ${selectedDistrict ? 'border-gold-500 bg-gold-500' : 'border-gold-400'}`} />
               </div>
-              <span className={`text-sm font-medium ${selectedDistrict ? 'text-gold-600' : 'text-gold-400'}`}>
+              <span className={`text-sm font-medium ${selectedDistrict ? 'text-gold-400' : 'text-gold-400'}`}>
                 {selectedDistrict || '選擇行政區'}
               </span>
             </div>
           </div>
         </div>}
 
-        {/* GPS button - 未選縣市才顯示 */}
-        {!selectedCity && <div className="bg-white mb-2 px-4 py-3">
+        {/* GPS button */}
+        {!selectedCity && <div className={`${cardBg} mb-2 px-4 py-3`}>
           <button
             onClick={handleGPS}
             disabled={locating}
-            className="w-full flex items-center justify-center gap-3 py-2 hover:bg-stone-50 rounded-xl transition-colors"
+            className={`w-full flex items-center justify-center gap-3 py-2 ${gpsHover} rounded-xl transition-colors`}
           >
-            <div className="w-8 h-8 bg-stone-100 rounded-full flex items-center justify-center flex-shrink-0">
-              <MapPin className="w-4 h-4 text-stone-700" />
+            <div className={`w-8 h-8 ${gpsBg} rounded-full flex items-center justify-center flex-shrink-0`}>
+              <MapPin className={`w-4 h-4 ${gpsIcon}`} />
             </div>
-            <span className="text-sm font-medium text-stone-800">
+            <span className={`text-sm font-medium ${gpsText}`}>
               {locating ? '定位中...' : '使用我的當前位置'}
             </span>
           </button>
@@ -212,8 +227,8 @@ export default function RegionPicker({ open, city: initCity, district: initDistr
 
         {/* City list */}
         {!selectedCity && (
-          <div className="bg-white">
-            <p className="px-4 py-2 text-xs font-semibold text-stone-400 uppercase tracking-wider bg-[#f2f2f7]">縣市</p>
+          <div className={cardBg}>
+            <p className={`px-4 py-2 text-xs font-semibold ${labelCls} uppercase tracking-wider ${sectionBg}`}>縣市</p>
             {Object.entries(
               cities.reduce((acc, city) => {
                 const key = city[0];
@@ -226,10 +241,10 @@ export default function RegionPicker({ open, city: initCity, district: initDistr
                 <button
                   key={city}
                   onClick={() => handleCitySelect(city)}
-                  className="w-full flex items-center px-4 py-4 border-b border-stone-50 last:border-0 hover:bg-stone-50 transition-colors"
+                  className={`w-full flex items-center px-4 py-4 border-b ${citySep} last:border-0 ${cityHover} transition-colors`}
                 >
-                  <span className="w-8 text-sm text-stone-300 flex-shrink-0">{i === 0 ? initial : ''}</span>
-                  <span className="text-sm text-stone-800">{city}</span>
+                  <span className={`w-8 text-sm ${initialCls} flex-shrink-0`}>{i === 0 ? initial : ''}</span>
+                  <span className={`text-sm ${cityLine}`}>{city}</span>
                 </button>
               ))
             )}
@@ -238,17 +253,17 @@ export default function RegionPicker({ open, city: initCity, district: initDistr
 
         {/* District list */}
         {selectedCity && (
-          <div className="bg-white">
-            <p className="px-4 py-2 text-xs font-semibold text-stone-400 uppercase tracking-wider bg-[#f2f2f7]">行政區</p>
+          <div className={cardBg}>
+            <p className={`px-4 py-2 text-xs font-semibold ${labelCls} uppercase tracking-wider ${sectionBg}`}>行政區</p>
             {Object.entries(groupedDistricts).sort(([a], [b]) => getStrokeCount(a) - getStrokeCount(b)).map(([initial, dists]) => (
               dists.map((dist, i) => (
                 <button
                   key={dist}
                   onClick={() => handleDistrictSelect(dist)}
-                  className="w-full flex items-center px-4 py-4 border-b border-stone-50 last:border-0 hover:bg-stone-50 transition-colors"
+                  className={`w-full flex items-center px-4 py-4 border-b ${citySep} last:border-0 ${cityHover} transition-colors`}
                 >
-                  <span className="w-8 text-sm text-stone-300 flex-shrink-0">{i === 0 ? initial : ''}</span>
-                  <span className="text-sm text-stone-800">{dist}</span>
+                  <span className={`w-8 text-sm ${initialCls} flex-shrink-0`}>{i === 0 ? initial : ''}</span>
+                  <span className={`text-sm ${cityLine}`}>{dist}</span>
                 </button>
               ))
             ))}
