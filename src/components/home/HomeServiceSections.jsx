@@ -222,6 +222,9 @@ export default function HomeServiceSections({ user, userAddress }) {
   const track = useTrack(user, userAddress);
   const safeTrack = track || (() => {});
 
+  // 每次 mount 產生一個隨機 seed，強制所有 shuffle 重新執行
+  const mountSeed = useRef(Math.random());
+
   const { data: allSections = [] } = useQuery({
     queryKey: ['homeSections'],
     queryFn: () => base44.entities.HomeSection.filter({ is_active: true }, 'sort_order', 100),
@@ -243,24 +246,34 @@ export default function HomeServiceSections({ user, userAddress }) {
     queryFn: () => base44.entities.ShopProduct.filter({ is_active: true }, 'sort_order', 16),
   });
 
-  // 每個模塊的卡片，帶 jitter 排序（memo 在 allSections/userAddress 變化時重算）
-  const sectionItemsMap = useMemo(() => {
+  // 每個模塊的卡片：資料到位後立即隨機，mount seed 確保每次進入頁面都重新洗牌
+  const [sectionItemsMap, setSectionItemsMap] = useState({});
+  useEffect(() => {
+    if (!allSections.length) return;
     const map = {};
     SECTION_DEFS.forEach(def => {
       map[def.key] = shuffle(allSections.filter(i => i.section_key === def.key));
     });
-    return map;
+    setSectionItemsMap(map);
+  // mountSeed.current 確保頁面每次 mount 時都重新洗牌（即使快取資料未變）
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allSections]);
+  }, [allSections, mountSeed.current]);
 
-  // 管理師：每次資料載入後真正隨機打亂（不固定順序）
-  const shuffledCleaners = useMemo(() => shuffle(
-    profiles.map(p => ({ ...p, click_count: 0, booking_count: 0, sort_order: 99 }))
+  // 管理師：資料到位後立即隨機
+  const [shuffledCleaners, setShuffledCleaners] = useState([]);
+  useEffect(() => {
+    if (!profiles.length) return;
+    setShuffledCleaners(shuffle(profiles.map(p => ({ ...p, click_count: 0, booking_count: 0, sort_order: 99 }))));
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  ), [profiles]);
+  }, [profiles, mountSeed.current]);
 
-  // 商品 shuffle
-  const shuffledProducts = useMemo(() => shuffle(products), [products]);
+  // 商品隨機
+  const [shuffledProducts, setShuffledProducts] = useState([]);
+  useEffect(() => {
+    if (!products.length) return;
+    setShuffledProducts(shuffle(products));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [products, mountSeed.current]);
 
   // ── 無限滾動：維護已顯示的輪次 ──
   // 每輪 = 8 個模塊（隨機打亂順序）
