@@ -222,8 +222,8 @@ export default function HomeServiceSections({ user, userAddress }) {
   const track = useTrack(user, userAddress);
   const safeTrack = track || (() => {});
 
-  // 每次 mount 產生一個隨機 seed，強制所有 shuffle 重新執行
-  const mountSeed = useRef(Math.random());
+  // 每次 mount 產生一個隨機 seed（useState 確保 effect deps 能偵測到）
+  const [mountSeed] = useState(() => Math.random());
 
   const { data: allSections = [] } = useQuery({
     queryKey: ['homeSections'],
