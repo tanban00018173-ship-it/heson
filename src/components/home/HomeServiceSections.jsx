@@ -231,30 +231,12 @@ export default function HomeServiceSections({ user, userAddress }) {
     queryFn: () => base44.entities.ShopProduct.filter({ is_active: true }, 'sort_order', 16),
   });
 
-  // 每個模塊的卡片，帶 jitter 排序，且盡量讓各模塊首位 provider 不重複
+  // 每個模塊的卡片，帶 jitter 排序（memo 在 allSections/userAddress 變化時重算）
   const sectionItemsMap = useMemo(() => {
     const map = {};
-    const usedProviders = new Set(); // 已被其他模塊放在首位的 provider_id
-
     SECTION_DEFS.forEach(def => {
-      const sorted = sortWithJitter(allSections.filter(i => i.section_key === def.key), userAddress);
-
-      // 嘗試把首位不重複的 provider 移到最前
-      const firstUnused = sorted.findIndex(item => item.provider_id && !usedProviders.has(item.provider_id));
-      if (firstUnused > 0) {
-        const reordered = [...sorted];
-        const [picked] = reordered.splice(firstUnused, 1);
-        reordered.unshift(picked);
-        map[def.key] = reordered;
-      } else {
-        map[def.key] = sorted;
-      }
-
-      // 記錄本模塊首位 provider（若有）
-      const first = map[def.key][0];
-      if (first?.provider_id) usedProviders.add(first.provider_id);
+      map[def.key] = sortWithJitter(allSections.filter(i => i.section_key === def.key), userAddress);
     });
-
     return map;
   }, [allSections, userAddress]);
 
