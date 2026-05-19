@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { Star, ArrowRight, Shield, Zap, ShoppingBag, Sparkles, Home, Wrench, Snowflake, RefreshCw, Package } from 'lucide-react';
 import { sortByRelevance } from '@/lib/useNearbyRecommend';
 import { useTrack } from '@/lib/useTrack';
+import VendorShowcaseRow from './VendorShowcaseRow';
 
 /* ─── 隨機洗牌（Fisher-Yates） ─── */
 function shuffle(arr) {
@@ -240,19 +241,30 @@ export default function HomeServiceSections({ user, userAddress }) {
 
   return (
     <div>
-      {rounds.map((roundDefs, roundIdx) =>
-        roundDefs.map(def => (
-          <SectionRow
-            key={`${roundIdx}-${def.key}`}
-            def={def}
-            items={sectionItemsMap[def.key] || []}
-            cleaners={shuffledCleaners}
-            reviews={reviews}
-            products={shuffledProducts}
-            onTrack={safeTrack}
-          />
-        ))
-      )}
+      {rounds.map((roundDefs, roundIdx) => (
+        <React.Fragment key={roundIdx}>
+          {roundDefs.map((def, defIdx) => (
+            <React.Fragment key={`${roundIdx}-${def.key}`}>
+              <SectionRow
+                def={def}
+                items={sectionItemsMap[def.key] || []}
+                cleaners={shuffledCleaners}
+                reviews={reviews}
+                products={shuffledProducts}
+                onTrack={safeTrack}
+              />
+              {/* 每輪第 4 個模塊後插入廠商展示列 */}
+              {defIdx === 3 && (
+                <VendorShowcaseRow
+                  key={`vendor-${roundIdx}`}
+                  allSections={allSections}
+                  onTrack={safeTrack}
+                />
+              )}
+            </React.Fragment>
+          ))}
+        </React.Fragment>
+      ))}
       {/* 底部觸發器 */}
       <div ref={bottomRef} className="h-16 flex items-center justify-center">
         <div className="w-6 h-6 border-2 border-stone-200 border-t-stone-500 rounded-full animate-spin" />
