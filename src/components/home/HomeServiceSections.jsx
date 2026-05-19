@@ -45,17 +45,17 @@ function DbCard({ item, onTrack }) {
       base44.entities.HomeSection.update(item.id, { click_count: (item.click_count || 0) + 1 }).catch(() => {});
       navigate('/ClientBooking');
     }}
-      className="flex-shrink-0 w-44 rounded-2xl overflow-hidden text-left active:scale-95 transition-transform border border-stone-100 shadow-sm bg-white"
+      className="flex-shrink-0 w-[60vw] max-w-[260px] rounded-2xl overflow-hidden text-left active:scale-95 transition-transform border border-stone-100 shadow-sm bg-white"
     >
-      <div className="h-24 bg-stone-100 flex items-center justify-center relative overflow-hidden">
+      <div className="h-36 bg-stone-100 flex items-center justify-center relative overflow-hidden">
         {item.image_url
           ? <img src={item.image_url} alt={item.title} className="w-full h-full object-cover" />
           : <span className="text-4xl">{item.emoji || '🧹'}</span>}
         {item.badge && <span className="absolute top-2 right-2 bg-white/90 text-stone-700 text-[9px] font-bold px-1.5 py-0.5 rounded-full">{item.badge}</span>}
       </div>
       <div className="p-3">
-        <p className="font-bold text-sm text-stone-800">{item.title}</p>
-        <p className="text-[11px] text-stone-400 mt-0.5 leading-tight">{item.subtitle}</p>
+        <p className="font-bold text-base text-stone-900 leading-snug">{item.title}</p>
+        <p className="text-xs text-stone-400 mt-0.5 leading-tight">{item.subtitle}</p>
         {item.price && <p className="text-sm font-bold text-stone-900 mt-1.5">NT$ {item.price.toLocaleString()} 起</p>}
       </div>
     </button>
@@ -69,9 +69,9 @@ function CleanerCard({ profile, reviews = [], onTrack }) {
     : null;
   return (
     <button onClick={() => { onTrack('click_cleaner', { section_key: 'featured_cleaners', target_id: profile.user_id, target_name: profile.nickname }); navigate(`/ServiceInquiry?cleaner=${profile.user_id}`); }}
-      className="flex-shrink-0 w-40 bg-white rounded-2xl overflow-hidden shadow-sm border border-stone-100 text-left active:scale-95 transition-transform"
+      className="flex-shrink-0 w-[55vw] max-w-[240px] bg-white rounded-2xl overflow-hidden shadow-sm border border-stone-100 text-left active:scale-95 transition-transform"
     >
-      <div className="relative h-24 bg-gradient-to-br from-stone-100 to-stone-200">
+      <div className="relative h-36 bg-gradient-to-br from-stone-100 to-stone-200">
         {profile.profile_photo
           ? <img src={profile.profile_photo} alt={profile.nickname} className="w-full h-full object-cover" />
           : <div className="w-full h-full flex items-center justify-center text-3xl">{profile.nickname?.[0] || '🧹'}</div>}
@@ -94,15 +94,15 @@ function ProductCard({ product, onTrack }) {
   const navigate = useNavigate();
   return (
     <button onClick={() => { onTrack('click_card', { section_key: 'shop', target_id: product.id, target_name: product.name }); navigate('/ClientShop'); }}
-      className="flex-shrink-0 w-36 bg-white rounded-2xl overflow-hidden shadow-sm border border-stone-100 text-left active:scale-95 transition-transform"
+      className="flex-shrink-0 w-[55vw] max-w-[240px] bg-white rounded-2xl overflow-hidden shadow-sm border border-stone-100 text-left active:scale-95 transition-transform"
     >
-      <div className="h-28 bg-stone-100 flex items-center justify-center overflow-hidden">
+      <div className="h-36 bg-stone-100 flex items-center justify-center overflow-hidden">
         {product.image_url ? <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" /> : <ShoppingBag className="w-10 h-10 text-stone-300" />}
       </div>
-      <div className="p-2.5">
-        <p className="text-sm font-bold text-stone-900">NT$ {product.price?.toLocaleString()}</p>
-        <p className="text-[11px] text-stone-600 mt-0.5 leading-tight line-clamp-2">{product.name}</p>
-        {product.unit && <p className="text-[10px] text-stone-400 mt-0.5">{product.unit}</p>}
+      <div className="p-3">
+        <p className="text-base font-bold text-stone-900">{product.name}</p>
+        <p className="text-sm font-black text-stone-900 mt-1">NT$ {product.price?.toLocaleString()}</p>
+        {product.unit && <p className="text-xs text-stone-400 mt-0.5">{product.unit}</p>}
       </div>
     </button>
   );
@@ -112,8 +112,8 @@ function PlaceholderCards({ count = 3 }) {
   return (
     <>
       {Array.from({ length: count }).map((_, i) => (
-        <div key={i} className="flex-shrink-0 w-44 rounded-2xl overflow-hidden border border-dashed border-stone-200 bg-stone-50">
-          <div className="h-24 flex items-center justify-center text-stone-200 text-3xl">🧹</div>
+        <div key={i} className="flex-shrink-0 w-[60vw] max-w-[260px] rounded-2xl overflow-hidden border border-dashed border-stone-200 bg-stone-50">
+          <div className="h-36 flex items-center justify-center text-stone-200 text-3xl">🧹</div>
           <div className="p-3">
             <div className="h-3 bg-stone-200 rounded-full w-3/4 mb-2 animate-pulse" />
             <div className="h-2.5 bg-stone-100 rounded-full w-1/2 animate-pulse" />
@@ -151,18 +151,20 @@ function SectionRow({ def, items, cleaners, reviews, products, onTrack }) {
   };
 
   return (
-    <section className="bg-white mt-2 pt-4 pb-1">
+    <section className="bg-white mt-2 pt-5 pb-2">
       <div className="flex items-center justify-between px-4 mb-3">
         <div className="flex items-center gap-2">
-          <Icon className="w-4 h-4 text-stone-600" />
-          <p className="text-sm font-bold text-stone-800">{def.title}</p>
+          <h2 className="text-xl font-black text-stone-900 tracking-tight">{def.title}</h2>
           {def.badge && <span className="text-[10px] font-bold px-1.5 py-0.5 bg-red-500 text-white rounded-full">{def.badge}</span>}
         </div>
-        <button onClick={() => navigate(def.ctaPath)} className="flex items-center gap-1 text-xs text-stone-500 hover:text-stone-800 transition-colors">
-          {def.cta} <ArrowRight className="w-3.5 h-3.5" />
+        <button
+          onClick={() => navigate(def.ctaPath)}
+          className="w-9 h-9 rounded-full bg-stone-100 flex items-center justify-center hover:bg-stone-200 transition-colors flex-shrink-0"
+        >
+          <ArrowRight className="w-4 h-4 text-stone-700" />
         </button>
       </div>
-      <div className="flex gap-3 px-4 overflow-x-auto pb-4 scrollbar-none">
+      <div className="flex gap-3 pl-4 pr-2 overflow-x-auto pb-4 scrollbar-none">
         {renderContent()}
       </div>
     </section>
