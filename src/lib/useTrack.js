@@ -1,6 +1,11 @@
+/**
+ * useTrack — 輕量行為追蹤 hook
+ * 記錄用戶在首頁的每個點擊/瀏覽事件到 UserBehavior entity
+ */
 import { useCallback, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 
+// 產生或讀取 session ID
 function getSessionId() {
   let sid = sessionStorage.getItem('_heson_sid');
   if (!sid) {
@@ -25,7 +30,7 @@ export function useTrack(user, userAddress) {
         ...payload,
       });
     } catch {
-      // 靜默失敗
+      // 靜默失敗，不影響主流程
     }
   }, [user, userAddress]);
 

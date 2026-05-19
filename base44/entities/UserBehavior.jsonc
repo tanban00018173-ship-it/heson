@@ -1,0 +1,76 @@
+{
+  "name": "UserBehavior",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "\u7528\u6236 ID\uff08\u53ef\u70ba\u7a7a\uff0c\u4ee3\u8868\u8a2a\u5ba2\uff09"
+    },
+    "session_id": {
+      "type": "string",
+      "description": "\u700f\u89bd session ID"
+    },
+    "event_type": {
+      "type": "string",
+      "enum": [
+        "view_section",
+        "click_card",
+        "click_cleaner",
+        "search",
+        "book_start",
+        "book_complete",
+        "review_submit"
+      ],
+      "description": "\u4e8b\u4ef6\u985e\u578b"
+    },
+    "section_key": {
+      "type": "string",
+      "description": "\u767c\u751f\u5728\u54ea\u500b\u6a21\u584a"
+    },
+    "target_id": {
+      "type": "string",
+      "description": "\u9ede\u64ca\u76ee\u6a19 ID\uff08HomeSection ID / CleanerProfile ID\uff09"
+    },
+    "target_name": {
+      "type": "string",
+      "description": "\u9ede\u64ca\u76ee\u6a19\u540d\u7a31\uff08\u65b9\u4fbf\u5f8c\u53f0\u95b1\u8b80\uff09"
+    },
+    "user_lat": {
+      "type": "number",
+      "description": "\u7528\u6236\u7576\u6642\u4f4d\u7f6e\u7def\u5ea6"
+    },
+    "user_lng": {
+      "type": "number",
+      "description": "\u7528\u6236\u7576\u6642\u4f4d\u7f6e\u7d93\u5ea6"
+    },
+    "user_district": {
+      "type": "string",
+      "description": "\u7528\u6236\u5730\u5740\uff08\u4f86\u81ea\u9810\u8a2d\u5730\u5740\uff09"
+    },
+    "extra": {
+      "type": "object",
+      "description": "\u984d\u5916\u8cc7\u8a0a\uff08\u641c\u5c0b\u95dc\u9375\u5b57\u3001\u505c\u7559\u79d2\u6578\u7b49\uff09"
+    }
+  },
+  "required": [
+    "event_type"
+  ],
+  "rls": {
+    "create": {},
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

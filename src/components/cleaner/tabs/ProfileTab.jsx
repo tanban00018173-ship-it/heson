@@ -107,6 +107,7 @@ export default function ProfileTab({ user, cleanerProfile, stats = {} }) {
           <p className="px-4 pt-4 pb-2 text-xs font-semibold text-stone-400 uppercase tracking-wider">作品集 & 資歷</p>
           {[
             { icon: Store, label: '我的師傅頁', desc: '上傳照片、介紹，讓客戶認識你', to: '/CleanerStorefront' },
+            { icon: Store, label: '首頁推薦管理', desc: '設定你出現在哪個分類模塊', to: '/ProviderSectionManager' },
             { icon: Camera, label: '上架作品集照片', desc: '展示清潔成果給客戶看' },
             { icon: Award, label: '我的認證技能', desc: '查看已解鎖的技能證書' },
             { icon: FileText, label: '個人資料設定', desc: '更新姓名、服務地區等', to: '/CleanerProfile' },
