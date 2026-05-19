@@ -1,8 +1,11 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
 const SPREADSHEET_ID = '1U0V5hXjrBo8Qh51vpPb6TfF2LOp05pKXTgtakz_YZvQ';
+// 地址座標資料來源（syncBookingAddress 寫入的試算表）
+const COORD_SPREADSHEET_ID = '1AgmwQLTTtslxU8Fn5GNdF9IjDAf4ih7ea5zmCUbuWWs';
+const COORD_SHEET_NAME = '地址座標資料';
 
-// 將欄位索引轉換為 A1 表示法（0→A, 1→B, 26→AA ...）
+// 將欄位索引轉換為 A1 表示法
 function colLetter(idx) {
   let s = '';
   let n = idx + 1;
@@ -19,7 +22,33 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
     const { accessToken } = await base44.asServiceRole.connectors.getConnection('googlesheets');
 
-    // 1. 取得試算表所有工作表名稱
+    // 1. 從「地址座標資料」表讀取所有地址→座標映射
+    const coordRes = await fetch(
+      `https://sheets.googleapis.com/v4/spreadsheets/${COORD_SPREADSHEET_ID}/values/${encodeURIComponent(COORD_SHEET_NAME + '!A:G')}`,
+      { headers: { 'Authorization': `Bearer ${accessToken}` } }
+    );
+    const coordData = await coordRes.json();
+    const coordRows = coordData.values || [];
+
+    // 建立地址→Maps連結的 map（標題行: A=預約ID, B=客戶姓名, C=服務類型, D=服務地址, E=緯度, F=經度, G=Google Maps連結）
+    // 跳過標題列（第0行）
+    const addressToLink = {};
+    for (let i = 1; i < coordRows.length; i++) {
+      const row = coordRows[i];
+      const addr = (row[3] || '').trim();   // D欄：服務地址
+      const lat  = (row[4] || '').trim();   // E欄：緯度
+      const lng  = (row[5] || '').trim();   // F欄：經度
+      const link = (row[6] || '').trim();   // G欄：Google Maps連結
+      if (addr && lat && lng) {
+        // 用座標生成連結（最準確）
+        addressToLink[addr] = `https://www.google.com/maps?q=${lat},${lng}`;
+      } else if (addr && link && link.startsWith('http')) {
+        // 備用：直接用已有連結
+        addressToLink[addr] = link;
+      }
+    }
+
+    // 2. 取得目標試算表所有工作表
     const metaRes = await fetch(
       `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}?fields=sheets.properties`,
       { headers: { 'Authorization': `Bearer ${accessToken}` } }
@@ -32,7 +61,7 @@ Deno.serve(async (req) => {
     for (const sheet of sheets) {
       const sheetName = sheet.properties.title;
 
-      // 2. 讀取第1列（標題）
+      // 3. 讀取標題列
       const headerRes = await fetch(
         `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(sheetName + '!1:1')}`,
         { headers: { 'Authorization': `Bearer ${accessToken}` } }
@@ -40,7 +69,7 @@ Deno.serve(async (req) => {
       const headerData = await headerRes.json();
       const headers = headerData.values?.[0] || [];
 
-      // 3. 找「地址」欄（包含「地址」、「需要服務地址」等關鍵字）
+      // 找地址欄
       const addrColIdx = headers.findIndex(h =>
         typeof h === 'string' && (h.includes('地址') || h.includes('address'))
       );
@@ -50,12 +79,10 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      // 4. 決定「地址連結」欄：看看標題列有沒有已存在的「地址連結」欄
+      // 決定「地址連結」欄位置
       let linkColIdx = headers.findIndex(h =>
         typeof h === 'string' && (h.includes('地址連結') || h.includes('map') || h.toLowerCase().includes('maps'))
       );
-
-      // 若沒有則放在地址欄的下一欄
       if (linkColIdx < 0) {
         linkColIdx = addrColIdx + 1;
       }
@@ -63,7 +90,7 @@ Deno.serve(async (req) => {
       const linkColLetter = colLetter(linkColIdx);
       const addrColLetter = colLetter(addrColIdx);
 
-      // 5. 若「地址連結」標題不存在，先寫入標題
+      // 若「地址連結」標題不存在，先寫入標題
       if (!headers[linkColIdx] || !headers[linkColIdx].includes('地址連結')) {
         await fetch(
           `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(sheetName + '!' + linkColLetter + '1')}?valueInputOption=USER_ENTERED`,
@@ -75,37 +102,49 @@ Deno.serve(async (req) => {
         );
       }
 
-      // 6. 讀取地址欄所有資料（從第2列開始）
+      // 4. 讀取地址欄所有資料（從第2列開始）
       const dataRes = await fetch(
         `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(sheetName + '!' + addrColLetter + '2:' + addrColLetter + '2000')}`,
         { headers: { 'Authorization': `Bearer ${accessToken}` } }
       );
-      const dataData = await dataRes.json();
-      const addrRows = dataData.values || [];
+      const addrRows = (await dataRes.json()).values || [];
 
       if (addrRows.length === 0) {
         results.push({ sheet: sheetName, skipped: true, reason: '無資料列' });
         continue;
       }
 
-      // 7. 讀取現有的地址連結欄（避免覆蓋已有的）
+      // 5. 讀取現有連結欄（不覆蓋已有座標連結）
       const linkDataRes = await fetch(
         `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(sheetName + '!' + linkColLetter + '2:' + linkColLetter + '2000')}`,
         { headers: { 'Authorization': `Bearer ${accessToken}` } }
       );
-      const linkData = await linkDataRes.json();
-      const existingLinks = linkData.values || [];
+      const existingLinks = (await linkDataRes.json()).values || [];
 
-      // 8. 建立要寫入的連結值（只處理有地址但連結是空的列）
+      // 6. 產生連結：優先用座標查詢，找不到才用地址文字
+      let filled = 0;
       const linkValues = addrRows.map((row, i) => {
         const addr = (row[0] || '').trim();
         const existing = (existingLinks[i]?.[0] || '').trim();
+
         if (!addr) return [''];
-        if (existing && existing.startsWith('http')) return [existing]; // 已有連結，保留
-        return [`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addr)}`];
+
+        // 已有座標連結（包含 ?q= 格式）就保留
+        if (existing && existing.includes('maps?q=')) return [existing];
+
+        // 從座標資料查找
+        const coordLink = addressToLink[addr];
+        if (coordLink) {
+          filled++;
+          return [coordLink];
+        }
+
+        // 找不到座標：保留已有連結，或留空（不再用地址文字反查）
+        if (existing && existing.startsWith('http')) return [existing];
+        return ['（無座標資料）'];
       });
 
-      // 9. 批次寫入
+      // 7. 批次寫入
       const writeRange = `${sheetName}!${linkColLetter}2:${linkColLetter}${addrRows.length + 1}`;
       const writeRes = await fetch(
         `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(writeRange)}?valueInputOption=USER_ENTERED`,
@@ -122,12 +161,11 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      const filled = linkValues.filter(v => v[0]?.startsWith('http')).length;
       results.push({
         sheet: sheetName,
         addrCol: addrColLetter,
         linkCol: linkColLetter,
-        filled,
+        filledWithCoords: filled,
         total: addrRows.length,
       });
     }
