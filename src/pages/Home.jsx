@@ -2,6 +2,7 @@ import React, { useRef, useState, useEffect } from 'react';
 import ClientBottomNav from "@/components/dashboard/ClientBottomNav";
 import HomeTopBar from "@/components/home/HomeTopBar";
 import HeroBanner from "@/components/home/HeroBanner";
+import ServiceGrid from "@/components/home/ServiceGrid";
 import CartDrawer from "@/components/home/CartDrawer";
 import HesonAIChat from "@/components/HesonAIChat";
 import AddressBar from "@/components/home/AddressBar";
@@ -12,21 +13,18 @@ import { base44 } from "@/api/base44Client";
 
 export default function Home() {
   const chatRef = useRef(null);
-  const [user, setUser] = useState(null);
   const [userId, setUserId] = useState(null);
-  const [userAddress, setUserAddress] = useState(null);
   const [defaultAddress, setDefaultAddress] = useState('台北市・居家服務');
 
   useEffect(() => {
     base44.auth.isAuthenticated().then(ok => {
       if (!ok) return;
       base44.auth.me().then(async (u) => {
-        setUser(u);
         setUserId(u.id);
+        // Try to load default address
         const addrs = await base44.entities.UserAddress.filter({ user_id: u.id });
         const def = addrs?.find(a => a.is_default) || addrs?.[0];
         if (def) {
-          setUserAddress(def);
           setDefaultAddress(`${def.district || def.city}・${def.street?.slice(0, 8) || '居家服務'}`);
         }
       });
@@ -55,7 +53,7 @@ export default function Home() {
         </div>
 
         {/* Service sections */}
-        <HomeServiceSections user={user} userAddress={userAddress} />
+        <HomeServiceSections />
 
         {/* Recent bookings */}
         <RecentBookings userId={userId} />
