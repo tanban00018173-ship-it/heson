@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { Star, Shield, MapPin, X } from 'lucide-react';
+import { Star, Shield, MapPin, X, Sparkles, Tag, TrendingUp, Flame, Zap, User } from 'lucide-react';
 
 /* ── 彩色 SVG icon 定義 ── */
 const icons = {
@@ -84,11 +84,11 @@ const CATEGORIES = [
 
 /* ── 篩選標籤（下排，複選） ── */
 const FILTERS = [
-  { id: 'premium',  label: '✦ Heson Premium' },
-  { id: 'deal',     label: '優惠方案' },
-  { id: 'top',      label: '⭐ 評分最高' },
-  { id: 'popular',  label: '🔥 熱門首選' },
-  { id: 'flash',    label: '⚡ 快速到府' },
+  { id: 'premium',  label: 'Heson Premium', Icon: Sparkles },
+  { id: 'deal',     label: '優惠方案',       Icon: Tag },
+  { id: 'top',      label: '評分最高',       Icon: Star },
+  { id: 'popular',  label: '熱門首選',       Icon: Flame },
+  { id: 'flash',    label: '快速到府',       Icon: Zap },
 ];
 
 /* ── 管理師卡片 ── */
@@ -101,7 +101,7 @@ function CleanerCard({ cleaner, avgRating, onClick }) {
       <div className="w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 bg-stone-100 flex items-center justify-center">
         {cleaner.profile_photo
           ? <img src={cleaner.profile_photo} alt={cleaner.nickname} className="w-full h-full object-cover" />
-          : <span className="text-2xl text-stone-300">👤</span>}
+          : <User className="w-7 h-7 text-stone-300" />}
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5 mb-0.5">
@@ -249,16 +249,18 @@ export default function CategoryChips() {
       <div className="flex overflow-x-auto gap-2 px-4 pb-3 pt-1 scrollbar-none">
         {FILTERS.map((f) => {
           const active = selectedFilters.includes(f.id);
+          const FIcon = f.Icon;
           return (
             <button
               key={f.id}
               onClick={() => toggleFilter(f.id)}
-              className={`flex items-center px-3.5 py-1.5 rounded-full text-[11px] font-semibold whitespace-nowrap transition-colors flex-shrink-0 ${
+              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[11px] font-semibold whitespace-nowrap transition-colors flex-shrink-0 ${
                 active
                   ? 'bg-stone-900 text-white'
                   : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
               }`}
             >
+              <FIcon className="w-3 h-3" />
               {f.label}
             </button>
           );
@@ -294,7 +296,7 @@ export default function CategoryChips() {
               ))
             ) : results.length === 0 ? (
               <div className="text-center py-8 text-stone-400">
-                <p className="text-3xl mb-2">🔍</p>
+                <MapPin className="w-8 h-8 mx-auto mb-2 opacity-40" />
                 <p className="text-sm">目前沒有符合條件的管理師</p>
                 <button
                   onClick={() => navigate('/ServiceInquiry')}
