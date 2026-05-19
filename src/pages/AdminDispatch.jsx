@@ -177,7 +177,18 @@ export default function AdminDispatch() {
                         {booking.address && (
                           <div className="flex items-start gap-2 text-sm text-stone-600">
                             <MapPin className="w-4 h-4 text-stone-400 flex-shrink-0 mt-0.5" />
-                            <span className="line-clamp-2">{booking.address}</span>
+                            <a
+                              href={booking.gps_lat && booking.gps_lng
+                                ? `https://www.google.com/maps?q=${booking.gps_lat},${booking.gps_lng}`
+                                : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(booking.address)}`
+                              }
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="line-clamp-2 text-blue-600 hover:underline"
+                              onClick={e => e.stopPropagation()}
+                            >
+                              {booking.address}
+                            </a>
                           </div>
                         )}
                       </div>
@@ -211,7 +222,20 @@ export default function AdminDispatch() {
                 <p className="text-sm text-stone-500 mt-1">
                   {selectedBooking.scheduled_date && format(new Date(selectedBooking.scheduled_date), 'M月d日 (EEE)', { locale: zhTW })} · {selectedBooking.time_slot}
                 </p>
-                <p className="text-sm text-stone-500 mt-1">{selectedBooking.address}</p>
+                {selectedBooking.address && (
+                  <a
+                    href={selectedBooking.gps_lat && selectedBooking.gps_lng
+                      ? `https://www.google.com/maps?q=${selectedBooking.gps_lat},${selectedBooking.gps_lng}`
+                      : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selectedBooking.address)}`
+                    }
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-blue-600 hover:underline mt-1 flex items-center gap-1"
+                  >
+                    <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
+                    {selectedBooking.address}
+                  </a>
+                )}
               </div>
 
               <div className="space-y-2">
