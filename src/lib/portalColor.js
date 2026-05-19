@@ -48,8 +48,8 @@ export function getPortalIconColor(portal, role, hasPremium = false) {
 
 // 顏色對應的 Tailwind class
 export const COLOR_CLASSES = {
-  blue:  'text-blue-500',
-  red:   'text-red-500',
+  blue:  'text-blue-800',
+  red:   'text-red-800',
   gold:  'text-amber-500',
   black: 'text-stone-900',
 };

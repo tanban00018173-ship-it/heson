@@ -61,8 +61,9 @@ export default function ClientBottomNav() {
     }
   };
 
+  // 只有 iconColor 確認有值（user 已載入）才顯示特殊色；否則走一般灰/黑邏輯，避免 loading 期間閃色
   const iconColorClass = isProfileActive
-    ? (iconColor ? COLOR_CLASSES[iconColor] : 'text-stone-900')
+    ? (iconColor ? COLOR_CLASSES[iconColor] : (user ? 'text-stone-900' : 'text-stone-300'))
     : 'text-stone-300';
 
   return (
