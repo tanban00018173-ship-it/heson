@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import React, { useRef, useState, useEffect } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { Home, ShoppingBag, Zap, Bell, User } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
@@ -9,11 +9,54 @@ const TABS = [
   { id: 'shop',    icon: ShoppingBag, label: '商店',  path: 'ClientShop' },
   { id: 'task',    icon: Zap,         label: '任務',  path: 'FlashTaskPost', primary: true },
   { id: 'notify',  icon: Bell,        label: '通知',  path: 'MyBookings' },
-  { id: 'profile', icon: User,        label: '我的',  path: 'ClientProfile' },
 ];
+
+function getNextPortal(currentPath, role) {
+  if (currentPath.startsWith('/Admin')) return '/Home';
+  if (currentPath.startsWith('/Cleaner')) {
+    return role === 'admin' ? '/AdminDashboard' : '/Home';
+  }
+  // 前台 → 中台
+  return '/CleanerJobs';
+}
 
 export default function ClientBottomNav() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const [user, setUser] = useState(null);
+  const [clickCount, setClickCount] = useState(0);
+  const clickTimer = useRef(null);
+
+  useEffect(() => {
+    base44.auth.isAuthenticated().then(auth => {
+      if (auth) base44.auth.me().then(u => setUser(u));
+    });
+  }, []);
+
+  const hasPortalAccess = user?.role === 'admin' || user?.role === 'cleaner';
+
+  const handleProfileClick = () => {
+    if (!hasPortalAccess) {
+      navigate(createPageUrl('ClientProfile'));
+      return;
+    }
+    const newCount = clickCount + 1;
+    setClickCount(newCount);
+    clearTimeout(clickTimer.current);
+    if (newCount >= 2) {
+      setClickCount(0);
+      const dest = getNextPortal(location.pathname, user.role);
+      navigate(dest);
+    } else {
+      clickTimer.current = setTimeout(() => {
+        setClickCount(0);
+        navigate(createPageUrl('ClientProfile'));
+      }, 400);
+    }
+  };
+
+  const profilePath = 'ClientProfile';
+  const isProfileActive = location.pathname === `/${profilePath}` || location.pathname.includes(profilePath);
 
   return (
     <div
@@ -51,6 +94,23 @@ export default function ClientBottomNav() {
             </Link>
           );
         })}
+
+        {/* 我的 — 雙擊切換台端 */}
+        <button
+          onClick={handleProfileClick}
+          className="flex-1 flex flex-col items-center justify-center py-2.5 gap-0.5 transition-colors relative"
+        >
+          {isProfileActive && (
+            <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-stone-900 rounded-full" />
+          )}
+          <User
+            className={`w-5 h-5 transition-colors ${isProfileActive ? 'text-stone-900' : 'text-stone-300'}`}
+            strokeWidth={isProfileActive ? 2.5 : 1.8}
+          />
+          <span className={`text-[10px] font-medium transition-colors ${isProfileActive ? 'text-stone-900' : 'text-stone-300'}`}>
+            我的
+          </span>
+        </button>
       </div>
     </div>
   );
