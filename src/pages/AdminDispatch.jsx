@@ -178,6 +178,17 @@ export default function AdminDispatch() {
                           <div className="flex items-start gap-2 text-sm text-stone-600">
                             <MapPin className="w-4 h-4 text-stone-400 flex-shrink-0 mt-0.5" />
                             <span className="line-clamp-2">{booking.address}</span>
+                            {booking.gps_lat && booking.gps_lng && (
+                              <a
+                                href={`https://www.google.com/maps?q=${booking.gps_lat},${booking.gps_lng}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex-shrink-0 text-blue-500 hover:text-blue-700 underline text-xs whitespace-nowrap"
+                                onClick={e => e.stopPropagation()}
+                              >
+                                地圖
+                              </a>
+                            )}
                           </div>
                         )}
                       </div>
@@ -211,7 +222,19 @@ export default function AdminDispatch() {
                 <p className="text-sm text-stone-500 mt-1">
                   {selectedBooking.scheduled_date && format(new Date(selectedBooking.scheduled_date), 'M月d日 (EEE)', { locale: zhTW })} · {selectedBooking.time_slot}
                 </p>
-                <p className="text-sm text-stone-500 mt-1">{selectedBooking.address}</p>
+                <div className="flex items-center gap-2 mt-1">
+                  <p className="text-sm text-stone-500">{selectedBooking.address}</p>
+                  {selectedBooking.gps_lat && selectedBooking.gps_lng && (
+                    <a
+                      href={`https://www.google.com/maps?q=${selectedBooking.gps_lat},${selectedBooking.gps_lng}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-shrink-0 flex items-center gap-1 text-blue-500 hover:text-blue-700 text-xs underline"
+                    >
+                      <MapPin className="w-3 h-3" />開啟地圖
+                    </a>
+                  )}
+                </div>
               </div>
 
               <div className="space-y-2">
