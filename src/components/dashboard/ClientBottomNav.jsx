@@ -17,28 +17,36 @@ const TABS = [
   { id: 'notify', icon: Bell,        label: '通知', path: 'MyBookings' },
 ];
 
+const CACHE_KEY = 'client_nav_cache';
+
 export default function ClientBottomNav() {
   const location = useLocation();
   const navigate = useNavigate();
-  const [user, setUser] = useState(null);
-  const [clientProfile, setClientProfile] = useState(null);
   const lastClickTime = useRef(0);
+
+  // 從 localStorage 讀取快取，立即初始化（避免閃色）
+  const cached = (() => { try { return JSON.parse(localStorage.getItem(CACHE_KEY) || 'null'); } catch { return null; } })();
+  const [userRole, setUserRole] = useState(cached?.role ?? null);
+  const [hasPremium, setHasPremium] = useState(cached?.hasPremium ?? false);
+  const [userLoaded, setUserLoaded] = useState(!!cached);
 
   useEffect(() => {
     base44.auth.isAuthenticated().then(ok => {
       if (!ok) return;
       base44.auth.me().then(async (u) => {
-        setUser(u);
-        // 抓 premium 狀態
         const profiles = await base44.entities.ClientProfile.filter({ user_id: u.id });
-        if (profiles?.[0]) setClientProfile(profiles[0]);
+        const profile = profiles?.[0];
+        const premium = !!(profile?.subscription_plan && profile.subscription_plan !== '無');
+        setUserRole(u.role);
+        setHasPremium(premium);
+        setUserLoaded(true);
+        localStorage.setItem(CACHE_KEY, JSON.stringify({ role: u.role, hasPremium: premium }));
       });
     });
   }, []);
 
   const portal = getCurrentPortal(location.pathname);
-  const hasPremium = clientProfile?.subscription_plan && clientProfile.subscription_plan !== '無';
-  const iconColor = getPortalIconColor(portal, user?.role, hasPremium);
+  const iconColor = userLoaded ? getPortalIconColor(portal, userRole, hasPremium) : null;
   const hasPortalAccess = !!iconColor;
 
   const profilePath = '/ClientProfile';
@@ -55,15 +63,14 @@ export default function ClientBottomNav() {
 
     if (diff < 400) {
       lastClickTime.current = 0;
-      navigate(getNextPortalPath(portal, user?.role));
+      navigate(getNextPortalPath(portal, userRole));
     } else {
       navigate(profilePath);
     }
   };
 
-  // 只有 iconColor 確認有值（user 已載入）才顯示特殊色；否則走一般灰/黑邏輯，避免 loading 期間閃色
   const iconColorClass = isProfileActive
-    ? (iconColor ? COLOR_CLASSES[iconColor] : (user ? 'text-stone-900' : 'text-stone-300'))
+    ? (iconColor ? COLOR_CLASSES[iconColor] : (userLoaded ? 'text-stone-900' : 'text-stone-300'))
     : 'text-stone-300';
 
   return (
