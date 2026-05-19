@@ -303,9 +303,9 @@ export default function HomeServiceSections({ user, userAddress }) {
 
   return (
     <div>
-      {/* ── 置頂：Heson 精選推薦（品牌廣告面板） ── */}
+      {/* ── 置頂：Heson 精選推薦（取前半段，避免與口碑模塊重複） ── */}
       <HesonPicksSection
-        cleaners={shuffledCleaners}
+        cleaners={shuffledCleaners.slice(0, Math.ceil(shuffledCleaners.length / 2))}
         reviews={reviews}
         onTrack={safeTrack}
       />
@@ -317,7 +317,14 @@ export default function HomeServiceSections({ user, userAddress }) {
           {roundDefs.map((def, defIdx) => {
             const rawItems = sectionItemsMap[def.key] || [];
             const dedupedItems = dedupeItems(rawItems, usedProviderIds);
-            const dedupedCleaners = dedupeCleaners(shuffledCleaners, usedProviderIds);
+
+            // featured_cleaners：取後半段（前半段已給 Heson 精選），避免重複
+            // 未來邏輯：可依 def.key（section_key）篩選有對應標籤的管理師
+            const half = Math.ceil(shuffledCleaners.length / 2);
+            const cleanersPool = def.key === 'featured_cleaners'
+              ? shuffledCleaners.slice(half)
+              : shuffledCleaners;
+            const dedupedCleaners = dedupeCleaners(cleanersPool, usedProviderIds);
 
             // 記錄本模塊第一個 provider（管理師或卡片）
             if (def.key === 'featured_cleaners') {
