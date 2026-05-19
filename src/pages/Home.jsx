@@ -1,9 +1,7 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import ClientBottomNav from "@/components/dashboard/ClientBottomNav";
 import HomeTopBar from "@/components/home/HomeTopBar";
-import HeroBanner from "@/components/home/HeroBanner";
 import CartDrawer from "@/components/home/CartDrawer";
-import HesonAIChat from "@/components/HesonAIChat";
 import AddressBar from "@/components/home/AddressBar";
 import CategoryChips from "@/components/home/CategoryChips";
 import HomeServiceSections from "@/components/home/HomeServiceSections";
@@ -11,7 +9,6 @@ import RecentBookings from "@/components/home/RecentBookings";
 import { base44 } from "@/api/base44Client";
 
 export default function Home() {
-  const chatRef = useRef(null);
   const [user, setUser] = useState(null);
   const [userId, setUserId] = useState(null);
   const [userAddress, setUserAddress] = useState(null);
@@ -33,38 +30,18 @@ export default function Home() {
     });
   }, []);
 
-  const handleChatOpen = () => {
-    window.dispatchEvent(new CustomEvent('heson:open-chat'));
-  };
-
   return (
     <div className="min-h-screen bg-stone-50">
-      {/* Top search bar */}
-      <HomeTopBar onChatOpen={handleChatOpen} />
+      <HomeTopBar />
 
       <main className="pb-28">
-        {/* Address bar */}
         <AddressBar address={defaultAddress} />
-
-        {/* Category chips */}
         <CategoryChips />
-
-        {/* Hero banner */}
-        <div className="mt-2">
-          <HeroBanner />
-        </div>
-
-        {/* Service sections */}
         <HomeServiceSections user={user} userAddress={userAddress} />
-
-        {/* Recent bookings */}
         <RecentBookings userId={userId} />
-
-
       </main>
 
       <CartDrawer />
-      <HesonAIChat autoOpenEvent="heson:open-chat" />
       <ClientBottomNav />
     </div>
   );
