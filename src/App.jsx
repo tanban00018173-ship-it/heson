@@ -34,6 +34,7 @@ import ClientPersonalInfo from './pages/ClientPersonalInfo'
 import ClientAddressList from './pages/ClientAddressList'
 import ClientAddressForm from './pages/ClientAddressForm'
 import VendorChatPage from './pages/VendorChatPage'
+import AdminPermissions from './pages/AdminPermissions'
 import { CartProvider } from './lib/CartContext'
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes, useNavigate, useLocation } from 'react-router-dom';
@@ -150,6 +151,7 @@ const AuthenticatedApp = () => {
       <Route path="/ClientAddressList" element={<ClientAddressList />} />
       <Route path="/ClientAddressForm" element={<ClientAddressForm />} />
       <Route path="/VendorChatPage" element={<VendorChatPage />} />
+      <Route path="/AdminPermissions" element={<LayoutWrapper currentPageName="AdminPermissions"><AdminPermissions /></LayoutWrapper>} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

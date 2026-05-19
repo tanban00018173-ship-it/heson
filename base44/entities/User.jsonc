@@ -1,0 +1,29 @@
+{
+  "name": "User",
+  "type": "object",
+  "properties": {
+    "role": {
+      "type": "string",
+      "enum": [
+        "admin",
+        "cleaner",
+        "user"
+      ],
+      "default": "user",
+      "description": "\u7cfb\u7d71\u89d2\u8272"
+    },
+    "admin_level": {
+      "type": "string",
+      "enum": [
+        "member",
+        "manager",
+        "operator"
+      ],
+      "description": "\u5f8c\u53f0\u7b49\u7d1a\uff1a\u6210\u54e1(member) / \u7ba1\u7406\u54e1(manager) / \u64cd\u4f5c\u8005(operator)\uff0c\u50c5 role=admin \u4f7f\u7528"
+    },
+    "admin_permissions": {
+      "type": "object",
+      "description": "\u5f8c\u53f0\u7d30\u90e8\u6b0a\u9650\u8986\u5beb {bookings, cleaners, clients, dispatch, finance, tools, users, settings}\uff0c\u503c\u70ba true/false"
+    }
+  }
+}

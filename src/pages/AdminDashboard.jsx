@@ -6,7 +6,7 @@ import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Users, ClipboardList, TrendingUp, Clock, CheckCircle, Table, ShoppingBag } from "lucide-react";
+import { Calendar, Users, ClipboardList, TrendingUp, Clock, CheckCircle, Table, ShoppingBag, Shield } from "lucide-react";
 import { motion } from "framer-motion";
 import { format } from "date-fns";
 import { zhTW } from "date-fns/locale";
@@ -193,13 +193,31 @@ export default function AdminDashboard() {
                         </Badge>
                       </div>
                     </Link>
+                    <Link to="/AdminPermissions">
+                      <div className="flex items-center justify-between p-3 bg-amber-50 rounded-xl hover:bg-amber-100 transition-colors cursor-pointer">
+                        <div className="flex items-center gap-2">
+                          <Shield className="w-4 h-4 text-amber-600" />
+                          <span className="text-sm text-stone-700">後台權限管理</span>
+                        </div>
+                        <Badge className="bg-amber-100 text-amber-700 text-xs">前往</Badge>
+                      </div>
+                    </Link>
                     <Link to="/AdminUsers">
                       <div className="flex items-center justify-between p-3 bg-stone-50 rounded-xl hover:bg-stone-100 transition-colors cursor-pointer">
                         <div className="flex items-center gap-2">
                           <Users className="w-4 h-4 text-stone-600" />
-                          <span className="text-sm text-stone-700">人員權限管理</span>
+                          <span className="text-sm text-stone-700">人員清單管理</span>
                         </div>
                         <Badge className="bg-stone-100 text-stone-600 text-xs">前往</Badge>
+                      </div>
+                    </Link>
+                    <Link to="/AdminPermissions">
+                      <div className="flex items-center justify-between p-3 bg-amber-50 rounded-xl hover:bg-amber-100 transition-colors cursor-pointer">
+                        <div className="flex items-center gap-2">
+                          <Shield className="w-4 h-4 text-amber-600" />
+                          <span className="text-sm text-stone-700">後台權限管理</span>
+                        </div>
+                        <Badge className="bg-amber-100 text-amber-700 text-xs">前往</Badge>
                       </div>
                     </Link>
                   </div>

@@ -9,14 +9,19 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const { userId, role } = await req.json();
+    const { userId, role, admin_level, admin_permissions } = await req.json();
     
     // Get user details to get email
     const targetUser = await base44.asServiceRole.entities.User.filter({ id: userId });
     const userEmail = targetUser?.[0]?.email;
     
-    // Update role
-    await base44.asServiceRole.entities.User.update(userId, { role });
+    // Build update payload
+    const updatePayload = { role };
+    if (admin_level !== undefined) updatePayload.admin_level = admin_level;
+    if (admin_permissions !== undefined) updatePayload.admin_permissions = admin_permissions;
+
+    // Update role (and optional admin sub-fields)
+    await base44.asServiceRole.entities.User.update(userId, updatePayload);
     
     // If role is "banned", automatically ban all associated devices
     if (role === 'banned' && userEmail) {
