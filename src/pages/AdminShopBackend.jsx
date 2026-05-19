@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import AdminBottomNav from '@/components/dashboard/AdminBottomNav';
+import AdminBottomNav from '@/components/dashboard/AdminBottomNav.jsx';
 import { Plus, Package, ToggleLeft, ToggleRight, Edit3, AlertCircle } from 'lucide-react';
 
 export default function AdminShopBackend() {

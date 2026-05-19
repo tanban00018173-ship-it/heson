@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
-import AdminBottomNav from '@/components/dashboard/AdminBottomNav';
+import AdminBottomNav from '@/components/dashboard/AdminBottomNav.jsx';
 import { resolvePermissions, PERMISSION_KEYS } from '@/lib/adminPermissions';
 import {
   LogOut, ChevronRight, Shield, Users, ClipboardList,

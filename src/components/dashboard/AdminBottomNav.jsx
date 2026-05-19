@@ -1,7 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { createPageUrl } from '@/utils';
-import { BarChart3, Calendar, Plus, Users, Wrench, User } from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import {
+  ShoppingBag, Headphones, CalendarDays, Users, User,
+  LogIn, LogOut
+} from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import {
   getCurrentPortal,
@@ -10,12 +12,17 @@ import {
   COLOR_CLASSES,
 } from '@/lib/portalColor';
 
-const TABS = [
-  { id: 'dashboard', icon: BarChart3, label: '總覽', path: 'AdminDashboard' },
-  { id: 'dispatch',  icon: Calendar,  label: '派單', path: 'AdminDispatch' },
-  { id: 'new',       icon: Plus,      label: '新預約', path: 'BookingForm', primary: true },
-  { id: 'clients',   icon: Users,     label: '客戶', path: 'AdminClients' },
-  { id: 'tools',     icon: Wrench,    label: '工具', path: 'InternalSpreadsheet' },
+// 行程頁面路徑
+const SCHEDULE_PATH = '/AdminSchedule';
+
+// 5 tabs 定義
+const LEFT_TABS = [
+  { id: 'shop',    icon: ShoppingBag, label: '商店',  path: '/AdminShopBackend' },
+  { id: 'support', icon: Headphones,  label: '客服',  path: '/AdminSupport' },
+];
+const RIGHT_TABS = [
+  { id: 'dept',    icon: Users, label: '部門',  path: '/AdminDepartment' },
+  { id: 'me',      icon: User,  label: '我的',  path: '/AdminMe', isMe: true },
 ];
 
 export default function AdminBottomNav() {
@@ -24,6 +31,9 @@ export default function AdminBottomNav() {
   const lastClickTime = useRef(0);
   const [user, setUser] = useState(null);
   const [clientProfile, setClientProfile] = useState(null);
+
+  // 打卡狀態（存 sessionStorage 跨頁保留）
+  const [clockedIn, setClockedIn] = useState(() => sessionStorage.getItem('admin_clocked_in') === '1');
 
   useEffect(() => {
     base44.auth.isAuthenticated().then(ok => {
@@ -40,77 +50,124 @@ export default function AdminBottomNav() {
   const hasPremium = clientProfile?.subscription_plan && clientProfile.subscription_plan !== '無';
   const iconColor = getPortalIconColor(portal, user?.role, hasPremium);
 
-  const profilePath = '/ClientProfile';
-  const isProfileActive = location.pathname === profilePath || location.pathname.includes('ClientProfile');
+  const isScheduleActive = location.pathname === SCHEDULE_PATH;
 
-  const handleProfileClick = () => {
+  // 打卡 handler
+  const handleClock = (e) => {
+    e.preventDefault();
+    const next = !clockedIn;
+    setClockedIn(next);
+    sessionStorage.setItem('admin_clocked_in', next ? '1' : '0');
+    // 若不在行程頁，跳過去
+    if (location.pathname !== SCHEDULE_PATH) {
+      navigate(SCHEDULE_PATH);
+    }
+  };
+
+  // 中央行程按鈕 navigate
+  const handleScheduleNav = () => navigate(SCHEDULE_PATH);
+
+  // 我的 — 雙擊切換台端
+  const handleMeClick = () => {
     const now = Date.now();
     const diff = now - lastClickTime.current;
     lastClickTime.current = now;
-
     if (diff < 400) {
       lastClickTime.current = 0;
       navigate(getNextPortalPath(portal, user?.role));
     } else {
-      navigate(profilePath);
+      navigate('/AdminMe');
     }
   };
 
-  // 未選中時維持灰色；選中時才顯示目的地顏色
-  const iconColorClass = isProfileActive
+  const isMeActive = location.pathname === '/AdminMe';
+  const meIconColorClass = isMeActive
     ? (iconColor ? COLOR_CLASSES[iconColor] : 'text-stone-900')
     : 'text-stone-300';
 
+  const isActive = (path) => location.pathname === path;
+
   return (
     <div
-      className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-stone-200"
+      className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-stone-100"
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
-      <div className="flex">
-        {TABS.map(({ id, icon: Icon, label, path, primary }) => {
-          const href = path.startsWith('/') ? path : `/${path}`;
-          const isActive = location.pathname.includes(path);
-
-          if (primary) {
-            return (
-              <Link key={id} to={href} className="flex-1 flex flex-col items-center justify-center py-2 relative">
-                <div className="w-12 h-12 bg-stone-900 rounded-2xl flex items-center justify-center shadow-lg shadow-stone-900/30 -mt-5 mb-0.5">
-                  <Icon className="w-6 h-6 text-white" strokeWidth={2.5} />
-                </div>
-                <span className="text-[10px] font-semibold text-stone-700">{label}</span>
-              </Link>
-            );
-          }
-
+      <div className="flex items-end">
+        {/* 左側兩個 tab */}
+        {LEFT_TABS.map(({ id, icon: Icon, label, path }) => {
+          const active = isActive(path);
           return (
-            <Link key={id} to={href} className="flex-1 flex flex-col items-center justify-center py-2.5 gap-0.5 transition-colors relative">
-              {isActive && (
-                <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-stone-900 rounded-full" />
-              )}
-              <Icon
-                className={`w-5 h-5 transition-colors ${isActive ? 'text-stone-900' : 'text-stone-300'}`}
-                strokeWidth={isActive ? 2.5 : 1.8}
-              />
-              <span className={`text-[10px] font-medium transition-colors ${isActive ? 'text-stone-900' : 'text-stone-300'}`}>
+            <button key={id} onClick={() => navigate(path)}
+              className="flex-1 flex flex-col items-center justify-center py-2.5 gap-0.5 relative transition-colors">
+              {active && <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-stone-900 rounded-full" />}
+              <Icon className={`w-5 h-5 transition-colors ${active ? 'text-stone-900' : 'text-stone-300'}`}
+                strokeWidth={active ? 2.5 : 1.8} />
+              <span className={`text-[10px] font-medium transition-colors ${active ? 'text-stone-900' : 'text-stone-300'}`}>
                 {label}
               </span>
-            </Link>
+            </button>
           );
         })}
 
-        {/* 我的 — 雙擊切換台端 */}
-        <button
-          onClick={handleProfileClick}
-          className="flex-1 flex flex-col items-center justify-center py-2.5 gap-0.5 transition-colors relative"
-        >
-          {isProfileActive && (
+        {/* 中央行程 / 打卡按鈕 */}
+        <div className="flex-1 flex flex-col items-center justify-center py-2 relative">
+          {/* 行程頁時：打卡 icon；否則：月曆 icon */}
+          {isScheduleActive ? (
+            /* 打卡狀態切換 */
+            <button onClick={handleClock}
+              className="flex flex-col items-center justify-center">
+              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg -mt-5 mb-0.5 transition-all
+                ${clockedIn
+                  ? 'bg-stone-500 shadow-stone-400/40'
+                  : 'bg-stone-900 shadow-stone-900/30'}`}>
+                {clockedIn
+                  ? <LogOut className="w-6 h-6 text-white" strokeWidth={2.5} />
+                  : <LogIn  className="w-6 h-6 text-white" strokeWidth={2.5} />
+                }
+              </div>
+              <span className="text-[10px] font-semibold text-stone-700">
+                {clockedIn ? '下班' : '上班'}
+              </span>
+            </button>
+          ) : (
+            /* 一般：月曆按鈕 navigate */
+            <button onClick={handleScheduleNav}
+              className="flex flex-col items-center justify-center">
+              <div className="w-12 h-12 bg-stone-900 rounded-2xl flex items-center justify-center shadow-lg shadow-stone-900/30 -mt-5 mb-0.5">
+                <CalendarDays className="w-6 h-6 text-white" strokeWidth={2.5} />
+              </div>
+              <span className="text-[10px] font-semibold text-stone-700">行程</span>
+            </button>
+          )}
+          {/* 行程 active indicator */}
+          {isScheduleActive && (
             <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-stone-900 rounded-full" />
           )}
-          <User
-            className={`w-5 h-5 transition-colors ${iconColorClass}`}
-            strokeWidth={isProfileActive ? 2.5 : 1.8}
-          />
-          <span className={`text-[10px] font-medium transition-colors ${isProfileActive ? 'text-stone-900' : 'text-stone-300'}`}>
+        </div>
+
+        {/* 右側：部門 */}
+        {RIGHT_TABS.slice(0, 1).map(({ id, path, label }) => {
+          const active = isActive(path);
+          return (
+            <button key={id} onClick={() => navigate(path)}
+              className="flex-1 flex flex-col items-center justify-center py-2.5 gap-0.5 relative transition-colors">
+              {active && <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-stone-900 rounded-full" />}
+              <Users className={`w-5 h-5 transition-colors ${active ? 'text-stone-900' : 'text-stone-300'}`}
+                strokeWidth={active ? 2.5 : 1.8} />
+              <span className={`text-[10px] font-medium transition-colors ${active ? 'text-stone-900' : 'text-stone-300'}`}>
+                {label}
+              </span>
+            </button>
+          );
+        })}
+
+        {/* 右側：我的（雙擊切台） */}
+        <button onClick={handleMeClick}
+          className="flex-1 flex flex-col items-center justify-center py-2.5 gap-0.5 relative transition-colors">
+          {isMeActive && <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-stone-900 rounded-full" />}
+          <User className={`w-5 h-5 transition-colors ${meIconColorClass}`}
+            strokeWidth={isMeActive ? 2.5 : 1.8} />
+          <span className={`text-[10px] font-medium transition-colors ${isMeActive ? 'text-stone-900' : 'text-stone-300'}`}>
             我的
           </span>
         </button>

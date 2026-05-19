@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Sidebar from "@/components/dashboard/Sidebar";
 import MobileNav from "@/components/dashboard/MobileNav";
-import AdminBottomNav from "@/components/dashboard/AdminBottomNav";
+import AdminBottomNav from "@/components/dashboard/AdminBottomNav.jsx";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

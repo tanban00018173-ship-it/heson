@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
-import AdminBottomNav from '@/components/dashboard/AdminBottomNav';
+import AdminBottomNav from '@/components/dashboard/AdminBottomNav.jsx';
 import { Copy, CheckCheck, Search, ChevronRight, Headphones } from 'lucide-react';
 
 const TEMPLATES = [

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
-import AdminBottomNav from '@/components/dashboard/AdminBottomNav';
+import AdminBottomNav from '@/components/dashboard/AdminBottomNav.jsx';
 import { ChevronLeft, ChevronRight, Plus, LogIn, LogOut, Megaphone } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, isSameDay, isToday } from 'date-fns';
 import { zhTW } from 'date-fns/locale';
