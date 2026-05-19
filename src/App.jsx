@@ -42,6 +42,7 @@ import AdminDepartment from './pages/AdminDepartment.jsx'
 import AdminMe from './pages/AdminMe.jsx'
 import CleanerStorefront from './pages/CleanerStorefront'
 import ProviderSectionManager from './pages/ProviderSectionManager'
+import SearchResults from './pages/SearchResults'
 import { CartProvider } from './lib/CartContext'
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes, useNavigate, useLocation } from 'react-router-dom';
@@ -166,6 +167,7 @@ const AuthenticatedApp = () => {
       <Route path="/AdminMe" element={<AdminMe />} />
       <Route path="/CleanerStorefront" element={<CleanerStorefront />} />
       <Route path="/ProviderSectionManager" element={<ProviderSectionManager />} />
+      <Route path="/SearchResults" element={<SearchResults />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

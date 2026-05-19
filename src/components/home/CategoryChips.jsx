@@ -70,13 +70,13 @@ const icons = {
 
 /* ── 服務類別（後台排序演算法後顯示，這裡先固定順序，可後續改為 prop） ── */
 const CATEGORIES = [
-  { id: 'light',     label: '輕量清潔', route: '/ServiceInquiry?service=輕量清潔',   icon: icons.light },
-  { id: 'recurring', label: '定期清潔', route: '/ServiceInquiry?service=定期清潔',   icon: icons.recurring },
-  { id: 'deep',      label: '大掃除',   route: '/ServiceInquiry?service=大掃除',     icon: icons.deep },
-  { id: 'moveout',   label: '退租前細清', route: '/ServiceInquiry?service=退租前細清', icon: icons.moveout },
-  { id: 'movein',    label: '入住前細清', route: '/ServiceInquiry?service=入住前細清', icon: icons.movein },
-  { id: 'airbnb',    label: '民宿房務', route: '/ServiceInquiry?service=民宿房務',   icon: icons.airbnb },
-  { id: 'reno',      label: '裝潢後細清', route: '/ServiceInquiry?service=裝潢後細清', icon: icons.reno },
+  { id: 'light',     label: '輕量清潔',  route: '/SearchResults?service=輕量清潔',   icon: icons.light },
+  { id: 'recurring', label: '定期清潔',  route: '/SearchResults?service=定期清潔',   icon: icons.recurring },
+  { id: 'deep',      label: '大掃除',    route: '/SearchResults?service=大掃除',     icon: icons.deep },
+  { id: 'moveout',   label: '退租前細清', route: '/SearchResults?service=退租前細清', icon: icons.moveout },
+  { id: 'movein',    label: '入住前細清', route: '/SearchResults?service=入住前細清', icon: icons.movein },
+  { id: 'airbnb',    label: '民宿房務',  route: '/SearchResults?service=民宿房務',   icon: icons.airbnb },
+  { id: 'reno',      label: '裝潢後細清', route: '/SearchResults?service=裝潢後細清', icon: icons.reno },
 ];
 
 /* ── 下行篩選標籤 ── */
