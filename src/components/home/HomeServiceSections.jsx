@@ -141,13 +141,19 @@ function PlaceholderCards({ count = 3 }) {
 /* ─── 取得模塊頭像 ─── */
 function getSectionAvatar(def, items, cleaners, products) {
   if (def.key === 'featured_cleaners') {
-    const p = cleaners[0];
-    return p?.profile_photo || null;
+    return cleaners[0]?.profile_photo || null;
   }
   if (def.key === 'shop') {
     return products[0]?.image_url || null;
   }
   return items[0]?.image_url || null;
+}
+
+/* ─── 讓每個模塊的 items 去重（已用 provider 排後面） ─── */
+function dedupeItems(items, usedProviderIds) {
+  const unused = items.filter(i => !usedProviderIds.has(i.provider_id));
+  const used   = items.filter(i =>  usedProviderIds.has(i.provider_id));
+  return [...unused, ...used];
 }
 
 /* ─── 橫向模塊列 ─── */
@@ -284,13 +290,22 @@ export default function HomeServiceSections({ user, userAddress }) {
         onTrack={safeTrack}
       />
 
-      {rounds.map((roundDefs, roundIdx) => (
+      {rounds.map((roundDefs, roundIdx) => {
+        const usedProviderIds = new Set();
+        return (
         <React.Fragment key={roundIdx}>
-          {roundDefs.map((def, defIdx) => (
+          {roundDefs.map((def, defIdx) => {
+            const rawItems = sectionItemsMap[def.key] || [];
+            const dedupedItems = dedupeItems(rawItems, usedProviderIds);
+            // 記錄本模塊第一個 provider
+            const firstProvider = dedupedItems[0]?.provider_id;
+            if (firstProvider) usedProviderIds.add(firstProvider);
+
+            return (
             <React.Fragment key={`${roundIdx}-${def.key}`}>
               <SectionRow
                 def={def}
-                items={sectionItemsMap[def.key] || []}
+                items={dedupedItems}
                 cleaners={shuffledCleaners}
                 reviews={reviews}
                 products={shuffledProducts}
@@ -305,9 +320,11 @@ export default function HomeServiceSections({ user, userAddress }) {
                 />
               )}
             </React.Fragment>
-          ))}
+            );
+          })}
         </React.Fragment>
-      ))}
+        );
+      })}
       {/* 底部觸發器 */}
       <div ref={bottomRef} className="h-16 flex items-center justify-center">
         <div className="w-6 h-6 border-2 border-stone-200 border-t-stone-500 rounded-full animate-spin" />
