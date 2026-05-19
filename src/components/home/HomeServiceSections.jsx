@@ -247,16 +247,17 @@ export default function HomeServiceSections({ user, userAddress }) {
   const sectionItemsMap = useMemo(() => {
     const map = {};
     SECTION_DEFS.forEach(def => {
-      map[def.key] = sortWithJitter(allSections.filter(i => i.section_key === def.key), userAddress);
+      map[def.key] = shuffle(allSections.filter(i => i.section_key === def.key));
     });
     return map;
-  }, [allSections, userAddress]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allSections]);
 
-  // 管理師帶 jitter
-  const shuffledCleaners = useMemo(() => sortWithJitter(
-    profiles.map(p => ({ ...p, click_count: 0, booking_count: 0, sort_order: 99 })),
-    userAddress
-  ), [profiles, userAddress]);
+  // 管理師：每次資料載入後真正隨機打亂（不固定順序）
+  const shuffledCleaners = useMemo(() => shuffle(
+    profiles.map(p => ({ ...p, click_count: 0, booking_count: 0, sort_order: 99 }))
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  ), [profiles]);
 
   // 商品 shuffle
   const shuffledProducts = useMemo(() => shuffle(products), [products]);
