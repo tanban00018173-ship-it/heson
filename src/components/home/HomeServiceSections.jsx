@@ -138,15 +138,28 @@ function PlaceholderCards({ count = 3 }) {
   );
 }
 
+/* ─── 取得模塊頭像 ─── */
+function getSectionAvatar(def, items, cleaners, products) {
+  if (def.key === 'featured_cleaners') {
+    const p = cleaners[0];
+    return p?.profile_photo || null;
+  }
+  if (def.key === 'shop') {
+    return products[0]?.image_url || null;
+  }
+  return items[0]?.image_url || null;
+}
+
 /* ─── 橫向模塊列 ─── */
 function SectionRow({ def, items, cleaners, reviews, products, onTrack }) {
   const navigate = useNavigate();
-  const Icon = def.icon;
 
   useEffect(() => {
     onTrack('view_section', { section_key: def.key });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [def.key]);
+
+  const avatarUrl = getSectionAvatar(def, items, cleaners, products);
 
   const renderContent = () => {
     if (def.key === 'featured_cleaners') {
@@ -167,7 +180,14 @@ function SectionRow({ def, items, cleaners, reviews, products, onTrack }) {
   return (
     <section className="bg-white mt-2 pt-5 pb-2">
       <div className="flex items-center justify-between px-4 mb-3">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2.5">
+          {avatarUrl && (
+            <img
+              src={avatarUrl}
+              alt=""
+              className="w-8 h-8 rounded-full object-cover border border-stone-100 flex-shrink-0"
+            />
+          )}
           <h2 className="text-xl font-black text-stone-900 tracking-tight">{def.title}</h2>
           {def.badge && <span className="text-[10px] font-bold px-1.5 py-0.5 bg-red-500 text-white rounded-full">{def.badge}</span>}
         </div>
