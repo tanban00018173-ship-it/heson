@@ -12,13 +12,20 @@ export default function Home() {
   const [user, setUser] = useState(null);
   const [userId, setUserId] = useState(null);
   const [userAddress, setUserAddress] = useState(null);
+  const [defaultAddress, setDefaultAddress] = useState('台北市・居家服務');
 
   useEffect(() => {
     base44.auth.isAuthenticated().then(ok => {
       if (!ok) return;
-      base44.auth.me().then(u => {
+      base44.auth.me().then(async (u) => {
         setUser(u);
         setUserId(u.id);
+        const addrs = await base44.entities.UserAddress.filter({ user_id: u.id });
+        const def = addrs?.find(a => a.is_default) || addrs?.[0];
+        if (def) {
+          setUserAddress(def);
+          setDefaultAddress(`${def.district || def.city}・${def.street?.slice(0, 8) || '居家服務'}`);
+        }
       });
     });
   }, []);
@@ -28,7 +35,7 @@ export default function Home() {
       <HomeTopBar />
 
       <main className="pb-28">
-        <AddressBar onAddressChange={setUserAddress} />
+        <AddressBar address={defaultAddress} />
         <CategoryChips />
         <HomeServiceSections user={user} userAddress={userAddress} />
         <RecentBookings userId={userId} />
