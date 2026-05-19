@@ -149,10 +149,16 @@ function getSectionAvatar(def, items, cleaners, products) {
   return items[0]?.image_url || null;
 }
 
-/* ─── 讓每個模塊的 items 去重（已用 provider 排後面） ─── */
-function dedupeItems(items, usedProviderIds) {
-  const unused = items.filter(i => !usedProviderIds.has(i.provider_id));
-  const used   = items.filter(i =>  usedProviderIds.has(i.provider_id));
+/* ─── 讓列表去重（已出現的 id 排後面） ─── */
+function dedupeItems(items, usedIds) {
+  const unused = items.filter(i => !usedIds.has(i.provider_id));
+  const used   = items.filter(i =>  usedIds.has(i.provider_id));
+  return [...unused, ...used];
+}
+
+function dedupeCleaners(cleaners, usedIds) {
+  const unused = cleaners.filter(c => !usedIds.has(c.user_id));
+  const used   = cleaners.filter(c =>  usedIds.has(c.user_id));
   return [...unused, ...used];
 }
 
@@ -297,16 +303,23 @@ export default function HomeServiceSections({ user, userAddress }) {
           {roundDefs.map((def, defIdx) => {
             const rawItems = sectionItemsMap[def.key] || [];
             const dedupedItems = dedupeItems(rawItems, usedProviderIds);
-            // 記錄本模塊第一個 provider
-            const firstProvider = dedupedItems[0]?.provider_id;
-            if (firstProvider) usedProviderIds.add(firstProvider);
+            const dedupedCleaners = dedupeCleaners(shuffledCleaners, usedProviderIds);
+
+            // 記錄本模塊第一個 provider（管理師或卡片）
+            if (def.key === 'featured_cleaners') {
+              const first = dedupedCleaners[0]?.user_id;
+              if (first) usedProviderIds.add(first);
+            } else {
+              const first = dedupedItems[0]?.provider_id;
+              if (first) usedProviderIds.add(first);
+            }
 
             return (
             <React.Fragment key={`${roundIdx}-${def.key}`}>
               <SectionRow
                 def={def}
                 items={dedupedItems}
-                cleaners={shuffledCleaners}
+                cleaners={dedupedCleaners}
                 reviews={reviews}
                 products={shuffledProducts}
                 onTrack={safeTrack}
