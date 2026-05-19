@@ -10,8 +10,6 @@ import CleanerJobs from './pages/CleanerJobs';
 import CleanerSchedule from './pages/CleanerSchedule';
 import CleanerReport from './pages/CleanerReport';
 import CleanerProfile from './pages/CleanerProfile';
-import AdminDashboard from './pages/AdminDashboard';
-
 import AdminCleaners from './pages/AdminCleaners';
 import AdminDispatch from './pages/AdminDispatch';
 import AdminClients from './pages/AdminClients';
@@ -30,8 +28,6 @@ export const PAGES = {
     "CleanerSchedule": CleanerSchedule,
     "CleanerReport": CleanerReport,
     "CleanerProfile": CleanerProfile,
-    "AdminDashboard": AdminDashboard,
-
     "AdminCleaners": AdminCleaners,
     "AdminDispatch": AdminDispatch,
     "AdminClients": AdminClients,
