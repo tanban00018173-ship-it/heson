@@ -58,10 +58,7 @@ export default function Home() {
         {/* Recent bookings */}
         <RecentBookings userId={userId} />
 
-        {/* Service grid */}
-        <div className="mt-2">
-          <ServiceGrid />
-        </div>
+
       </main>
 
       <CartDrawer />
