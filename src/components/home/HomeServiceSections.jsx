@@ -192,63 +192,72 @@ export default function HomeServiceSections({ user, userAddress }) {
   const noOp = () => {};
   const safeTrack = track || noOp;
 
+  // 佔位卡片（無資料時提示）
+  const PlaceholderCards = ({ count = 3 }) => (
+    <>
+      {Array.from({ length: count }).map((_, i) => (
+        <div key={i} className="flex-shrink-0 w-44 rounded-2xl overflow-hidden border border-dashed border-stone-200 bg-stone-50">
+          <div className="h-24 flex items-center justify-center text-stone-200 text-3xl">🧹</div>
+          <div className="p-3">
+            <div className="h-3 bg-stone-200 rounded-full w-3/4 mb-2" />
+            <div className="h-2.5 bg-stone-100 rounded-full w-1/2" />
+          </div>
+        </div>
+      ))}
+    </>
+  );
+
+  const renderCards = (key) => {
+    const items = getSorted(key);
+    if (items.length > 0) return items.map(item => <DbCard key={item.id} item={item} onTrack={safeTrack} />);
+    return <PlaceholderCards />;
+  };
+
   return (
     <div>
       {/* 1. 閃電今日到府 */}
-      {getSorted('flash').length > 0 && (
-        <SectionRow icon={Zap} title="閃電今日到府" badge="快速" cta="立刻預約" onCta={() => navigate('/FlashTaskPost')} sectionKey="flash" onTrack={safeTrack}>
-          {getSorted('flash').map(item => <DbCard key={item.id} item={item} onTrack={safeTrack} />)}
-        </SectionRow>
-      )}
+      <SectionRow icon={Zap} title="閃電今日到府" badge="快速" cta="立刻預約" onCta={() => navigate('/FlashTaskPost')} sectionKey="flash" onTrack={safeTrack}>
+        {renderCards('flash')}
+      </SectionRow>
 
       {/* 2. 口碑好評管理師 */}
-      {sortedCleaners.length > 0 && (
-        <SectionRow icon={Sparkles} title="口碑好評管理師" cta="查看全部" onCta={() => navigate('/CleanerTeam')} sectionKey="featured_cleaners" onTrack={safeTrack}>
-          {sortedCleaners.map(p => <CleanerCard key={p.id} profile={p} reviews={getReviews(p.user_id)} onTrack={safeTrack} />)}
-        </SectionRow>
-      )}
+      <SectionRow icon={Sparkles} title="口碑好評管理師" cta="查看全部" onCta={() => navigate('/CleanerTeam')} sectionKey="featured_cleaners" onTrack={safeTrack}>
+        {sortedCleaners.length > 0
+          ? sortedCleaners.map(p => <CleanerCard key={p.id} profile={p} reviews={getReviews(p.user_id)} onTrack={safeTrack} />)
+          : <PlaceholderCards count={3} />}
+      </SectionRow>
 
       {/* 3. 定期包月方案 */}
-      {getSorted('recurring').length > 0 && (
-        <SectionRow icon={RefreshCw} title="定期包月省更多" cta="查看方案" onCta={() => navigate('/ClientBooking')} sectionKey="recurring" onTrack={safeTrack}>
-          {getSorted('recurring').map(item => <DbCard key={item.id} item={item} onTrack={safeTrack} />)}
-        </SectionRow>
-      )}
+      <SectionRow icon={RefreshCw} title="定期包月省更多" cta="查看方案" onCta={() => navigate('/ClientBooking')} sectionKey="recurring" onTrack={safeTrack}>
+        {renderCards('recurring')}
+      </SectionRow>
 
       {/* 4. 大掃除 & 裝潢後細清 */}
-      {getSorted('deep_clean').length > 0 && (
-        <SectionRow icon={Home} title="大掃除 & 裝潢後細清" cta="了解更多" onCta={() => navigate('/ServiceInquiry')} sectionKey="deep_clean" onTrack={safeTrack}>
-          {getSorted('deep_clean').map(item => <DbCard key={item.id} item={item} onTrack={safeTrack} />)}
-        </SectionRow>
-      )}
+      <SectionRow icon={Home} title="大掃除 & 裝潢後細清" cta="了解更多" onCta={() => navigate('/ServiceInquiry')} sectionKey="deep_clean" onTrack={safeTrack}>
+        {renderCards('deep_clean')}
+      </SectionRow>
 
       {/* 5. 商店精選 */}
-      {products.length > 0 && (
-        <SectionRow icon={ShoppingBag} title="爆殺限量瘋搶 💥" badge="限時" cta="逛商店" onCta={() => navigate('/ClientShop')} sectionKey="shop" onTrack={safeTrack}>
-          {products.map(p => <ProductCard key={p.id} product={p} onTrack={safeTrack} />)}
-        </SectionRow>
-      )}
+      <SectionRow icon={ShoppingBag} title="爆殺限量瘋搶 💥" badge="限時" cta="逛商店" onCta={() => navigate('/ClientShop')} sectionKey="shop" onTrack={safeTrack}>
+        {products.length > 0
+          ? products.map(p => <ProductCard key={p.id} product={p} onTrack={safeTrack} />)
+          : <PlaceholderCards count={3} />}
+      </SectionRow>
 
       {/* 6. 家電清洗 */}
-      {getSorted('appliance').length > 0 && (
-        <SectionRow icon={Snowflake} title="家電清洗 讓家更健康" cta="預約清洗" onCta={() => navigate('/ServiceInquiry')} sectionKey="appliance" onTrack={safeTrack}>
-          {getSorted('appliance').map(item => <DbCard key={item.id} item={item} onTrack={safeTrack} />)}
-        </SectionRow>
-      )}
+      <SectionRow icon={Snowflake} title="家電清洗 讓家更健康" cta="預約清洗" onCta={() => navigate('/ServiceInquiry')} sectionKey="appliance" onTrack={safeTrack}>
+        {renderCards('appliance')}
+      </SectionRow>
 
       {/* 7. 布面清洗 */}
-      {getSorted('fabric').length > 0 && (
-        <SectionRow icon={Wrench} title="布面清洗 煥然一新" cta="預約清洗" onCta={() => navigate('/ServiceInquiry')} sectionKey="fabric" onTrack={safeTrack}>
-          {getSorted('fabric').map(item => <DbCard key={item.id} item={item} onTrack={safeTrack} />)}
-        </SectionRow>
-      )}
+      <SectionRow icon={Wrench} title="布面清洗 煥然一新" cta="預約清洗" onCta={() => navigate('/ServiceInquiry')} sectionKey="fabric" onTrack={safeTrack}>
+        {renderCards('fabric')}
+      </SectionRow>
 
       {/* 8. 整理收納 */}
-      {getSorted('organize').length > 0 && (
-        <SectionRow icon={Home} title="整理收納 換個心情" cta="立即預約" onCta={() => navigate('/ServiceInquiry')} sectionKey="organize" onTrack={safeTrack}>
-          {getSorted('organize').map(item => <DbCard key={item.id} item={item} onTrack={safeTrack} />)}
-        </SectionRow>
-      )}
+      <SectionRow icon={Home} title="整理收納 換個心情" cta="立即預約" onCta={() => navigate('/ServiceInquiry')} sectionKey="organize" onTrack={safeTrack}>
+        {renderCards('organize')}
+      </SectionRow>
     </div>
   );
 }
