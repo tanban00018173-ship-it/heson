@@ -7,7 +7,7 @@ import CartDrawer from "@/components/home/CartDrawer";
 import HesonAIChat from "@/components/HesonAIChat";
 import AddressBar from "@/components/home/AddressBar";
 import CategoryChips from "@/components/home/CategoryChips";
-import HomeModules from "@/components/home/HomeModules";
+import CleanerCards from "@/components/home/CleanerCards";
 import RecentBookings from "@/components/home/RecentBookings";
 import { base44 } from "@/api/base44Client";
 
@@ -52,8 +52,8 @@ export default function Home() {
           <HeroBanner />
         </div>
 
-        {/* Home modules — services, cleaners, shop, plans */}
-        <HomeModules />
+        {/* Cleaner cards — featured */}
+        <CleanerCards />
 
         {/* Recent bookings */}
         <RecentBookings userId={userId} />
