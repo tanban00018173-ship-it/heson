@@ -49,6 +49,8 @@ export default function AdminBottomNav() {
   const portal = getCurrentPortal(location.pathname);
   const hasPremium = clientProfile?.subscription_plan && clientProfile.subscription_plan !== '無';
   const iconColor = getPortalIconColor(portal, user?.role, hasPremium);
+  // 後台「我的」：有 premium 顯示金色，否則黑色（代表雙擊可切回前台）
+  const meIconColor = iconColor ? COLOR_CLASSES[iconColor] : 'text-stone-300';
 
   const isScheduleActive = location.pathname === SCHEDULE_PATH;
 
@@ -81,9 +83,10 @@ export default function AdminBottomNav() {
   };
 
   const isMeActive = location.pathname === '/AdminMe';
-  const meIconColorClass = isMeActive
-    ? (iconColor ? COLOR_CLASSES[iconColor] : 'text-stone-900')
-    : 'text-stone-300';
+  // 有多台端權限時，icon 常駐顯示目的地顏色（不論選中與否）；無則用預設灰/黑
+  const meIconColorClass = iconColor
+    ? COLOR_CLASSES[iconColor]
+    : (isMeActive ? 'text-stone-900' : 'text-stone-300');
 
   const isActive = (path) => location.pathname === path;
 
