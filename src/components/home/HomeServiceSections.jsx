@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
 import { Star, ArrowRight, Shield, Zap, ShoppingBag, Sparkles, Home, Wrench, Snowflake, RefreshCw, Package } from 'lucide-react';
+import { IconBroom, IconDeepClean, IconCleaner, IconRecurring, IconAC, IconFabric, IconOrganize, IconShop } from './CleaningIcons';
 import { sortByRelevance } from '@/lib/useNearbyRecommend';
 import { useTrack } from '@/lib/useTrack';
 import VendorShowcaseRow from './VendorShowcaseRow';
@@ -50,7 +51,7 @@ function DbCard({ item, onTrack }) {
       <div className="h-36 bg-stone-100 flex items-center justify-center relative overflow-hidden">
         {item.image_url
           ? <img src={item.image_url} alt={item.title} className="w-full h-full object-cover" />
-          : <span className="text-4xl">{item.emoji || '🧹'}</span>}
+          : <IconBroom className="w-14 h-14" />}
         {item.badge && <span className="absolute top-2 right-2 bg-white/90 text-stone-700 text-[9px] font-bold px-1.5 py-0.5 rounded-full">{item.badge}</span>}
       </div>
       <div className="p-3">
@@ -74,7 +75,7 @@ function CleanerCard({ profile, reviews = [], onTrack }) {
       <div className="relative h-36 bg-gradient-to-br from-stone-100 to-stone-200">
         {profile.profile_photo
           ? <img src={profile.profile_photo} alt={profile.nickname} className="w-full h-full object-cover" />
-          : <div className="w-full h-full flex items-center justify-center text-3xl">{profile.nickname?.[0] || '🧹'}</div>}
+          : <div className="w-full h-full flex items-center justify-center bg-stone-100"><IconCleaner className="w-16 h-16" /></div>}
         {profile.is_active && <span className="absolute top-2 left-2 bg-green-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">接案中</span>}
       </div>
       <div className="p-2.5">
@@ -100,7 +101,7 @@ function ProductCard({ product, onTrack }) {
       <div className="w-full aspect-square rounded-2xl bg-stone-100 flex items-center justify-center overflow-hidden relative">
         {product.image_url
           ? <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" />
-          : <ShoppingBag className="w-10 h-10 text-stone-300" />}
+          : <IconShop className="w-12 h-12" />}
         <div className="absolute bottom-2 right-2 w-9 h-9 rounded-full bg-white shadow-lg flex items-center justify-center">
           <span className="text-stone-800 font-bold text-xl leading-none">+</span>
         </div>
@@ -125,7 +126,7 @@ function PlaceholderCards({ count = 3 }) {
     <>
       {Array.from({ length: count }).map((_, i) => (
         <div key={i} className="flex-shrink-0 w-[60vw] max-w-[260px] rounded-2xl overflow-hidden border border-dashed border-stone-200 bg-stone-50">
-          <div className="h-36 flex items-center justify-center text-stone-200 text-3xl">🧹</div>
+          <div className="h-36 flex items-center justify-center bg-stone-50"><IconBroom className="w-12 h-12 opacity-40" /></div>
           <div className="p-3">
             <div className="h-3 bg-stone-200 rounded-full w-3/4 mb-2 animate-pulse" />
             <div className="h-2.5 bg-stone-100 rounded-full w-1/2 animate-pulse" />

@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, Store } from 'lucide-react';
+import { IconShop, IconBroom } from './CleaningIcons';
 
 /* 單一商品卡片 — UberEats 風格 */
 function ProductCard({ item, onTrack }) {
@@ -27,8 +28,8 @@ function ProductCard({ item, onTrack }) {
         {item.image_url ? (
           <img src={item.image_url} alt={item.title} className="w-full h-full object-cover" />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-4xl">
-            {item.emoji || '🧹'}
+          <div className="w-full h-full flex items-center justify-center bg-stone-100">
+            <IconBroom className="w-12 h-12" />
           </div>
         )}
         {/* + 加入按鈕 */}
@@ -144,7 +145,7 @@ export default function VendorShowcaseRow({ allSections = [], onTrack }) {
         <div className="flex gap-3 pl-4 pr-2 pb-1 overflow-x-auto scrollbar-none">
           {[1, 2, 3].map(i => (
             <div key={i} className="flex-shrink-0 w-[38vw] max-w-[160px]">
-              <div className="w-full aspect-square rounded-2xl bg-stone-100 animate-pulse" />
+              <div className="w-full aspect-square rounded-2xl bg-stone-50 flex items-center justify-center"><IconShop className="w-10 h-10 opacity-30" /></div>
               <div className="mt-2 space-y-1.5">
                 <div className="h-5 bg-stone-100 rounded w-2/3 animate-pulse" />
                 <div className="h-3 bg-stone-50 rounded w-full animate-pulse" />
