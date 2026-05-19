@@ -16,7 +16,6 @@ import {
   Table
 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
-import AdminViewSwitcher from "@/components/AdminViewSwitcher";
 
 export default function Sidebar({ userRole = 'client', userName = '' }) {
   const location = useLocation();
@@ -75,11 +74,7 @@ export default function Sidebar({ userRole = 'client', userName = '' }) {
             className="h-8 w-auto"
           />
         </Link>
-        {userRole === 'admin' && (
-          <div className="mt-3">
-            <AdminViewSwitcher />
-          </div>
-        )}
+
         {userName && (
           <p className="text-sm text-stone-500 mt-3">
             您好，{userName}

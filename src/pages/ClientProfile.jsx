@@ -1,16 +1,31 @@
-import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from "react-router-dom";
+import React, { useState, useEffect, useRef } from 'react';
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import ClientBottomNav from "@/components/dashboard/ClientBottomNav";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Calendar, LogOut, ChevronRight, HelpCircle, MessageSquare, MessageCircle, Shield, Phone, FileText, LayoutDashboard, Zap, Settings, ShoppingCart } from "lucide-react";
+import { Calendar, LogOut, ChevronRight, HelpCircle, MessageSquare, MessageCircle, Shield, Phone, FileText, Settings, ShoppingCart, Layers } from "lucide-react";
 
 import { useCart } from "@/lib/CartContext";
 import CartDrawer from "@/components/home/CartDrawer";
 
+// 雙擊切換台端邏輯
+// 前台 → 中台 → 後台（admin）/ 前台（cleaner）
+// 後台 → 前台
+function getNextPortal(currentPath, role) {
+  if (currentPath.startsWith('/Admin')) return '/Home';
+  if (currentPath.startsWith('/Cleaner')) {
+    return role === 'admin' ? '/AdminDashboard' : '/Home';
+  }
+  // 前台 → 中台
+  return '/CleanerJobs';
+}
+
 export default function ClientProfile() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
+  const [clickCount, setClickCount] = useState(0);
+  const clickTimer = useRef(null);
+  const location = useLocation();
   const queryClient = useQueryClient();
 
 
@@ -45,6 +60,27 @@ export default function ClientProfile() {
 
   const displayName = user?.full_name || '訪客';
   const avatarLetter = displayName?.[0]?.toUpperCase() || 'U';
+  const hasPortalAccess = user?.role === 'admin' || user?.role === 'cleaner';
+
+  const handleAvatarClick = () => {
+    if (!hasPortalAccess) {
+      navigate('/ClientPersonalInfo');
+      return;
+    }
+    const newCount = clickCount + 1;
+    setClickCount(newCount);
+    clearTimeout(clickTimer.current);
+    if (newCount >= 2) {
+      setClickCount(0);
+      const dest = getNextPortal(location.pathname, user.role);
+      navigate(dest);
+    } else {
+      clickTimer.current = setTimeout(() => {
+        setClickCount(0);
+        navigate('/ClientPersonalInfo');
+      }, 400);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
@@ -52,10 +88,15 @@ export default function ClientProfile() {
       <div className="bg-black pt-8 pb-4 px-6 text-white">
         <div className="flex items-center gap-3">
           <button
-            onClick={() => navigate('/ClientPersonalInfo')}
-            className="w-12 h-12 rounded-full bg-stone-700 flex items-center justify-center border-2 border-white/20 flex-shrink-0 hover:bg-stone-600 transition-colors"
+            onClick={handleAvatarClick}
+            className="relative w-12 h-12 rounded-full bg-stone-700 flex items-center justify-center border-2 border-white/20 flex-shrink-0 hover:bg-stone-600 transition-colors"
           >
             <span className="text-lg font-bold text-white">{avatarLetter}</span>
+            {hasPortalAccess && (
+              <span className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-gold-500 rounded-full flex items-center justify-center border border-black">
+                <Layers className="w-2.5 h-2.5 text-white" />
+              </span>
+            )}
           </button>
           <div className="flex-1 min-w-0">
             <p className="text-base font-bold truncate">{displayName}</p>
@@ -141,30 +182,7 @@ export default function ClientProfile() {
             ))}
           </div>
 
-          {/* 台端切換（僅 admin 或 cleaner 可見） */}
-          {(user?.role === 'admin' || user?.role === 'cleaner') && (
-            <div className="bg-white rounded-xl overflow-hidden border border-gold-200">
-              <p className="px-4 pt-4 pb-2 text-xs font-semibold text-gold-600 uppercase tracking-wider">台端切換</p>
-              {[
-                ...(user?.role === 'admin' ? [
-                  { icon: LayoutDashboard, label: '後台管理', desc: '訂單、派案、報表', to: '/AdminDashboard' },
-                ] : []),
-                { icon: Zap, label: '中台（清潔師）', desc: '任務地圖、接單管理', to: '/CleanerJobs' },
-              ].map(({ icon: Icon, label, desc, to }) => (
-                <button key={label} onClick={() => navigate(to)}
-                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gold-50 transition-colors border-t border-stone-50">
-                  <div className="w-9 h-9 rounded-lg bg-gold-100 flex items-center justify-center flex-shrink-0">
-                    <Icon className="w-4 h-4 text-gold-700" />
-                  </div>
-                  <div className="flex-1 text-left">
-                    <p className="text-sm font-medium text-stone-800">{label}</p>
-                    <p className="text-xs text-stone-400">{desc}</p>
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-gold-400" />
-                </button>
-              ))}
-            </div>
-          )}
+
 
           {/* 登出 */}
           <button onClick={() => base44.auth.logout()}

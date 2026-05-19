@@ -17,7 +17,6 @@ import {
 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import AdminViewSwitcher from "@/components/AdminViewSwitcher";
 
 export default function MobileNav({ userRole = 'client', userName = '' }) {
   const [open, setOpen] = useState(false);
@@ -84,7 +83,7 @@ export default function MobileNav({ userRole = 'client', userName = '' }) {
           </SheetTrigger>
           <SheetContent side="right" className="w-72 p-0">
             <div className="p-6 border-b border-stone-100">
-              {userRole === 'admin' && <div className="mb-3"><AdminViewSwitcher /></div>}
+
               <p className="text-sm text-stone-500">
                 您好，{userName || '訪客'}
               </p>
