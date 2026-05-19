@@ -4,52 +4,61 @@ import { queryClientInstance } from '@/lib/query-client'
 import VisualEditAgent from '@/lib/VisualEditAgent'
 import NavigationTracker from '@/lib/NavigationTracker'
 import { pagesConfig } from './pages.config'
-import AdminAttendance from './pages/AdminAttendance'
-import MyBookings from './pages/MyBookings'
-import PaymentResult from './pages/PaymentResult'
-import PaymentRedirect from './pages/PaymentRedirect'
-import OrderQuery from './pages/OrderQuery'
-import ServiceInquiry from './pages/ServiceInquiry'
-import PrivacyPolicy from './pages/PrivacyPolicy'
-import TermsOfService from './pages/TermsOfService'
-import JoinCleaner from './pages/JoinCleaner'
-import BusinessCooperation from './pages/BusinessCooperation'
-import Recruitment from './pages/Recruitment'
-import CleanerTeam from './pages/CleanerTeam'
-import CleanerApplicationForm from './pages/CleanerApplicationForm'
-import CleanerManagement from './pages/CleanerManagement'
-import CleanerBulkImport from './pages/CleanerBulkImport'
-import CleanerJobsPage from './pages/CleanerJobs'
-import GoogleSheetsManager from './pages/GoogleSheetsManager'
-import SheetSyncLog from './pages/SheetSyncLog'
-import ServiceCaseManager from './pages/ServiceCaseManager'
-import InternalSpreadsheet from './pages/InternalSpreadsheet'
-import PartTimeSchedule from './pages/PartTimeSchedule'
-import AdminShopProducts from './pages/AdminShopProducts'
-import FlashTaskPost from './pages/FlashTaskPost'
-import AdminUsers from './pages/AdminUsers'
-import ClientShop from './pages/ClientShop'
-import ClientProfileEdit from './pages/ClientProfileEdit'
-import ClientPersonalInfo from './pages/ClientPersonalInfo'
-import ClientAddressList from './pages/ClientAddressList'
-import ClientAddressForm from './pages/ClientAddressForm'
-import VendorChatPage from './pages/VendorChatPage'
-import AdminPermissions from './pages/AdminPermissions'
-import AdminSchedule from './pages/AdminSchedule.jsx'
-import AdminShopBackend from './pages/AdminShopBackend.jsx'
-import AdminSupport from './pages/AdminSupport.jsx'
-import AdminDepartment from './pages/AdminDepartment.jsx'
-import AdminMe from './pages/AdminMe.jsx'
-import CleanerStorefront from './pages/CleanerStorefront'
-import ProviderSectionManager from './pages/ProviderSectionManager'
-import SearchResults from './pages/SearchResults'
 import { CartProvider } from './lib/CartContext'
-import React from 'react';
+import React, { Suspense } from 'react';
 import { BrowserRouter as Router, Route, Routes, useNavigate, useLocation } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import { getRoleHome } from '@/lib/roleRouter';
+
+/* ── Lazy-loaded pages (code splitting) ── */
+const AdminAttendance       = React.lazy(() => import('./pages/AdminAttendance'));
+const MyBookings            = React.lazy(() => import('./pages/MyBookings'));
+const PaymentResult         = React.lazy(() => import('./pages/PaymentResult'));
+const PaymentRedirect       = React.lazy(() => import('./pages/PaymentRedirect'));
+const OrderQuery            = React.lazy(() => import('./pages/OrderQuery'));
+const ServiceInquiry        = React.lazy(() => import('./pages/ServiceInquiry'));
+const PrivacyPolicy         = React.lazy(() => import('./pages/PrivacyPolicy'));
+const TermsOfService        = React.lazy(() => import('./pages/TermsOfService'));
+const JoinCleaner           = React.lazy(() => import('./pages/JoinCleaner'));
+const BusinessCooperation   = React.lazy(() => import('./pages/BusinessCooperation'));
+const Recruitment           = React.lazy(() => import('./pages/Recruitment'));
+const CleanerTeam           = React.lazy(() => import('./pages/CleanerTeam'));
+const CleanerApplicationForm= React.lazy(() => import('./pages/CleanerApplicationForm'));
+const CleanerManagement     = React.lazy(() => import('./pages/CleanerManagement'));
+const CleanerBulkImport     = React.lazy(() => import('./pages/CleanerBulkImport'));
+const CleanerJobsPage       = React.lazy(() => import('./pages/CleanerJobs'));
+const GoogleSheetsManager   = React.lazy(() => import('./pages/GoogleSheetsManager'));
+const SheetSyncLog          = React.lazy(() => import('./pages/SheetSyncLog'));
+const ServiceCaseManager    = React.lazy(() => import('./pages/ServiceCaseManager'));
+const InternalSpreadsheet   = React.lazy(() => import('./pages/InternalSpreadsheet'));
+const PartTimeSchedule      = React.lazy(() => import('./pages/PartTimeSchedule'));
+const AdminShopProducts     = React.lazy(() => import('./pages/AdminShopProducts'));
+const FlashTaskPost         = React.lazy(() => import('./pages/FlashTaskPost'));
+const AdminUsers            = React.lazy(() => import('./pages/AdminUsers'));
+const ClientShop            = React.lazy(() => import('./pages/ClientShop'));
+const ClientProfileEdit     = React.lazy(() => import('./pages/ClientProfileEdit'));
+const ClientPersonalInfo    = React.lazy(() => import('./pages/ClientPersonalInfo'));
+const ClientAddressList     = React.lazy(() => import('./pages/ClientAddressList'));
+const ClientAddressForm     = React.lazy(() => import('./pages/ClientAddressForm'));
+const VendorChatPage        = React.lazy(() => import('./pages/VendorChatPage'));
+const AdminPermissions      = React.lazy(() => import('./pages/AdminPermissions'));
+const AdminSchedule         = React.lazy(() => import('./pages/AdminSchedule'));
+const AdminShopBackend      = React.lazy(() => import('./pages/AdminShopBackend'));
+const AdminSupport          = React.lazy(() => import('./pages/AdminSupport'));
+const AdminDepartment       = React.lazy(() => import('./pages/AdminDepartment'));
+const AdminMe               = React.lazy(() => import('./pages/AdminMe'));
+const CleanerStorefront     = React.lazy(() => import('./pages/CleanerStorefront'));
+const ProviderSectionManager= React.lazy(() => import('./pages/ProviderSectionManager'));
+const SearchResults         = React.lazy(() => import('./pages/SearchResults'));
+
+/* ── Page loading fallback ── */
+const PageLoader = () => (
+  <div className="fixed inset-0 flex items-center justify-center bg-white">
+    <div className="w-8 h-8 border-4 border-stone-200 border-t-stone-800 rounded-full animate-spin" />
+  </div>
+);
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -66,7 +75,6 @@ const RoleRedirector = () => {
 
   React.useEffect(() => {
     if (!isAuthenticated || !user) return;
-    // 只在根路徑 or 未分配入口時才導向
     if (location.pathname !== '/') return;
     const dest = getRoleHome(user.role);
     navigate(dest, { replace: true });
@@ -76,9 +84,8 @@ const RoleRedirector = () => {
 };
 
 const AuthenticatedApp = () => {
-  const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, isAuthenticated, appPublicSettings } = useAuth();
+  const { isLoadingPublicSettings, authError, navigateToLogin, appPublicSettings } = useAuth();
 
-  // Show loading spinner while checking app public settings or auth
   if (isLoadingPublicSettings) {
     return (
       <div className="fixed inset-0 flex items-center justify-center">
@@ -87,10 +94,6 @@ const AuthenticatedApp = () => {
     );
   }
 
-  // Check if app is public
-  const isAppPublic = appPublicSettings?.public_settings?.is_public === true;
-
-  // Handle authentication errors
   if (authError) {
     if (authError.type === 'user_not_registered') {
       return <UserNotRegisteredError />;
@@ -110,86 +113,83 @@ const AuthenticatedApp = () => {
     }
   }
 
-  // App is accessible to all visitors; login is only required for member-specific actions
-
-  // Render the main app
   return (
-    <Routes>
-      <Route path="/" element={
-        <><RoleRedirector /><LayoutWrapper currentPageName={mainPageKey}><MainPage /></LayoutWrapper></>
-      } />
-      {Object.entries(Pages).map(([path, Page]) => (
-        <Route
-          key={path}
-          path={`/${path}`}
-          element={
-            <LayoutWrapper currentPageName={path}>
-              <Page />
-            </LayoutWrapper>
-          }
-        />
-      ))}
-      <Route path="/AdminAttendance" element={<LayoutWrapper currentPageName="AdminAttendance"><AdminAttendance /></LayoutWrapper>} />
-      <Route path="/MyBookings" element={<LayoutWrapper currentPageName="MyBookings"><MyBookings /></LayoutWrapper>} />
-      <Route path="/PaymentResult" element={<LayoutWrapper currentPageName="PaymentResult"><PaymentResult /></LayoutWrapper>} />
-      <Route path="/PaymentRedirect" element={<LayoutWrapper currentPageName="PaymentRedirect"><PaymentRedirect /></LayoutWrapper>} />
-      <Route path="/ServiceInquiry" element={<LayoutWrapper currentPageName="ServiceInquiry"><ServiceInquiry /></LayoutWrapper>} />
-      <Route path="/OrderQuery" element={<LayoutWrapper currentPageName="OrderQuery"><OrderQuery /></LayoutWrapper>} />
-      <Route path="/PrivacyPolicy" element={<LayoutWrapper currentPageName="PrivacyPolicy"><PrivacyPolicy /></LayoutWrapper>} />
-      <Route path="/TermsOfService" element={<LayoutWrapper currentPageName="TermsOfService"><TermsOfService /></LayoutWrapper>} />
-      <Route path="/JoinCleaner" element={<LayoutWrapper currentPageName="JoinCleaner"><JoinCleaner /></LayoutWrapper>} />
-      <Route path="/BusinessCooperation" element={<LayoutWrapper currentPageName="BusinessCooperation"><BusinessCooperation /></LayoutWrapper>} />
-      <Route path="/Recruitment" element={<LayoutWrapper currentPageName="Recruitment"><Recruitment /></LayoutWrapper>} />
-      <Route path="/CleanerTeam" element={<LayoutWrapper currentPageName="CleanerTeam"><CleanerTeam /></LayoutWrapper>} />
-      <Route path="/CleanerApplicationForm" element={<LayoutWrapper currentPageName="CleanerApplicationForm"><CleanerApplicationForm /></LayoutWrapper>} />
-      <Route path="/CleanerManagement" element={<LayoutWrapper currentPageName="CleanerManagement"><CleanerManagement /></LayoutWrapper>} />
-      <Route path="/CleanerJobs" element={<CleanerJobsPage />} />
-      <Route path="/CleanerBulkImport" element={<LayoutWrapper currentPageName="CleanerBulkImport"><CleanerBulkImport /></LayoutWrapper>} />
-      <Route path="/GoogleSheetsManager" element={<LayoutWrapper currentPageName="GoogleSheetsManager"><GoogleSheetsManager /></LayoutWrapper>} />
-      <Route path="/SheetSyncLog" element={<LayoutWrapper currentPageName="SheetSyncLog"><SheetSyncLog /></LayoutWrapper>} />
-      <Route path="/ServiceCaseManager" element={<LayoutWrapper currentPageName="ServiceCaseManager"><ServiceCaseManager /></LayoutWrapper>} />
-      <Route path="/InternalSpreadsheet" element={<InternalSpreadsheet />} />
-      <Route path="/PartTimeSchedule" element={<PartTimeSchedule />} />
-      <Route path="/AdminShopProducts" element={<AdminShopProducts />} />
-      <Route path="/FlashTaskPost" element={<FlashTaskPost />} />
-      <Route path="/AdminUsers" element={<LayoutWrapper currentPageName="AdminUsers"><AdminUsers /></LayoutWrapper>} />
-      <Route path="/ClientShop" element={<ClientShop />} />
-      <Route path="/ClientProfileEdit" element={<LayoutWrapper currentPageName="ClientProfileEdit"><ClientProfileEdit /></LayoutWrapper>} />
-      <Route path="/ClientPersonalInfo" element={<ClientPersonalInfo />} />
-      <Route path="/ClientAddressList" element={<ClientAddressList />} />
-      <Route path="/ClientAddressForm" element={<ClientAddressForm />} />
-      <Route path="/VendorChatPage" element={<VendorChatPage />} />
-      <Route path="/AdminPermissions" element={<LayoutWrapper currentPageName="AdminPermissions"><AdminPermissions /></LayoutWrapper>} />
-      <Route path="/AdminSchedule" element={<AdminSchedule />} />
-      <Route path="/AdminShopBackend" element={<AdminShopBackend />} />
-      <Route path="/AdminSupport" element={<AdminSupport />} />
-      <Route path="/AdminDepartment" element={<AdminDepartment />} />
-      <Route path="/AdminMe" element={<AdminMe />} />
-      <Route path="/CleanerStorefront" element={<CleanerStorefront />} />
-      <Route path="/ProviderSectionManager" element={<ProviderSectionManager />} />
-      <Route path="/SearchResults" element={<SearchResults />} />
-      <Route path="*" element={<PageNotFound />} />
-    </Routes>
+    <Suspense fallback={<PageLoader />}>
+      <Routes>
+        <Route path="/" element={
+          <><RoleRedirector /><LayoutWrapper currentPageName={mainPageKey}><MainPage /></LayoutWrapper></>
+        } />
+        {Object.entries(Pages).map(([path, Page]) => (
+          <Route
+            key={path}
+            path={`/${path}`}
+            element={
+              <LayoutWrapper currentPageName={path}>
+                <Page />
+              </LayoutWrapper>
+            }
+          />
+        ))}
+        <Route path="/AdminAttendance"        element={<LayoutWrapper currentPageName="AdminAttendance"><AdminAttendance /></LayoutWrapper>} />
+        <Route path="/MyBookings"             element={<LayoutWrapper currentPageName="MyBookings"><MyBookings /></LayoutWrapper>} />
+        <Route path="/PaymentResult"          element={<LayoutWrapper currentPageName="PaymentResult"><PaymentResult /></LayoutWrapper>} />
+        <Route path="/PaymentRedirect"        element={<LayoutWrapper currentPageName="PaymentRedirect"><PaymentRedirect /></LayoutWrapper>} />
+        <Route path="/ServiceInquiry"         element={<LayoutWrapper currentPageName="ServiceInquiry"><ServiceInquiry /></LayoutWrapper>} />
+        <Route path="/OrderQuery"             element={<LayoutWrapper currentPageName="OrderQuery"><OrderQuery /></LayoutWrapper>} />
+        <Route path="/PrivacyPolicy"          element={<LayoutWrapper currentPageName="PrivacyPolicy"><PrivacyPolicy /></LayoutWrapper>} />
+        <Route path="/TermsOfService"         element={<LayoutWrapper currentPageName="TermsOfService"><TermsOfService /></LayoutWrapper>} />
+        <Route path="/JoinCleaner"            element={<LayoutWrapper currentPageName="JoinCleaner"><JoinCleaner /></LayoutWrapper>} />
+        <Route path="/BusinessCooperation"    element={<LayoutWrapper currentPageName="BusinessCooperation"><BusinessCooperation /></LayoutWrapper>} />
+        <Route path="/Recruitment"            element={<LayoutWrapper currentPageName="Recruitment"><Recruitment /></LayoutWrapper>} />
+        <Route path="/CleanerTeam"            element={<LayoutWrapper currentPageName="CleanerTeam"><CleanerTeam /></LayoutWrapper>} />
+        <Route path="/CleanerApplicationForm" element={<LayoutWrapper currentPageName="CleanerApplicationForm"><CleanerApplicationForm /></LayoutWrapper>} />
+        <Route path="/CleanerManagement"      element={<LayoutWrapper currentPageName="CleanerManagement"><CleanerManagement /></LayoutWrapper>} />
+        <Route path="/CleanerJobs"            element={<CleanerJobsPage />} />
+        <Route path="/CleanerBulkImport"      element={<LayoutWrapper currentPageName="CleanerBulkImport"><CleanerBulkImport /></LayoutWrapper>} />
+        <Route path="/GoogleSheetsManager"    element={<LayoutWrapper currentPageName="GoogleSheetsManager"><GoogleSheetsManager /></LayoutWrapper>} />
+        <Route path="/SheetSyncLog"           element={<LayoutWrapper currentPageName="SheetSyncLog"><SheetSyncLog /></LayoutWrapper>} />
+        <Route path="/ServiceCaseManager"     element={<LayoutWrapper currentPageName="ServiceCaseManager"><ServiceCaseManager /></LayoutWrapper>} />
+        <Route path="/InternalSpreadsheet"    element={<InternalSpreadsheet />} />
+        <Route path="/PartTimeSchedule"       element={<PartTimeSchedule />} />
+        <Route path="/AdminShopProducts"      element={<AdminShopProducts />} />
+        <Route path="/FlashTaskPost"          element={<FlashTaskPost />} />
+        <Route path="/AdminUsers"             element={<LayoutWrapper currentPageName="AdminUsers"><AdminUsers /></LayoutWrapper>} />
+        <Route path="/ClientShop"             element={<ClientShop />} />
+        <Route path="/ClientProfileEdit"      element={<LayoutWrapper currentPageName="ClientProfileEdit"><ClientProfileEdit /></LayoutWrapper>} />
+        <Route path="/ClientPersonalInfo"     element={<ClientPersonalInfo />} />
+        <Route path="/ClientAddressList"      element={<ClientAddressList />} />
+        <Route path="/ClientAddressForm"      element={<ClientAddressForm />} />
+        <Route path="/VendorChatPage"         element={<VendorChatPage />} />
+        <Route path="/AdminPermissions"       element={<LayoutWrapper currentPageName="AdminPermissions"><AdminPermissions /></LayoutWrapper>} />
+        <Route path="/AdminSchedule"          element={<AdminSchedule />} />
+        <Route path="/AdminShopBackend"       element={<AdminShopBackend />} />
+        <Route path="/AdminSupport"           element={<AdminSupport />} />
+        <Route path="/AdminDepartment"        element={<AdminDepartment />} />
+        <Route path="/AdminMe"                element={<AdminMe />} />
+        <Route path="/CleanerStorefront"      element={<CleanerStorefront />} />
+        <Route path="/ProviderSectionManager" element={<ProviderSectionManager />} />
+        <Route path="/SearchResults"          element={<SearchResults />} />
+        <Route path="*"                       element={<PageNotFound />} />
+      </Routes>
+    </Suspense>
   );
 };
 
-
 function App() {
-
   return (
     <AuthProvider>
       <CartProvider>
-      <QueryClientProvider client={queryClientInstance}>
-        <Router>
-          <NavigationTracker />
-          <AuthenticatedApp />
-        </Router>
-        <Toaster />
-        <VisualEditAgent />
-      </QueryClientProvider>
+        <QueryClientProvider client={queryClientInstance}>
+          <Router>
+            <NavigationTracker />
+            <AuthenticatedApp />
+          </Router>
+          <Toaster />
+          <VisualEditAgent />
+        </QueryClientProvider>
       </CartProvider>
     </AuthProvider>
-  )
+  );
 }
 
-export default App
+export default App;
