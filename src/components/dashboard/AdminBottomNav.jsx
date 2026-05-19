@@ -83,10 +83,10 @@ export default function AdminBottomNav() {
   };
 
   const isMeActive = location.pathname === '/AdminMe';
-  // 有多台端權限時，icon 常駐顯示目的地顏色（不論選中與否）；無則用預設灰/黑
-  const meIconColorClass = iconColor
-    ? COLOR_CLASSES[iconColor]
-    : (isMeActive ? 'text-stone-900' : 'text-stone-300');
+  // 選取時顯示目的地顏色（有 premium 金色，一般黑色）；未選取一律灰色
+  const meIconColorClass = isMeActive
+    ? (iconColor ? COLOR_CLASSES[iconColor] : 'text-stone-900')
+    : 'text-stone-300';
 
   const isActive = (path) => location.pathname === path;
 

@@ -61,7 +61,9 @@ export default function ClientBottomNav() {
     }
   };
 
-  const iconColorClass = iconColor ? COLOR_CLASSES[iconColor] : (isProfileActive ? 'text-stone-900' : 'text-stone-300');
+  const iconColorClass = isProfileActive
+    ? (iconColor ? COLOR_CLASSES[iconColor] : 'text-stone-900')
+    : 'text-stone-300';
 
   return (
     <div
