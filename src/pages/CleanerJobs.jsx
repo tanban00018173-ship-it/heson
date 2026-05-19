@@ -145,7 +145,7 @@ export default function CleanerJobs() {
       )}
 
       {/* ── 底部 Tab Bar ── */}
-      <BottomTabBar activeTab={activeTab} onTabChange={setActiveTab} />
+      <BottomTabBar activeTab={activeTab} onTabChange={setActiveTab} user={user} />
 
       {/* ── 任務執行流程 Modal ── */}
       {executingTask && (
