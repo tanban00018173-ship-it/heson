@@ -51,9 +51,10 @@ export default function BottomTabBar({ activeTab, onTabChange, user }) {
     }
   };
 
-  const iconColorClass = iconColor
-    ? COLOR_CLASSES[iconColor]
-    : (activeTab === 'profile' ? 'text-black' : 'text-stone-300');
+  // 未選中時顯示灰色；選中時才顯示目的地顏色（或預設黑色）
+  const iconColorClass = activeTab === 'profile'
+    ? (iconColor ? COLOR_CLASSES[iconColor] : 'text-black')
+    : 'text-stone-300';
 
   return (
     <div
