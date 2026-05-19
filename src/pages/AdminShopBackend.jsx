@@ -124,7 +124,7 @@ export default function AdminShopBackend() {
         )}
       </div>
 
-      <div className="fixed bottom-20 right-4 z-30">
+      <div className="fixed bottom-24 right-4 z-30">
         <button onClick={() => navigate('/AdminShopProducts')}
           className="w-14 h-14 bg-stone-900 rounded-2xl flex items-center justify-center shadow-xl shadow-stone-900/30 hover:bg-stone-700 transition-colors">
           <Plus className="w-7 h-7 text-white" />
