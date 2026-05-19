@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { IconAll, IconClean, IconAppliance, IconFabric, IconOrganize, IconBusiness, IconReno } from './CleaningIcons';
+import { IconAll, IconClean, IconAppliance, IconFabric, IconOrganize, IconBusiness, IconReno, IconFlash } from './CleaningIcons';
 
 const CATEGORIES = [
   { id: 'all',       Icon: IconAll,       label: '全部',     route: null },
@@ -10,6 +10,7 @@ const CATEGORIES = [
   { id: 'organize',  Icon: IconOrganize,  label: '整理收納', route: '/ServiceInquiry?service=整理收納' },
   { id: 'biz',       Icon: IconBusiness,  label: '商業清潔', route: '/ServiceInquiry?service=商業清潔' },
   { id: 'reno',      Icon: IconReno,      label: '裝潢清潔', route: '/ServiceInquiry?service=裝潢後清潔' },
+  { id: 'flash',     Icon: IconFlash,     label: '閃電任務', route: '/FlashTaskPost' },
 ];
 
 const FILTERS = ['首次優惠', '高評分', '10分鐘到', '訂閱方案'];
