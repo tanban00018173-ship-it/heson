@@ -3,7 +3,6 @@ import { createPortal } from 'react-dom';
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { X, ClipboardList, Zap, LogOut, User, Home, RefreshCw } from "lucide-react";
-import AdminViewSwitcher from "@/components/AdminViewSwitcher";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
@@ -193,35 +192,24 @@ export default function CleanerJobs() {
 
             {/* 選單項目 */}
             <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-              {user?.role === 'admin' && (
-                <div className="pb-3 mb-2 border-b border-stone-100">
-                  <p className="text-xs text-stone-400 font-medium mb-2 px-1">切換視角</p>
-                  <AdminViewSwitcher />
-                </div>
-              )}
-
               {[
                 { to: 'CleanerJobs', icon: Zap, label: '閃電任務地圖', active: true },
                 { to: 'CleanerSchedule', icon: ClipboardList, label: '我的行程' },
                 { to: 'CleanerProfile', icon: User, label: '個人資料' },
-                { to: 'AdminDashboard', icon: Home, label: '後台（管理員視角）', adminOnly: true },
-                { to: 'ClientDashboard', icon: Home, label: '前台（客戶視角）' },
-              ].map(({ to, icon: Icon, label, active, adminOnly }) => (
-                user?.role === 'admin' || !adminOnly ? (
-                  <Link
-                    key={to}
-                    to={createPageUrl(to)}
-                    onClick={() => setMenuOpen(false)}
-                    className={`flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium transition-colors ${
-                      active ? 'bg-stone-100 text-black font-semibold' : 'text-stone-500 hover:bg-stone-50'
-                    }`}
-                  >
-                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${active ? 'bg-black' : 'bg-stone-100'}`}>
-                      <Icon className={`w-4 h-4 ${active ? 'text-white' : 'text-stone-500'}`} />
-                    </div>
-                    {label}
-                  </Link>
-                ) : null
+              ].map(({ to, icon: Icon, label, active }) => (
+                <Link
+                  key={to}
+                  to={createPageUrl(to)}
+                  onClick={() => setMenuOpen(false)}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium transition-colors ${
+                    active ? 'bg-stone-100 text-black font-semibold' : 'text-stone-500 hover:bg-stone-50'
+                  }`}
+                >
+                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${active ? 'bg-black' : 'bg-stone-100'}`}>
+                    <Icon className={`w-4 h-4 ${active ? 'text-white' : 'text-stone-500'}`} />
+                  </div>
+                  {label}
+                </Link>
               ))}
             </nav>
 
