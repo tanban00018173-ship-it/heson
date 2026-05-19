@@ -22,7 +22,7 @@ export function getCurrentPortal(pathname) {
 // 雙擊後要去哪
 export function getNextPortalPath(portal, role) {
   if (portal === 'client') return '/CleanerJobs';           // 前台 → 中台
-  if (portal === 'cleaner') return role === 'admin' ? '/AdminDashboard' : '/Home';  // 中台 → 後台(admin) 或 前台
+  if (portal === 'cleaner') return role === 'admin' ? '/AdminSchedule' : '/Home';  // 中台 → 後台(admin) 或 前台
   if (portal === 'admin') return '/Home';                   // 後台 → 前台
   return '/Home';
 }
