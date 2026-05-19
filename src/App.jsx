@@ -35,6 +35,11 @@ import ClientAddressList from './pages/ClientAddressList'
 import ClientAddressForm from './pages/ClientAddressForm'
 import VendorChatPage from './pages/VendorChatPage'
 import AdminPermissions from './pages/AdminPermissions'
+import AdminSchedule from './pages/AdminSchedule.jsx'
+import AdminShopBackend from './pages/AdminShopBackend.jsx'
+import AdminSupport from './pages/AdminSupport.jsx'
+import AdminDepartment from './pages/AdminDepartment.jsx'
+import AdminMe from './pages/AdminMe.jsx'
 import { CartProvider } from './lib/CartContext'
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes, useNavigate, useLocation } from 'react-router-dom';
@@ -152,6 +157,11 @@ const AuthenticatedApp = () => {
       <Route path="/ClientAddressForm" element={<ClientAddressForm />} />
       <Route path="/VendorChatPage" element={<VendorChatPage />} />
       <Route path="/AdminPermissions" element={<LayoutWrapper currentPageName="AdminPermissions"><AdminPermissions /></LayoutWrapper>} />
+      <Route path="/AdminSchedule" element={<AdminSchedule />} />
+      <Route path="/AdminShopBackend" element={<AdminShopBackend />} />
+      <Route path="/AdminSupport" element={<AdminSupport />} />
+      <Route path="/AdminDepartment" element={<AdminDepartment />} />
+      <Route path="/AdminMe" element={<AdminMe />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );
