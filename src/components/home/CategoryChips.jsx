@@ -26,27 +26,7 @@ export default function CategoryChips() {
 
   return (
     <div className="bg-white border-b border-stone-100">
-      <div className="flex overflow-x-auto gap-2 px-4 py-3 scrollbar-none">
-        {CATEGORIES.map((cat) => {
-          const isActive = active === cat.id;
-          return (
-            <button
-              key={cat.id}
-              onClick={() => handleClick(cat)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap border transition-all flex-shrink-0 ${
-                isActive
-                  ? 'bg-stone-900 text-white border-stone-900'
-                  : 'bg-white text-stone-600 border-stone-200 hover:border-stone-400'
-              }`}
-            >
-              <cat.Icon className="w-3.5 h-3.5" />
-              <span>{cat.label}</span>
-            </button>
-          );
-        })}
-      </div>
-
-      <div className="flex overflow-x-auto gap-2 px-4 pb-3 scrollbar-none">
+      <div className="flex overflow-x-auto gap-2 px-4 pb-3 pt-3 scrollbar-none">
         {FILTERS.map((label) => (
           <button
             key={label}
