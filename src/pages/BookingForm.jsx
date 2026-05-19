@@ -371,12 +371,13 @@ export default function BookingForm() {
         time_slot: timeSlot,
         address: fullAddress,
         phone: orderer.phone,
+        gps_lat: addrCoords?.lat ?? null,
+        gps_lng: addrCoords?.lng ?? null,
         notes: [
         `清潔類型: ${cleaningType}`,
         housingType ? `房型: ${housingType}${hasElevator ? ` (${hasElevator})` : ''}` : '',
           squareFootage ? `坪數: ${squareFootage}` : '',
           enhanceAreas.length ? `加強: ${enhanceAreas.join(', ')}` : '',
-          addrCoords ? `GPS: ${addrCoords.lat.toFixed(6)},${addrCoords.lng.toFixed(6)}` : '',
           notes ? `備註: ${notes}` : '',
         ].filter(Boolean).join(' | '),
       });

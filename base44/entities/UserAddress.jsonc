@@ -44,6 +44,14 @@
       "type": "boolean",
       "default": false,
       "description": "\u662f\u5426\u70ba\u9810\u8a2d\u5730\u5740"
+    },
+    "gps_lat": {
+      "type": "number",
+      "description": "\u670d\u52d9\u5730\u9ede\u7def\u5ea6\uff08\u624b\u52d5\u6821\u6b63\u5f8c\u5132\u5b58\uff09"
+    },
+    "gps_lng": {
+      "type": "number",
+      "description": "\u670d\u52d9\u5730\u9ede\u7d93\u5ea6\uff08\u624b\u52d5\u6821\u6b63\u5f8c\u5132\u5b58\uff09"
     }
   },
   "required": [
