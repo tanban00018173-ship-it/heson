@@ -3,37 +3,44 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { Home, ShoppingBag, Zap, Bell, User } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
+import {
+  getCurrentPortal,
+  getNextPortalPath,
+  getPortalIconColor,
+  COLOR_CLASSES,
+} from '@/lib/portalColor';
 
 const TABS = [
-  { id: 'home',    icon: Home,        label: '首頁',  path: 'Home' },
-  { id: 'shop',    icon: ShoppingBag, label: '商店',  path: 'ClientShop' },
-  { id: 'task',    icon: Zap,         label: '任務',  path: 'FlashTaskPost', primary: true },
-  { id: 'notify',  icon: Bell,        label: '通知',  path: 'MyBookings' },
+  { id: 'home',   icon: Home,        label: '首頁', path: 'Home' },
+  { id: 'shop',   icon: ShoppingBag, label: '商店', path: 'ClientShop' },
+  { id: 'task',   icon: Zap,         label: '任務', path: 'FlashTaskPost', primary: true },
+  { id: 'notify', icon: Bell,        label: '通知', path: 'MyBookings' },
 ];
-
-// 前台 → 中台(CleanerJobs) → 後台(AdminDashboard) → 前台
-function getNextPortal(currentPath, role) {
-  if (currentPath.startsWith('/Admin')) return '/Home';
-  if (currentPath.startsWith('/Cleaner')) {
-    return role === 'admin' ? '/AdminDashboard' : '/Home';
-  }
-  // 前台 → 中台
-  return '/CleanerJobs';
-}
 
 export default function ClientBottomNav() {
   const location = useLocation();
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
+  const [clientProfile, setClientProfile] = useState(null);
   const lastClickTime = useRef(0);
 
   useEffect(() => {
     base44.auth.isAuthenticated().then(ok => {
-      if (ok) base44.auth.me().then(setUser);
+      if (!ok) return;
+      base44.auth.me().then(async (u) => {
+        setUser(u);
+        // 抓 premium 狀態
+        const profiles = await base44.entities.ClientProfile.filter({ user_id: u.id });
+        if (profiles?.[0]) setClientProfile(profiles[0]);
+      });
     });
   }, []);
 
-  const hasPortalAccess = user?.role === 'admin' || user?.role === 'cleaner';
+  const portal = getCurrentPortal(location.pathname);
+  const hasPremium = clientProfile?.subscription_plan && clientProfile.subscription_plan !== '無';
+  const iconColor = getPortalIconColor(portal, user?.role, hasPremium);
+  const hasPortalAccess = !!iconColor;
+
   const profilePath = '/ClientProfile';
   const isProfileActive = location.pathname === profilePath || location.pathname.includes('ClientProfile');
 
@@ -47,14 +54,14 @@ export default function ClientBottomNav() {
     lastClickTime.current = now;
 
     if (diff < 400) {
-      // 雙擊：切換台端
       lastClickTime.current = 0;
-      navigate(getNextPortal(location.pathname, user.role));
+      navigate(getNextPortalPath(portal, user?.role));
     } else {
-      // 單擊：進我的頁面
       navigate(profilePath);
     }
   };
+
+  const iconColorClass = iconColor ? COLOR_CLASSES[iconColor] : (isProfileActive ? 'text-stone-900' : 'text-stone-300');
 
   return (
     <div
@@ -93,7 +100,7 @@ export default function ClientBottomNav() {
           );
         })}
 
-        {/* 我的 — 雙擊切換台端 */}
+        {/* 我的 — 雙擊切換台端，icon 顏色代表目的地 */}
         <button
           onClick={handleProfileClick}
           className="flex-1 flex flex-col items-center justify-center py-2.5 gap-0.5 transition-colors relative"
@@ -101,15 +108,10 @@ export default function ClientBottomNav() {
           {isProfileActive && (
             <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-stone-900 rounded-full" />
           )}
-          <div className="relative">
-            <User
-              className={`w-5 h-5 transition-colors ${isProfileActive ? 'text-stone-900' : 'text-stone-300'}`}
-              strokeWidth={isProfileActive ? 2.5 : 1.8}
-            />
-            {hasPortalAccess && (
-              <span className="absolute -top-1 -right-1 w-2 h-2 bg-amber-500 rounded-full" />
-            )}
-          </div>
+          <User
+            className={`w-5 h-5 transition-colors ${iconColorClass}`}
+            strokeWidth={isProfileActive ? 2.5 : 1.8}
+          />
           <span className={`text-[10px] font-medium transition-colors ${isProfileActive ? 'text-stone-900' : 'text-stone-300'}`}>
             我的
           </span>
