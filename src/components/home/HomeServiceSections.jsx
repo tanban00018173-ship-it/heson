@@ -7,6 +7,7 @@ import { IconBroom, IconDeepClean, IconCleaner, IconRecurring, IconAC, IconFabri
 import { sortByRelevance } from '@/lib/useNearbyRecommend';
 import { useTrack } from '@/lib/useTrack';
 import VendorShowcaseRow from './VendorShowcaseRow';
+import HesonPicksSection from './HesonPicksSection';
 
 /* ─── 隨機洗牌（Fisher-Yates） ─── */
 function shuffle(arr) {
@@ -256,6 +257,13 @@ export default function HomeServiceSections({ user, userAddress }) {
 
   return (
     <div>
+      {/* ── 置頂：Heson 精選推薦（品牌廣告面板） ── */}
+      <HesonPicksSection
+        cleaners={shuffledCleaners}
+        reviews={reviews}
+        onTrack={safeTrack}
+      />
+
       {rounds.map((roundDefs, roundIdx) => (
         <React.Fragment key={roundIdx}>
           {roundDefs.map((def, defIdx) => (
