@@ -25,8 +25,7 @@ export default function ClientBottomNav() {
   const location = useLocation();
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
-  const [clickCount, setClickCount] = useState(0);
-  const clickTimer = useRef(null);
+  const lastClickTime = useRef(0);
 
   useEffect(() => {
     base44.auth.isAuthenticated().then(ok => {
@@ -43,18 +42,17 @@ export default function ClientBottomNav() {
       navigate(profilePath);
       return;
     }
-    const newCount = clickCount + 1;
-    setClickCount(newCount);
-    clearTimeout(clickTimer.current);
-    if (newCount >= 2) {
-      setClickCount(0);
-      const dest = getNextPortal(location.pathname, user.role);
-      navigate(dest);
+    const now = Date.now();
+    const diff = now - lastClickTime.current;
+    lastClickTime.current = now;
+
+    if (diff < 400) {
+      // 雙擊：切換台端
+      lastClickTime.current = 0;
+      navigate(getNextPortal(location.pathname, user.role));
     } else {
-      clickTimer.current = setTimeout(() => {
-        setClickCount(0);
-        navigate(profilePath);
-      }, 400);
+      // 單擊：進我的頁面
+      navigate(profilePath);
     }
   };
 
