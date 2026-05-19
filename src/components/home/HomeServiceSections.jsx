@@ -92,17 +92,29 @@ function CleanerCard({ profile, reviews = [], onTrack }) {
 
 function ProductCard({ product, onTrack }) {
   const navigate = useNavigate();
+  const priceInt = product.price ? Math.floor(product.price) : null;
   return (
     <button onClick={() => { onTrack('click_card', { section_key: 'shop', target_id: product.id, target_name: product.name }); navigate('/ClientShop'); }}
-      className="flex-shrink-0 w-[55vw] max-w-[240px] bg-white rounded-2xl overflow-hidden shadow-sm border border-stone-100 text-left active:scale-95 transition-transform"
+      className="flex-shrink-0 w-[38vw] max-w-[160px] text-left active:scale-95 transition-transform"
     >
-      <div className="h-36 bg-stone-100 flex items-center justify-center overflow-hidden">
-        {product.image_url ? <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" /> : <ShoppingBag className="w-10 h-10 text-stone-300" />}
+      <div className="w-full aspect-square rounded-2xl bg-stone-100 flex items-center justify-center overflow-hidden relative">
+        {product.image_url
+          ? <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" />
+          : <ShoppingBag className="w-10 h-10 text-stone-300" />}
+        <div className="absolute bottom-2 right-2 w-9 h-9 rounded-full bg-white shadow-lg flex items-center justify-center">
+          <span className="text-stone-800 font-bold text-xl leading-none">+</span>
+        </div>
       </div>
-      <div className="p-3">
-        <p className="text-base font-bold text-stone-900">{product.name}</p>
-        <p className="text-sm font-black text-stone-900 mt-1">NT$ {product.price?.toLocaleString()}</p>
-        {product.unit && <p className="text-xs text-stone-400 mt-0.5">{product.unit}</p>}
+      <div className="mt-2 px-0.5">
+        {priceInt != null && (
+          <p className="font-black text-stone-900 leading-none mb-1">
+            <span className="text-sm">$</span>
+            <span className="text-xl">{priceInt}</span>
+            <sup className="text-[10px] font-bold align-super">00</sup>
+          </p>
+        )}
+        <p className="text-[12px] text-stone-800 leading-snug line-clamp-2">{product.name}</p>
+        {product.unit && <p className="text-[11px] text-stone-400 mt-0.5">{product.unit}</p>}
       </div>
     </button>
   );
