@@ -8,7 +8,7 @@ function PickCard({ profile, avgRating, reviewCount, onClick }) {
       onClick={onClick}
       className="flex-shrink-0 w-[55vw] max-w-[240px] rounded-2xl overflow-hidden text-left active:scale-95 transition-transform border border-stone-100 shadow-sm bg-white flex flex-col"
     >
-      <div className="h-32 bg-gradient-to-br from-stone-100 to-stone-200 overflow-hidden flex items-center justify-center">
+      <div className="relative h-32 bg-gradient-to-br from-stone-100 to-stone-200 overflow-hidden flex items-center justify-center">
         {profile.profile_photo
           ? <img src={profile.profile_photo} alt={profile.nickname} className="w-full h-full object-cover" />
           : <span className="text-4xl">🧹</span>
