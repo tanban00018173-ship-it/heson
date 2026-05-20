@@ -39,7 +39,7 @@ const SECTION_DEFS = [
 ];
 
 /* ─── 卡片組件 ─── */
-function DbCard({ item, onTrack }) {
+function DbCard({ item, cleaner, onTrack }) {
   const navigate = useNavigate();
   return (
     <button onClick={() => {
@@ -47,18 +47,30 @@ function DbCard({ item, onTrack }) {
       base44.entities.HomeSection.update(item.id, { click_count: (item.click_count || 0) + 1 }).catch(() => {});
       navigate('/ClientBooking');
     }}
-      className="flex-shrink-0 w-[60vw] max-w-[260px] rounded-2xl overflow-hidden text-left active:scale-95 transition-transform border border-stone-100 shadow-sm bg-white"
+      className="flex-shrink-0 w-[75vw] max-w-[340px] rounded-2xl overflow-hidden text-left active:scale-95 transition-transform border border-stone-100 shadow-sm bg-white flex"
     >
-      <div className="h-36 bg-stone-100 flex items-center justify-center relative overflow-hidden">
+      {/* 左側頭像 */}
+      <div className="w-20 h-20 flex-shrink-0 bg-stone-100 flex items-center justify-center overflow-hidden">
+        {cleaner?.profile_photo
+          ? <img src={cleaner.profile_photo} alt={cleaner.nickname} className="w-full h-full object-cover" />
+          : <span className="text-2xl">🧹</span>}
+      </div>
+      
+      {/* 中央服務內容 */}
+      <div className="flex-1 flex flex-col justify-between p-3 min-w-0">
+        <div>
+          <p className="font-bold text-sm text-stone-900 leading-snug line-clamp-1">{item.title}</p>
+          <p className="text-xs text-stone-400 mt-0.5 leading-tight line-clamp-1">{item.subtitle}</p>
+        </div>
+        {item.price && <p className="text-sm font-bold text-stone-900 mt-1">NT$ {item.price.toLocaleString()} 起</p>}
+      </div>
+
+      {/* 右側圖片與標籤 */}
+      <div className="w-20 h-20 flex-shrink-0 bg-stone-100 flex items-center justify-center relative overflow-hidden">
         {item.image_url
           ? <img src={item.image_url} alt={item.title} className="w-full h-full object-cover" />
-          : <IconBroom className="w-14 h-14" />}
-        {item.badge && <span className="absolute top-2 right-2 bg-white/90 text-stone-700 text-[9px] font-bold px-1.5 py-0.5 rounded-full">{item.badge}</span>}
-      </div>
-      <div className="p-3">
-        <p className="font-bold text-base text-stone-900 leading-snug">{item.title}</p>
-        <p className="text-xs text-stone-400 mt-0.5 leading-tight">{item.subtitle}</p>
-        {item.price && <p className="text-sm font-bold text-stone-900 mt-1.5">NT$ {item.price.toLocaleString()} 起</p>}
+          : <IconBroom className="w-8 h-8" />}
+        {item.badge && <span className="absolute top-1 right-1 bg-white/90 text-stone-700 text-[9px] font-bold px-1 py-0.5 rounded-full">{item.badge}</span>}
       </div>
     </button>
   );
@@ -185,7 +197,10 @@ function SectionRow({ def, items, cleaners, reviews, products, onTrack }) {
         : <PlaceholderCards />;
     }
     return items.length > 0
-      ? items.map(item => <DbCard key={item.id} item={item} onTrack={onTrack} />)
+      ? items.map(item => {
+          const cleanerProfile = cleaners.find(c => c.user_id === item.provider_id);
+          return <DbCard key={item.id} item={item} cleaner={cleanerProfile} onTrack={onTrack} />;
+        })
       : <PlaceholderCards />;
   };
 
