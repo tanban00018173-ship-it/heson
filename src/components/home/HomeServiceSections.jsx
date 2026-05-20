@@ -47,30 +47,26 @@ function DbCard({ item, onTrack, providerPhoto }) {
       base44.entities.HomeSection.update(item.id, { click_count: (item.click_count || 0) + 1 }).catch(() => {});
       navigate('/ClientBooking');
     }}
-      className="flex-shrink-0 w-[60vw] max-w-[260px] rounded-2xl border border-stone-100 shadow-sm bg-white text-left active:scale-95 transition-transform overflow-hidden"
+      className="flex-shrink-0 w-[60vw] max-w-[260px] rounded-2xl overflow-hidden text-left active:scale-95 transition-transform border border-stone-100 shadow-sm bg-white"
     >
-      {/* 上方圓角灰底圖片區（內縮留白） */}
-      <div className="relative mx-3 mt-3 rounded-xl bg-stone-100 h-36 flex items-center justify-center overflow-hidden">
+      <div className="h-36 bg-stone-100 flex items-center justify-center relative overflow-hidden">
         {item.image_url
           ? <img src={item.image_url} alt={item.title} className="w-full h-full object-cover" />
-          : <IconBroom className="w-14 h-14 opacity-30" />}
-        {item.badge && (
-          <span className="absolute top-2 right-2 bg-red-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-full">{item.badge}</span>
-        )}
+          : <IconBroom className="w-14 h-14" />}
+        {item.badge && <span className="absolute top-2 right-2 bg-white/90 text-stone-700 text-[9px] font-bold px-1.5 py-0.5 rounded-full">{item.badge}</span>}
       </div>
-      {/* 下方左圓形圖示 + 右文字 */}
-      <div className="flex items-center gap-2.5 px-3 py-3">
-        <div className="w-11 h-11 rounded-full bg-stone-100 flex-shrink-0 overflow-hidden flex items-center justify-center">
-          {providerPhoto
-            ? <img src={providerPhoto} alt="" className="w-full h-full object-cover" />
-            : <IconBroom className="w-6 h-6 opacity-50" />}
-        </div>
+      <div className="p-3 flex gap-2">
+        {providerPhoto ? (
+          <img src={providerPhoto} alt="" className="w-12 h-12 rounded-full object-cover border border-stone-100 flex-shrink-0" />
+        ) : (
+          <div className="w-12 h-12 rounded-full bg-stone-200 flex items-center justify-center flex-shrink-0">
+            <span className="text-lg">🧹</span>
+          </div>
+        )}
         <div className="flex-1 min-w-0">
-          <p className="font-bold text-sm text-stone-900 leading-snug line-clamp-2">{item.title}</p>
-          <p className="text-[11px] text-stone-400 mt-0.5 leading-tight line-clamp-1">{item.subtitle}</p>
-          {item.price != null && (
-            <p className="text-sm font-black text-stone-900 mt-1">NT$ {item.price.toLocaleString()} 起</p>
-          )}
+          <p className="font-bold text-base text-stone-900 leading-snug line-clamp-2">{item.title}</p>
+          <p className="text-xs text-stone-400 mt-0.5 leading-tight line-clamp-1">{item.subtitle}</p>
+          {item.price && <p className="text-sm font-bold text-stone-900 mt-1">NT$ {item.price.toLocaleString()} 起</p>}
         </div>
       </div>
     </button>
