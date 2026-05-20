@@ -57,9 +57,9 @@ function SkeletonGrid() {
 
 /* ── 等級橫幅 ── */
 function getLevel(years) {
-  if (!years || years < 2) return { label: '清潔師傅', bg: 'bg-gray-400', icon: '🧹' };
-  if (years < 5) return { label: '清潔達人', bg: 'bg-amber-500', icon: '⭐' };
-  return { label: '清潔大師', bg: 'bg-purple-600', icon: '👑' };
+  if (!years || years < 2) return { label: '清潔師傅', color: 'from-stone-400 to-stone-600', icon: '🧹' };
+  if (years < 5) return { label: '清潔達人', color: 'from-amber-400 to-orange-500', icon: '⭐' };
+  return { label: '清潔大師', color: 'from-purple-500 to-indigo-600', icon: '👑' };
 }
 
 export default function CleanerShopPage() {
@@ -199,7 +199,7 @@ export default function CleanerShopPage() {
             {(() => {
               const lv = getLevel(profile?.experience_years);
               return (
-                <span className={`absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 ${lv.bg} text-white text-[9px] font-bold px-2 py-0.75 rounded-full shadow whitespace-nowrap`}>
+                <span className={`absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 bg-gradient-to-r ${lv.color} text-white text-[7px] font-bold px-1.5 py-0.5 rounded-full shadow whitespace-nowrap`}>
                   {lv.label}
                 </span>
               );
