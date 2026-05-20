@@ -75,7 +75,7 @@ const icons = {
 const CATEGORIES = [
   { id: 'light',     label: '輕量清潔',  icon: icons.light },
   { id: 'recurring', label: '定期清潔',  icon: icons.recurring },
-  { id: 'deep',      label: '大掃除',    icon: icons.deep },
+  { id: 'deep',      label: '細清／大掃除', icon: icons.deep },
   { id: 'moveout',   label: '退租前細清', icon: icons.moveout },
   { id: 'movein',    label: '入住前細清', icon: icons.movein },
   { id: 'airbnb',    label: '民宿房務',  icon: icons.airbnb },
