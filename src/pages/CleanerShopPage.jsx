@@ -208,20 +208,20 @@ export default function CleanerShopPage() {
 
           {/* 名稱、評分、粉絲 */}
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-1.5">
-              <h1 className="font-bold text-sm text-white drop-shadow truncate">
+            <div className="flex items-center gap-1">
+              <h1 className="font-bold text-base text-white drop-shadow truncate">
                 {profile?.nickname || (isLoading ? '載入中…' : '師傅')}
               </h1>
-              <ChevronRight className="w-3.5 h-3.5 text-white/70 flex-shrink-0" />
+              <ChevronRight className="w-4 h-4 text-white/70 flex-shrink-0" />
             </div>
-            <div className="flex items-center gap-1.5 mt-1">
+            <div className="flex items-center gap-1 mt-0.5">
               <Star className="w-3 h-3 fill-amber-400 text-amber-400 flex-shrink-0" />
-              <span className="text-xs font-bold text-white drop-shadow">
+              <span className="text-[10px] font-bold text-white drop-shadow">
                 {avgRating || '－'}
               </span>
-              <span className="text-white/60 text-xs">｜</span>
+              <span className="text-white/60 text-[10px]">｜</span>
               <Users className="w-3 h-3 text-white/80 flex-shrink-0" />
-              <span className="text-xs text-white drop-shadow font-semibold">
+              <span className="text-[10px] text-white drop-shadow font-semibold">
                 {formatCount(followerCount)} 粉絲
               </span>
             </div>
