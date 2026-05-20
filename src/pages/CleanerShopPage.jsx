@@ -142,19 +142,19 @@ export default function CleanerShopPage() {
         {/* 頭像 + 按鈕 row */}
         <div className="px-4 flex items-end justify-between" style={{ marginTop: -28 }}>
           {/* 頭像 + 等級橫幅 */}
-          <div className="flex flex-col items-center gap-0">
-            <div className="w-16 h-16 rounded-2xl overflow-hidden border-2 border-white shadow-md bg-stone-100 flex-shrink-0">
+          <div className="relative flex-shrink-0" style={{ width: 64 }}>
+            <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-white shadow-md bg-stone-100">
               {profile?.profile_photo
                 ? <img src={profile.profile_photo} alt={profile?.nickname} className="w-full h-full object-cover" />
                 : <div className="w-full h-full flex items-center justify-center"><span className="text-2xl">🧹</span></div>
               }
             </div>
-            {/* 等級橫幅 */}
+            {/* 等級橫幅：覆蓋在頭像偏下方 */}
             {(() => {
               const lv = getLevel(profile?.experience_years);
               return (
-                <span className={`mt-1 bg-gradient-to-r ${lv.color} text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow-sm`}>
-                  {lv.icon} {lv.label}
+                <span className={`absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 bg-gradient-to-r ${lv.color} text-white text-[8px] font-bold px-2 py-0.5 rounded-full shadow whitespace-nowrap`}>
+                  {lv.label}
                 </span>
               );
             })()}
