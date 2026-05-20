@@ -199,7 +199,7 @@ export default function CleanerShopPage() {
             {(() => {
               const lv = getLevel(profile?.experience_years);
               return (
-                <span className={`absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 bg-gradient-to-r ${lv.color} text-white text-[9px] font-bold px-2 py-0.75 rounded-full shadow whitespace-nowrap`}>
+                <span className={`absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 bg-gradient-to-r ${lv.color} text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow whitespace-nowrap`}>
                   {lv.label}
                 </span>
               );
