@@ -313,17 +313,12 @@ export default function HomeServiceSections({ user, userAddress }) {
     return () => observer.disconnect();
   }, [addRound]);
 
-  // 取 flash、featured_cleaners、recurring、deep_clean 這四個熱門模塊的卡片作為精選推薦
-  const hesonServiceKeys = ['flash', 'featured_cleaners', 'recurring', 'deep_clean'];
-  const hesonServices = hesonServiceKeys
-    .flatMap(key => sectionItemsMap[key] || [])
-    .slice(0, 4);
-
   return (
     <div>
-      {/* ── 置頂：Heson 精選推薦（清潔服務） ── */}
+      {/* ── 置頂：Heson 精選推薦（取前半段，避免與口碑模塊重複） ── */}
       <HesonPicksSection
-        services={hesonServices}
+        cleaners={shuffledCleaners.slice(0, Math.ceil(shuffledCleaners.length / 2))}
+        reviews={reviews}
         onTrack={safeTrack}
       />
 
