@@ -223,12 +223,11 @@ export default function CleanerShopPage() {
           <button
             key={tab}
             onClick={() => setSortTab(tab)}
-            className={`flex-1 py-2.5 text-xs font-semibold border-b-2 transition-colors ${
-              sortTab === tab ? 'text-stone-900 border-stone-900' : 'text-stone-400 border-transparent'
+            className={`flex-1 py-2.5 text-xs font-semibold transition-colors ${
+              sortTab === tab ? 'text-stone-900' : 'text-stone-400'
             }`}
           >
             {tab}
-            {tab === '最新' && <span className="ml-0.5 w-1.5 h-1.5 bg-red-500 rounded-full inline-block align-middle" />}
           </button>
         ))}
       </div>
