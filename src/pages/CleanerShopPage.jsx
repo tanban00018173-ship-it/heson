@@ -334,6 +334,20 @@ export default function CleanerShopPage() {
       {/* ── 服務 Tab ── */}
       {activeTab === '服務' && (
         <div className="pb-24">
+          {/* 排序列 */}
+          <div className="border-t border-stone-100 flex items-center bg-white sticky top-[121px] z-20">
+            {SORT_TABS.map((tab, idx) => (
+              <div key={tab} className="flex-1 flex items-center">
+                <button
+                  onClick={() => setSortTab(tab)}
+                  className={`flex-1 py-2.5 text-xs font-semibold transition-colors ${sortTab === tab ? 'text-stone-900' : 'text-stone-400'}`}
+                >
+                  {tab}
+                </button>
+                {idx < SORT_TABS.length - 1 && <span className="w-px h-4 bg-stone-300" />}
+              </div>
+            ))}
+          </div>
           {isLoading ? <SkeletonGrid /> : sections.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20">
               <span className="text-5xl mb-3">🧹</span>
@@ -376,16 +390,32 @@ export default function CleanerShopPage() {
 
       {/* ── 小舖 Tab ── */}
       {activeTab === '小舖' && (
-        <div className="pb-24 px-4 pt-4">
-          <div className="flex flex-col items-center justify-center py-16">
-            <span className="text-5xl mb-3">🛍️</span>
-            <p className="text-sm font-medium text-stone-400">小舖功能即將開放</p>
-            <button
-              onClick={() => navigate('/ClientShop')}
-              className="mt-5 bg-stone-900 text-white text-xs font-bold px-5 py-2.5 rounded-full"
-            >
-              前往商店
-            </button>
+        <div className="pb-24">
+          {/* 排序列 */}
+          <div className="border-t border-stone-100 flex items-center bg-white sticky top-[121px] z-20">
+            {SORT_TABS.map((tab, idx) => (
+              <div key={tab} className="flex-1 flex items-center">
+                <button
+                  onClick={() => setSortTab(tab)}
+                  className={`flex-1 py-2.5 text-xs font-semibold transition-colors ${sortTab === tab ? 'text-stone-900' : 'text-stone-400'}`}
+                >
+                  {tab}
+                </button>
+                {idx < SORT_TABS.length - 1 && <span className="w-px h-4 bg-stone-300" />}
+              </div>
+            ))}
+          </div>
+          <div className="px-4 pt-4">
+            <div className="flex flex-col items-center justify-center py-16">
+              <span className="text-5xl mb-3">🛍️</span>
+              <p className="text-sm font-medium text-stone-400">小舖功能即將開放</p>
+              <button
+                onClick={() => navigate('/ClientShop')}
+                className="mt-5 bg-stone-900 text-white text-xs font-bold px-5 py-2.5 rounded-full"
+              >
+                前往商店
+              </button>
+            </div>
           </div>
         </div>
       )}
