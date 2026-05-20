@@ -31,7 +31,7 @@ const SECTION_DEFS = [
   { key: 'flash',            icon: Zap,        title: '閃電今日到府',      badge: '快速', cta: '立刻預約', ctaPath: '/FlashTaskPost' },
   { key: 'featured_cleaners',icon: Sparkles,   title: '口碑好評管理師',    badge: null,  cta: '查看全部', ctaPath: '/CleanerTeam' },
   { key: 'recurring',        icon: RefreshCw,  title: '定期包月省更多',    badge: null,  cta: '查看方案', ctaPath: '/ClientBooking' },
-  { key: 'deep_clean',       icon: Home,       title: '細清／大掃除', badge: null, cta: '了解更多', ctaPath: '/ServiceInquiry' },
+  { key: 'deep_clean',       icon: Home,       title: '大掃除 & 裝潢後細清', badge: null, cta: '了解更多', ctaPath: '/ServiceInquiry' },
   { key: 'shop',             icon: ShoppingBag,title: '爆殺限量瘋搶 💥',  badge: '限時', cta: '逛商店',  ctaPath: '/ClientShop' },
   { key: 'appliance',        icon: Snowflake,  title: '家電清洗 讓家更健康', badge: null, cta: '預約清洗', ctaPath: '/ServiceInquiry' },
   { key: 'fabric',           icon: Wrench,     title: '布面清洗 煥然一新', badge: null,  cta: '預約清洗', ctaPath: '/ServiceInquiry' },
