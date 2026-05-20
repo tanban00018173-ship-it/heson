@@ -224,7 +224,7 @@ export default function CategoryChips() {
   return (
     <div className="bg-white border-b border-stone-100">
       {/* 上行：類別（單選） */}
-      <div className="flex overflow-x-auto scrollbar-none px-3 pt-4 pb-1.5 gap-0">
+      <div className="flex overflow-x-auto scrollbar-none px-3 pt-4 pb-2 gap-0">
         {CATEGORIES.map((cat) => {
           const active = selectedCat === cat.id;
           return (
@@ -246,7 +246,7 @@ export default function CategoryChips() {
       </div>
 
       {/* 下行：篩選膠囊（複選） */}
-      <div className="flex overflow-x-auto gap-2 px-4 pb-1.5 pt-1 scrollbar-none">
+      <div className="flex overflow-x-auto gap-2 px-4 pb-3 pt-1 scrollbar-none">
         {FILTERS.map((f) => {
           const active = selectedFilters.includes(f.id);
           const FIcon = f.Icon;
