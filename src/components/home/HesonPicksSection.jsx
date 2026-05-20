@@ -2,40 +2,42 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Star, Shield, ArrowRight } from 'lucide-react';
 
-function PickCard({ profile, avgRating, reviewCount, onClick }) {
+function PickCard({ profile, avgRating, onClick }) {
   return (
     <button
       onClick={onClick}
-      className="flex-shrink-0 w-[55vw] max-w-[240px] rounded-2xl overflow-hidden text-left active:scale-95 transition-transform border border-stone-100 shadow-sm bg-white flex flex-col"
+      className="flex-shrink-0 w-[55vw] max-w-[240px] rounded-2xl border border-stone-100 shadow-sm bg-white text-left active:scale-95 transition-transform overflow-hidden"
     >
-      <div className="relative h-40 bg-stone-100 overflow-hidden flex items-center justify-center flex-shrink-0">
+      {/* 上方淺灰圖片區 */}
+      <div className="relative mx-3 mt-3 rounded-xl bg-stone-100 h-36 flex items-center justify-center overflow-hidden">
         {profile.profile_photo
-          ? <img src={profile.profile_photo} alt={profile.nickname} className="w-24 h-24 rounded-full object-cover" />
-          : <span className="text-5xl">🧹</span>
+          ? <img src={profile.profile_photo} alt={profile.nickname} className="w-full h-full object-cover" />
+          : <span className="text-5xl opacity-30">🧹</span>
         }
         {profile.is_active && (
           <span className="absolute top-2 left-2 bg-green-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">接案中</span>
         )}
       </div>
-      <div className="p-3 flex gap-2.5">
-        <div className="w-12 h-12 rounded-full bg-stone-100 flex-shrink-0 overflow-hidden flex items-center justify-center">
+
+      {/* 下方文字區：左圓形頭像 + 右文字 */}
+      <div className="flex items-center gap-2.5 px-3 py-3">
+        <div className="w-11 h-11 rounded-full bg-stone-100 flex-shrink-0 overflow-hidden flex items-center justify-center">
           {profile.profile_photo
             ? <img src={profile.profile_photo} alt={profile.nickname} className="w-full h-full object-cover" />
-            : <span className="text-xl">🧹</span>
+            : <span className="text-lg">🧹</span>
           }
         </div>
         <div className="flex-1 min-w-0">
-          <p className="font-bold text-sm text-stone-800">{profile.nickname || '管理師'}</p>
-          <p className="text-[10px] text-stone-400 leading-tight">{(profile.service_areas || []).slice(0, 2).join('・') || '全台服務'}</p>
-          <div className="flex items-center gap-2 mt-1.5">
-            {avgRating && (
-              <span className="flex items-center gap-0.5 text-[10px] font-bold text-amber-500">
-                <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />{avgRating}
-              </span>
-            )}
-            <span className="text-[10px] text-stone-600 font-semibold">{profile.experience_years || 1}年資</span>
-            {profile.police_record_verified && <Shield className="w-2.5 h-2.5 text-blue-400" />}
-          </div>
+          <p className="font-bold text-sm text-stone-900 leading-tight">{profile.nickname || '管理師'}</p>
+          <p className="text-[11px] text-stone-400 mt-0.5 leading-tight">{(profile.service_areas || []).slice(0, 2).join('・') || '全台服務'}</p>
+          {avgRating && (
+            <p className="font-black text-stone-900 text-sm mt-1 leading-none">
+              ★ {avgRating}
+            </p>
+          )}
+          {!avgRating && profile.experience_years && (
+            <p className="text-sm font-bold text-stone-900 mt-1">{profile.experience_years} 年資歷</p>
+          )}
         </div>
       </div>
     </button>
