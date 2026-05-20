@@ -208,9 +208,9 @@ export default function CleanerShopPage() {
         )}
 
         {/* 導航 tabs */}
-        <div className="border-t border-stone-100 flex px-4 gap-5 text-xs font-semibold text-stone-400 pt-2.5 pb-0 overflow-x-auto scrollbar-none">
+        <div className="border-t border-stone-100 flex text-xs font-semibold text-stone-400 pt-2.5 pb-0">
           {['作品', '服務項目', '評價', '師傅資訊'].map((tab, i) => (
-            <button key={tab} className={`flex-shrink-0 pb-2 border-b-2 transition-colors ${i === 0 ? 'text-stone-900 border-stone-900' : 'border-transparent'}`}>
+            <button key={tab} className={`flex-1 pb-2 border-b-2 transition-colors ${i === 0 ? 'text-stone-900 border-stone-900' : 'border-transparent'}`}>
               {tab}
             </button>
           ))}
@@ -218,12 +218,12 @@ export default function CleanerShopPage() {
       </div>
 
       {/* ── 排序列 ── */}
-      <div className="bg-white mt-2 border-b border-stone-100 flex overflow-x-auto scrollbar-none">
+      <div className="bg-white mt-2 border-b border-stone-100 flex">
         {SORT_TABS.map(tab => (
           <button
             key={tab}
             onClick={() => setSortTab(tab)}
-            className={`flex-shrink-0 px-4 py-2.5 text-xs font-semibold border-b-2 transition-colors ${
+            className={`flex-1 py-2.5 text-xs font-semibold border-b-2 transition-colors ${
               sortTab === tab ? 'text-stone-900 border-stone-900' : 'text-stone-400 border-transparent'
             }`}
           >
