@@ -65,6 +65,7 @@ function getLevel(years) {
 export default function CleanerShopPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [activeTab, setActiveTab] = useState('首頁');
   const [sortTab, setSortTab] = useState('綜合排名');
   const [search, setSearch] = useState('');
   const [cleanerId, setCleanerId] = useState('');
@@ -274,88 +275,212 @@ export default function CleanerShopPage() {
 
       {/* 導航 tabs */}
       <div className="bg-white border-b border-stone-100 flex text-xs font-semibold text-stone-400">
-        {['首頁', '服務', '小舖', '會員', '貼文'].map((tab, i) => (
-          <button key={tab} className={`flex-1 py-2.5 border-b-2 transition-colors ${i === 0 ? 'text-stone-900 border-stone-900' : 'border-transparent'}`}>
+        {['首頁', '服務', '小舖', '會員', '貼文'].map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`flex-1 py-2.5 border-b-2 transition-colors ${activeTab === tab ? 'text-stone-900 border-stone-900' : 'border-transparent'}`}
+          >
             {tab}
           </button>
         ))}
       </div>
 
-      {/* ── 排序列 ── */}
-      <div className="border-t border-stone-100 flex items-center">
-        {SORT_TABS.map((tab, idx) => (
-          <div key={tab} className="flex-1 flex items-center">
-            <button
-              onClick={() => setSortTab(tab)}
-              className={`flex-1 py-2.5 text-xs font-semibold transition-colors ${
-                sortTab === tab ? 'text-stone-900' : 'text-stone-400'
-              }`}
-            >
-              {tab}
-            </button>
-            {idx < SORT_TABS.length - 1 && (
-              <span className="w-px h-4 bg-stone-300" />
+      {/* ── 首頁 Tab ── */}
+      {activeTab === '首頁' && (
+        <>
+          {/* 排序列 */}
+          <div className="border-t border-stone-100 flex items-center bg-white">
+            {SORT_TABS.map((tab, idx) => (
+              <div key={tab} className="flex-1 flex items-center">
+                <button
+                  onClick={() => setSortTab(tab)}
+                  className={`flex-1 py-2.5 text-xs font-semibold transition-colors ${sortTab === tab ? 'text-stone-900' : 'text-stone-400'}`}
+                >
+                  {tab}
+                </button>
+                {idx < SORT_TABS.length - 1 && <span className="w-px h-4 bg-stone-300" />}
+              </div>
+            ))}
+          </div>
+          <div className="mt-2 pb-24">
+            {isLoading ? (
+              <SkeletonGrid />
+            ) : items.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-20">
+                <span className="text-5xl mb-3">🧹</span>
+                <p className="text-sm font-medium text-stone-400">尚無作品</p>
+                <p className="text-xs text-stone-300 mt-1">師傅尚未上架服務項目</p>
+                <button
+                  onClick={() => navigate(`/ServiceInquiry?cleaner=${profile?.user_id}`)}
+                  className="mt-5 bg-stone-900 text-white text-xs font-bold px-5 py-2.5 rounded-full"
+                >
+                  直接詢問預約
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-[1px] bg-stone-100">
+                {items.map(item => (
+                  <div key={item.id} className="bg-white p-3">
+                    <ServiceCard item={item} onClick={() => navigate(`/ServiceInquiry?cleaner=${profile?.user_id}&service=${item.id}`)} />
+                  </div>
+                ))}
+              </div>
             )}
           </div>
-        ))}
-      </div>
+        </>
+      )}
 
-      {/* ── 作品網格 ── */}
-      <div className="mt-2 pb-24">
-        {isLoading ? (
-          <SkeletonGrid />
-        ) : items.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20">
-            <span className="text-5xl mb-3">🧹</span>
-            <p className="text-sm font-medium text-stone-400">尚無作品</p>
-            <p className="text-xs text-stone-300 mt-1">師傅尚未上架服務項目</p>
+      {/* ── 服務 Tab ── */}
+      {activeTab === '服務' && (
+        <div className="pb-24">
+          {isLoading ? <SkeletonGrid /> : sections.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-20">
+              <span className="text-5xl mb-3">🧹</span>
+              <p className="text-sm font-medium text-stone-400">尚無服務項目</p>
+              <button
+                onClick={() => navigate(`/ServiceInquiry?cleaner=${profile?.user_id}`)}
+                className="mt-5 bg-stone-900 text-white text-xs font-bold px-5 py-2.5 rounded-full"
+              >
+                直接詢問預約
+              </button>
+            </div>
+          ) : (
+            <div className="divide-y divide-stone-100">
+              {sections.map(item => (
+                <button
+                  key={item.id}
+                  onClick={() => navigate(`/ServiceInquiry?cleaner=${profile?.user_id}&service=${item.id}`)}
+                  className="w-full flex items-center gap-3 px-4 py-3 bg-white active:bg-stone-50 text-left"
+                >
+                  <div className="w-14 h-14 rounded-xl overflow-hidden bg-stone-100 flex-shrink-0">
+                    {item.image_url
+                      ? <img src={item.image_url} alt={item.title} className="w-full h-full object-cover" />
+                      : <div className="w-full h-full flex items-center justify-center text-2xl">🧹</div>
+                    }
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-stone-800 truncate">{item.title}</p>
+                    {item.subtitle && <p className="text-xs text-stone-400 mt-0.5 truncate">{item.subtitle}</p>}
+                    {item.price != null && (
+                      <p className="text-xs font-bold text-stone-900 mt-1">NT$ {item.price.toLocaleString()} 起</p>
+                    )}
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-stone-300 flex-shrink-0" />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── 小舖 Tab ── */}
+      {activeTab === '小舖' && (
+        <div className="pb-24 px-4 pt-4">
+          <div className="flex flex-col items-center justify-center py-16">
+            <span className="text-5xl mb-3">🛍️</span>
+            <p className="text-sm font-medium text-stone-400">小舖功能即將開放</p>
             <button
-              onClick={() => navigate(`/ServiceInquiry?cleaner=${profile?.user_id}`)}
+              onClick={() => navigate('/ClientShop')}
               className="mt-5 bg-stone-900 text-white text-xs font-bold px-5 py-2.5 rounded-full"
             >
-              直接詢問預約
+              前往商店
             </button>
           </div>
-        ) : (
-          <div className="grid grid-cols-2 gap-[1px] bg-stone-100">
-            {items.map(item => (
-              <div key={item.id} className="bg-white p-3">
-                <ServiceCard item={item} onClick={() => navigate(`/ServiceInquiry?cleaner=${profile?.user_id}&service=${item.id}`)} />
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+        </div>
+      )}
 
-      {/* ── 評價區 ── */}
-      {reviews.length > 0 && (
-        <div className="bg-white mt-2 px-4 py-4 pb-8">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-black text-stone-800">客戶評價</h2>
-            <button className="flex items-center gap-0.5 text-xs text-stone-400">
-              查看全部 <ChevronRight className="w-3.5 h-3.5" />
-            </button>
+      {/* ── 會員 Tab ── */}
+      {activeTab === '會員' && (
+        <div className="pb-24 px-4 pt-4 space-y-3">
+          <div className="bg-white rounded-2xl p-4">
+            <h3 className="text-sm font-black text-stone-800 mb-3">師傅資訊</h3>
+            <div className="space-y-2">
+              {profile?.residence_area && (
+                <div className="flex items-center gap-2 text-xs text-stone-600">
+                  <MapPin className="w-3.5 h-3.5 text-stone-400" />
+                  <span>{profile.residence_area}</span>
+                </div>
+              )}
+              {profile?.experience_years && (
+                <div className="flex items-center gap-2 text-xs text-stone-600">
+                  <Clock className="w-3.5 h-3.5 text-stone-400" />
+                  <span>{profile.experience_years} 年清潔資歷</span>
+                </div>
+              )}
+              {profile?.police_record_verified && (
+                <div className="flex items-center gap-2 text-xs text-stone-600">
+                  <CheckCircle className="w-3.5 h-3.5 text-green-500" />
+                  <span>已提供良民證</span>
+                </div>
+              )}
+              {profile?.transportation && (
+                <div className="flex items-center gap-2 text-xs text-stone-600">
+                  <Shield className="w-3.5 h-3.5 text-stone-400" />
+                  <span>交通工具：{profile.transportation}</span>
+                </div>
+              )}
+            </div>
           </div>
-          <div className="space-y-3">
-            {reviews.slice(0, 3).map(r => (
-              <div key={r.id} className="bg-stone-50 rounded-2xl p-3">
-                <div className="flex items-center gap-2 mb-1.5">
-                  <div className="w-6 h-6 rounded-full bg-stone-200 flex items-center justify-center">
-                    <span className="text-[10px]">👤</span>
-                  </div>
-                  <div className="flex items-center gap-1">
+          {(profile?.service_types || []).length > 0 && (
+            <div className="bg-white rounded-2xl p-4">
+              <h3 className="text-sm font-black text-stone-800 mb-3">服務項目</h3>
+              <div className="flex flex-wrap gap-1.5">
+                {profile.service_types.map(s => (
+                  <span key={s} className="text-[11px] bg-stone-100 text-stone-600 px-2.5 py-1 rounded-full">{s}</span>
+                ))}
+              </div>
+            </div>
+          )}
+          {avgRating && (
+            <div className="bg-white rounded-2xl p-4">
+              <h3 className="text-sm font-black text-stone-800 mb-1">綜合評分</h3>
+              <div className="flex items-center gap-2">
+                <span className="text-3xl font-black text-stone-900">{avgRating}</span>
+                <div>
+                  <div className="flex gap-0.5">
                     {Array.from({ length: 5 }).map((_, i) => (
-                      <Star key={i} className={`w-2.5 h-2.5 ${i < r.rating ? 'fill-amber-400 text-amber-400' : 'text-stone-200'}`} />
+                      <Star key={i} className={`w-3.5 h-3.5 ${i < Math.round(avgRating) ? 'fill-amber-400 text-amber-400' : 'text-stone-200'}`} />
                     ))}
                   </div>
-                  <span className="text-[10px] text-stone-400 ml-auto">
-                    {r.created_date ? new Date(r.created_date).toLocaleDateString('zh-TW') : ''}
-                  </span>
+                  <p className="text-[10px] text-stone-400 mt-0.5">{reviews.length} 則評價</p>
                 </div>
-                {r.comment && <p className="text-xs text-stone-600 leading-relaxed">{r.comment}</p>}
               </div>
-            ))}
-          </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── 貼文 Tab（評價） ── */}
+      {activeTab === '貼文' && (
+        <div className="pb-24">
+          {reviews.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-20">
+              <span className="text-5xl mb-3">💬</span>
+              <p className="text-sm font-medium text-stone-400">尚無評價</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-stone-100">
+              {reviews.map(r => (
+                <div key={r.id} className="bg-white px-4 py-3">
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <div className="w-7 h-7 rounded-full bg-stone-200 flex items-center justify-center flex-shrink-0">
+                      <span className="text-xs">👤</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <Star key={i} className={`w-3 h-3 ${i < r.rating ? 'fill-amber-400 text-amber-400' : 'text-stone-200'}`} />
+                      ))}
+                    </div>
+                    <span className="text-[10px] text-stone-400 ml-auto">
+                      {r.created_date ? new Date(r.created_date).toLocaleDateString('zh-TW') : ''}
+                    </span>
+                  </div>
+                  {r.comment && <p className="text-xs text-stone-600 leading-relaxed">{r.comment}</p>}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>
