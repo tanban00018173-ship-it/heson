@@ -6,13 +6,11 @@ import { ArrowRight, Store } from 'lucide-react';
 import { IconShop, IconBroom } from './CleaningIcons';
 
 /* 單一商品卡片 — UberEats 風格 */
-function ProductCard({ item, onTrack }) {
-  const navigate = useNavigate();
-
+function ProductCard({ item, onTrack, onOpenDetail }) {
   const handleClick = () => {
     onTrack?.('click_card', { section_key: item.section_key, target_id: item.id, target_name: item.title });
     base44.entities.HomeSection.update(item.id, { click_count: (item.click_count || 0) + 1 }).catch(() => {});
-    navigate('/ClientBooking');
+    if (onOpenDetail) onOpenDetail(item);
   };
 
   // 格式化價格：整數 + 上標 00
@@ -64,7 +62,7 @@ function ProductCard({ item, onTrack }) {
 }
 
 /* 單一廠商展示列 */
-function VendorRow({ vendor, items, onTrack }) {
+function VendorRow({ vendor, items, onTrack, onOpenDetail }) {
   const navigate = useNavigate();
 
   if (!items.length) return null;
@@ -100,7 +98,7 @@ function VendorRow({ vendor, items, onTrack }) {
       {/* 商品卡片橫向滾動 */}
       <div className="flex gap-3 pl-4 pr-2 overflow-x-auto pb-1 scrollbar-none">
         {items.map(item => (
-          <ProductCard key={item.id} item={item} onTrack={onTrack} />
+          <ProductCard key={item.id} item={item} onTrack={onTrack} onOpenDetail={onOpenDetail} />
         ))}
       </div>
     </section>
@@ -108,7 +106,7 @@ function VendorRow({ vendor, items, onTrack }) {
 }
 
 /* ─── 主組件：抓所有廠商，各自展示一列 ─── */
-export default function VendorShowcaseRow({ allSections = [], onTrack }) {
+export default function VendorShowcaseRow({ allSections = [], onTrack, onOpenDetail }) {
   const { data: vendors = [] } = useQuery({
     queryKey: ['vendors-showcase'],
     queryFn: () => base44.entities.Vendor.list('created_date', 20),
@@ -165,6 +163,7 @@ export default function VendorShowcaseRow({ allSections = [], onTrack }) {
           vendor={vendor}
           items={grouped[vendor.id] || []}
           onTrack={onTrack}
+          onOpenDetail={onOpenDetail}
         />
       ))}
     </>

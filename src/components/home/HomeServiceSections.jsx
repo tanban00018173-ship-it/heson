@@ -8,6 +8,7 @@ import { sortByRelevance } from '@/lib/useNearbyRecommend';
 import { useTrack } from '@/lib/useTrack';
 import VendorShowcaseRow from './VendorShowcaseRow';
 import HesonPicksSection from './HesonPicksSection';
+import ServiceDetailSheet from './ServiceDetailSheet';
 
 /* ─── 隨機洗牌（Fisher-Yates） ─── */
 function shuffle(arr) {
@@ -39,13 +40,12 @@ const SECTION_DEFS = [
 ];
 
 /* ─── 卡片組件 ─── */
-function DbCard({ item, onTrack, providerPhoto }) {
-  const navigate = useNavigate();
+function DbCard({ item, onTrack, providerPhoto, onOpenDetail }) {
   return (
     <button onClick={() => {
       onTrack('click_card', { section_key: item.section_key, target_id: item.id, target_name: item.title });
       base44.entities.HomeSection.update(item.id, { click_count: (item.click_count || 0) + 1 }).catch(() => {});
-      navigate('/ClientBooking');
+      onOpenDetail(item);
     }}
       className="flex-shrink-0 w-[60vw] max-w-[260px] rounded-2xl overflow-hidden text-left active:scale-95 transition-transform border border-stone-100 shadow-sm bg-white"
     >
@@ -79,7 +79,10 @@ function CleanerCard({ profile, reviews = [], onTrack }) {
     ? (reviews.reduce((s, r) => s + (r.rating || 0), 0) / reviews.length).toFixed(1)
     : null;
   return (
-    <button onClick={() => { onTrack('click_cleaner', { section_key: 'featured_cleaners', target_id: profile.user_id, target_name: profile.nickname }); navigate(`/ServiceInquiry?cleaner=${profile.user_id}`); }}
+    <button onClick={() => {
+      onTrack('click_cleaner', { section_key: 'featured_cleaners', target_id: profile.user_id, target_name: profile.nickname });
+      navigate(`/CleanerShopPage?id=${profile.user_id}`);
+    }}
       className="flex-shrink-0 w-[55vw] max-w-[240px] bg-white rounded-2xl overflow-hidden shadow-sm border border-stone-100 text-left active:scale-95 transition-transform p-3 flex gap-3"
     >
       <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-stone-100 to-stone-200 flex-shrink-0 overflow-hidden flex items-center justify-center">
@@ -172,7 +175,7 @@ function dedupeCleaners(cleaners, usedIds) {
 }
 
 /* ─── 橫向模塊列 ─── */
-function SectionRow({ def, items, cleaners, reviews, products, onTrack, profiles }) {
+function SectionRow({ def, items, cleaners, reviews, products, onTrack, profiles, onOpenDetail }) {
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -196,7 +199,7 @@ function SectionRow({ def, items, cleaners, reviews, products, onTrack, profiles
     return items.length > 0
       ? items.map(item => {
           const provider = profiles.find(p => p.user_id === item.provider_id);
-          return <DbCard key={item.id} item={item} onTrack={onTrack} providerPhoto={provider?.profile_photo} />;
+          return <DbCard key={item.id} item={item} onTrack={onTrack} providerPhoto={provider?.profile_photo} onOpenDetail={onOpenDetail} />;
         })
       : <PlaceholderCards />;
   };
@@ -233,6 +236,7 @@ function SectionRow({ def, items, cleaners, reviews, products, onTrack, profiles
 export default function HomeServiceSections({ user, userAddress }) {
   const track = useTrack(user, userAddress);
   const safeTrack = track || (() => {});
+  const [selectedService, setSelectedService] = useState(null);
 
   // 每次 mount 產生一個隨機 seed（useState 確保 effect deps 能偵測到）
   const [mountSeed] = useState(() => Math.random());
@@ -315,11 +319,15 @@ export default function HomeServiceSections({ user, userAddress }) {
 
   return (
     <div>
+      {selectedService && (
+        <ServiceDetailSheet item={selectedService} onClose={() => setSelectedService(null)} />
+      )}
       {/* ── 置頂：Heson 精選推薦（取前半段，避免與口碑模塊重複） ── */}
       <HesonPicksSection
         sections={shuffle(allSections).slice(0, 6)}
         profiles={profiles}
         onTrack={safeTrack}
+        onOpenDetail={setSelectedService}
       />
 
       {rounds.map((roundDefs, roundIdx) => {
@@ -357,6 +365,7 @@ export default function HomeServiceSections({ user, userAddress }) {
                 products={shuffledProducts}
                 onTrack={safeTrack}
                 profiles={profiles}
+                onOpenDetail={setSelectedService}
               />
               {/* 每輪第 4 個模塊後插入廠商展示列 */}
               {defIdx === 3 && (
@@ -364,6 +373,7 @@ export default function HomeServiceSections({ user, userAddress }) {
                   key={`vendor-${roundIdx}`}
                   allSections={allSections}
                   onTrack={safeTrack}
+                  onOpenDetail={setSelectedService}
                 />
               )}
             </React.Fragment>

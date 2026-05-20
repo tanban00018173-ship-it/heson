@@ -38,7 +38,7 @@ function ServiceCard({ item, providerPhoto, onClick }) {
   );
 }
 
-export default function HesonPicksSection({ sections, profiles, onTrack }) {
+export default function HesonPicksSection({ sections, profiles, onTrack, onOpenDetail }) {
   const navigate = useNavigate();
 
   if (!sections || sections.length === 0) return null;
@@ -65,7 +65,7 @@ export default function HesonPicksSection({ sections, profiles, onTrack }) {
               onClick={() => {
                 onTrack?.('click_card', { section_key: 'heson_picks', target_id: item.id, target_name: item.title });
                 base44.entities.HomeSection.update(item.id, { click_count: (item.click_count || 0) + 1 }).catch(() => {});
-                navigate('/ClientBooking');
+                if (onOpenDetail) onOpenDetail(item);
               }}
             />
           );
