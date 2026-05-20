@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MapPin, ChevronDown, Home, Building2, HelpCircle, PlusCircle, X, Check, ChevronRight, Loader2 } from 'lucide-react';
+import { MapPin, ChevronDown, Bell, Home, Building2, HelpCircle, PlusCircle, X, Check, ChevronRight, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -119,6 +119,9 @@ export default function AddressBar({ address: initialAddress = '台北市・居�
           <MapPin className="w-4 h-4 text-stone-700 flex-shrink-0" />
           <span className="text-sm font-semibold text-stone-800 truncate">{displayAddress}</span>
           <ChevronDown className="w-3.5 h-3.5 text-stone-500 flex-shrink-0" />
+        </button>
+        <button className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-stone-100 transition-colors">
+          <Bell className="w-5 h-5 text-stone-600" />
         </button>
       </div>
 
