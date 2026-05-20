@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  ArrowLeft, Star, Shield, MessageCircle, UserPlus, MapPin,
-  CheckCircle, Clock, ChevronRight, Search, UserCheck, Users
+  ArrowLeft, Star, MessageCircle, MapPin,
+  CheckCircle, Clock, ChevronRight, Search, Users, Shield
 } from 'lucide-react';
 
 const SORT_TABS = ['綜合排名', '最新', '評分最高', '人氣'];
@@ -64,16 +64,16 @@ function getLevel(years) {
 
 export default function CleanerShopPage() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [sortTab, setSortTab] = useState('綜合排名');
   const [search, setSearch] = useState('');
   const [cleanerId, setCleanerId] = useState('');
-  const [followed, setFollowed] = useState(false);
-  // 模擬粉絲數（實際可從 profile 或其他 entity 取得）
-  const [followerCount, setFollowerCount] = useState(128);
+  const [currentUser, setCurrentUser] = useState(null);
 
   useEffect(() => {
     const p = new URLSearchParams(window.location.search);
     setCleanerId(p.get('cleaner') || p.get('id') || '');
+    base44.auth.me().then(u => setCurrentUser(u)).catch(() => {});
   }, []);
 
   const { data: profiles = [], isLoading: loadingProfile } = useQuery({
@@ -97,6 +97,43 @@ export default function CleanerShopPage() {
     enabled: !!profile?.user_id,
   });
 
+  // 取得所有追蹤此師傅的記錄（粉絲數）
+  const { data: allFollows = [] } = useQuery({
+    queryKey: ['follows', profile?.user_id],
+    queryFn: () => base44.entities.Follow.filter({ target_id: profile.user_id }),
+    enabled: !!profile?.user_id,
+  });
+
+  // 取得當前用戶是否已追蹤
+  const { data: myFollow = [] } = useQuery({
+    queryKey: ['myFollow', profile?.user_id, currentUser?.id],
+    queryFn: () => base44.entities.Follow.filter({ follower_id: currentUser.id, target_id: profile.user_id }),
+    enabled: !!profile?.user_id && !!currentUser?.id,
+  });
+
+  const isFollowed = myFollow.length > 0;
+  const followerCount = allFollows.length;
+
+  const followMutation = useMutation({
+    mutationFn: async () => {
+      if (isFollowed) {
+        await base44.entities.Follow.delete(myFollow[0].id);
+      } else {
+        await base44.entities.Follow.create({
+          follower_id: currentUser.id,
+          follower_name: currentUser.full_name || '',
+          target_id: profile.user_id,
+          target_name: profile.nickname || '',
+          target_type: 'cleaner',
+        });
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['follows', profile?.user_id] });
+      queryClient.invalidateQueries({ queryKey: ['myFollow', profile?.user_id, currentUser?.id] });
+    },
+  });
+
   const avgRating = reviews.length
     ? (reviews.reduce((s, r) => s + (r.rating || 0), 0) / reviews.length).toFixed(1)
     : null;
@@ -108,6 +145,13 @@ export default function CleanerShopPage() {
   else if (sortTab === '人氣') items.sort((a, b) => (b.click_count || 0) - (a.click_count || 0));
 
   const isLoading = loadingProfile || loadingSections;
+
+  // 格式化粉絲數（如 1.2萬）
+  function formatCount(n) {
+    if (n >= 10000) return (n / 10000).toFixed(1) + '萬';
+    if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+    return n.toString();
+  }
 
   return (
     <div className="min-h-screen bg-stone-50">
@@ -130,126 +174,111 @@ export default function CleanerShopPage() {
         </div>
       </div>
 
-      {/* ── 師傅 Banner ── */}
-      <div className="bg-white">
-        {/* 封面圖 */}
-        <div className="h-24 bg-gradient-to-r from-stone-600 to-stone-400 overflow-hidden">
-          {profile?.profile_photo && (
-            <img src={profile.profile_photo} alt="cover" className="w-full h-full object-cover opacity-40" />
-          )}
+      {/* ── 師傅 Banner（Shopee 橫排風格） ── */}
+      <div className="relative bg-white overflow-hidden">
+        {/* 背景封面模糊 */}
+        <div className="absolute inset-0 z-0">
+          {profile?.profile_photo
+            ? <img src={profile.profile_photo} alt="" className="w-full h-full object-cover scale-110 blur-sm opacity-30" />
+            : <div className="w-full h-full bg-gradient-to-r from-stone-400 to-stone-300" />
+          }
         </div>
 
-        {/* 頭像 + 按鈕 row */}
-        <div className="px-4 flex items-end justify-between" style={{ marginTop: -28 }}>
+        {/* 主體橫排內容 */}
+        <div className="relative z-10 flex items-center gap-3 px-3 py-4">
+
           {/* 頭像 + 等級橫幅 */}
-          <div className="relative flex-shrink-0" style={{ width: 64 }}>
-            <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-white shadow-md bg-stone-100">
+          <div className="relative flex-shrink-0">
+            <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-white shadow-lg bg-stone-100">
               {profile?.profile_photo
                 ? <img src={profile.profile_photo} alt={profile?.nickname} className="w-full h-full object-cover" />
                 : <div className="w-full h-full flex items-center justify-center"><span className="text-2xl">🧹</span></div>
               }
             </div>
-            {/* 等級橫幅：覆蓋在頭像偏下方 */}
+            {/* 等級橫幅覆蓋在頭像偏下方 */}
             {(() => {
               const lv = getLevel(profile?.experience_years);
               return (
-                <span className={`absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 bg-gradient-to-r ${lv.color} text-white text-[8px] font-bold px-2 py-0.5 rounded-full shadow whitespace-nowrap`}>
+                <span className={`absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 bg-gradient-to-r ${lv.color} text-white text-[7px] font-bold px-1.5 py-0.5 rounded-full shadow whitespace-nowrap`}>
                   {lv.label}
                 </span>
               );
             })()}
           </div>
-          {/* 操作按鈕 */}
-          <div className="flex gap-2 pb-1">
+
+          {/* 名稱、評分、粉絲 */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-1.5">
+              <h1 className="font-bold text-sm text-white drop-shadow truncate">
+                {profile?.nickname || (isLoading ? '載入中…' : '師傅')}
+              </h1>
+              <ChevronRight className="w-3.5 h-3.5 text-white/70 flex-shrink-0" />
+            </div>
+            <div className="flex items-center gap-1.5 mt-1">
+              <Star className="w-3 h-3 fill-amber-400 text-amber-400 flex-shrink-0" />
+              <span className="text-xs font-bold text-white drop-shadow">
+                {avgRating || '－'}
+              </span>
+              <span className="text-white/60 text-xs">｜</span>
+              <Users className="w-3 h-3 text-white/80 flex-shrink-0" />
+              <span className="text-xs text-white drop-shadow font-semibold">
+                {formatCount(followerCount)} 粉絲
+              </span>
+            </div>
+          </div>
+
+          {/* 操作按鈕欄 */}
+          <div className="flex flex-col gap-2 flex-shrink-0">
             <button
-              onClick={() => { setFollowed(f => !f); setFollowerCount(c => followed ? c - 1 : c + 1); }}
-              className={`flex items-center gap-1 text-[11px] font-bold px-3 py-1.5 rounded-full border transition-colors ${
-                followed ? 'bg-stone-100 border-stone-200 text-stone-600' : 'bg-stone-900 border-stone-900 text-white'
+              disabled={!currentUser}
+              onClick={() => followMutation.mutate()}
+              className={`text-[11px] font-bold px-4 py-1.5 rounded-lg border transition-colors min-w-[72px] text-center ${
+                isFollowed
+                  ? 'bg-white/20 border-white/40 text-white'
+                  : 'bg-white border-white text-stone-900'
               }`}
             >
-              <UserCheck className="w-3 h-3" />{followed ? '已追蹤' : '+追蹤'}
+              {isFollowed ? '已關注' : '+ 關注'}
             </button>
             <button
               onClick={() => navigate(`/ServiceInquiry?cleaner=${profile?.user_id}`)}
-              className="flex items-center gap-1 bg-stone-900 text-white text-[11px] font-bold px-3 py-1.5 rounded-full"
+              className="flex items-center justify-center gap-1 bg-white/20 border border-white/40 text-white text-[11px] font-semibold px-4 py-1.5 rounded-lg min-w-[72px]"
             >
-              <UserPlus className="w-3 h-3" />預約
-            </button>
-            <button className="flex items-center gap-1 border border-stone-300 text-stone-700 text-[11px] font-semibold px-3 py-1.5 rounded-full">
               <MessageCircle className="w-3 h-3" />聊聊
             </button>
           </div>
         </div>
 
-        {/* 師傅名稱 & 評分 & 粉絲 */}
-        <div className="px-4 mt-2.5">
-          <div className="flex items-center gap-2 flex-wrap">
-            <h1 className="font-black text-base text-stone-900">{profile?.nickname || (isLoading ? '載入中…' : '師傅')}</h1>
-            {profile?.is_active && (
-              <span className="bg-green-100 text-green-700 text-[9px] font-bold px-1.5 py-0.5 rounded-full">接案中</span>
-            )}
-          </div>
-          {/* 五星評分 */}
-          <div className="flex items-center gap-1 mt-1">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <Star key={i} className={`w-3.5 h-3.5 ${avgRating && i < Math.round(parseFloat(avgRating)) ? 'fill-amber-400 text-amber-400' : 'text-stone-200'}`} />
-            ))}
-            {avgRating && <span className="text-xs font-bold text-amber-600 ml-1">{avgRating}</span>}
-            <span className="text-[10px] text-stone-400 ml-1">({reviews.length} 則評價)</span>
-          </div>
-          {/* 粉絲數 */}
-          <div className="flex items-center gap-1 mt-1">
-            <Users className="w-3 h-3 text-stone-400" />
-            <span className="text-[11px] text-stone-500 font-semibold">{followerCount.toLocaleString()} 粉絲</span>
-          </div>
-        </div>
-
-        {/* 標籤列 */}
-        <div className="px-4 mt-2 flex flex-wrap gap-1.5">
+        {/* 標籤列（緊接在 banner 下方，半透明背景） */}
+        <div className="relative z-10 flex gap-1.5 px-3 pb-3 overflow-x-auto scrollbar-none">
           {profile?.police_record_verified && (
-            <span className="flex items-center gap-0.5 bg-blue-50 text-blue-600 text-[10px] font-semibold px-2 py-0.5 rounded-full">
-              <Shield className="w-2.5 h-2.5" />良民證
+            <span className="flex-shrink-0 flex items-center gap-0.5 bg-white/20 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full">
+              <CheckCircle className="w-2.5 h-2.5" />良民證
             </span>
           )}
           {profile?.experience_years && (
-            <span className="flex items-center gap-0.5 bg-amber-50 text-amber-600 text-[10px] font-semibold px-2 py-0.5 rounded-full">
+            <span className="flex-shrink-0 flex items-center gap-0.5 bg-white/20 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full">
               <Clock className="w-2.5 h-2.5" />{profile.experience_years} 年資歷
             </span>
           )}
           {profile?.residence_area && (
-            <span className="flex items-center gap-0.5 bg-stone-100 text-stone-600 text-[10px] font-semibold px-2 py-0.5 rounded-full">
+            <span className="flex-shrink-0 flex items-center gap-0.5 bg-white/20 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full">
               <MapPin className="w-2.5 h-2.5" />{profile.residence_area}
             </span>
           )}
-          {profile?.has_own_tools && (
-            <span className="flex items-center gap-0.5 bg-stone-100 text-stone-600 text-[10px] font-semibold px-2 py-0.5 rounded-full">
-              <CheckCircle className="w-2.5 h-2.5" />自備工具
-            </span>
-          )}
-        </div>
-
-        {/* 自我介紹 */}
-        {profile?.bio && (
-          <p className="px-4 mt-2 text-xs text-stone-500 leading-relaxed line-clamp-2">{profile.bio}</p>
-        )}
-
-        {/* 服務類型 chips */}
-        {(profile?.service_types || []).length > 0 && (
-          <div className="flex gap-1.5 px-4 mt-2.5 pb-3 overflow-x-auto scrollbar-none">
-            {profile.service_types.map(s => (
-              <span key={s} className="flex-shrink-0 bg-stone-900 text-white text-[10px] font-semibold px-2.5 py-1 rounded-full">{s}</span>
-            ))}
-          </div>
-        )}
-
-        {/* 導航 tabs */}
-        <div className="border-t border-stone-100 flex text-xs font-semibold text-stone-400 pt-2.5 pb-0">
-          {['作品', '服務項目', '評價', '師傅資訊'].map((tab, i) => (
-            <button key={tab} className={`flex-1 pb-2 border-b-2 transition-colors ${i === 0 ? 'text-stone-900 border-stone-900' : 'border-transparent'}`}>
-              {tab}
-            </button>
+          {(profile?.service_types || []).slice(0, 3).map(s => (
+            <span key={s} className="flex-shrink-0 bg-white/20 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full">{s}</span>
           ))}
         </div>
+      </div>
+
+      {/* 導航 tabs */}
+      <div className="bg-white border-b border-stone-100 flex text-xs font-semibold text-stone-400">
+        {['作品', '服務項目', '評價', '師傅資訊'].map((tab, i) => (
+          <button key={tab} className={`flex-1 py-2.5 border-b-2 transition-colors ${i === 0 ? 'text-stone-900 border-stone-900' : 'border-transparent'}`}>
+            {tab}
+          </button>
+        ))}
       </div>
 
       {/* ── 排序列 ── */}

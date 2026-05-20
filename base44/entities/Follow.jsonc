@@ -1,0 +1,53 @@
+{
+  "name": "Follow",
+  "type": "object",
+  "properties": {
+    "follower_id": {
+      "type": "string",
+      "description": "\u8ffd\u8e64\u8005\u7684 user ID"
+    },
+    "follower_name": {
+      "type": "string",
+      "description": "\u8ffd\u8e64\u8005\u59d3\u540d"
+    },
+    "target_id": {
+      "type": "string",
+      "description": "\u88ab\u8ffd\u8e64\u5c0d\u8c61\u7684 user_id\uff08\u5e2b\u5085/\u5ee0\u5546\uff09"
+    },
+    "target_name": {
+      "type": "string",
+      "description": "\u88ab\u8ffd\u8e64\u5c0d\u8c61\u540d\u7a31"
+    },
+    "target_type": {
+      "type": "string",
+      "enum": [
+        "cleaner",
+        "vendor"
+      ],
+      "description": "\u88ab\u8ffd\u8e64\u5c0d\u8c61\u985e\u578b",
+      "default": "cleaner"
+    }
+  },
+  "required": [
+    "follower_id",
+    "target_id",
+    "target_type"
+  ],
+  "rls": {
+    "create": {},
+    "read": {},
+    "update": {},
+    "delete": {
+      "$or": [
+        {
+          "data.follower_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}
