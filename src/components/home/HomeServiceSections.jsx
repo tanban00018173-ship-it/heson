@@ -39,7 +39,7 @@ const SECTION_DEFS = [
 ];
 
 /* ─── 卡片組件 ─── */
-function DbCard({ item, onTrack, providerProfile }) {
+function DbCard({ item, onTrack }) {
   const navigate = useNavigate();
   return (
     <button onClick={() => {
@@ -54,11 +54,6 @@ function DbCard({ item, onTrack, providerProfile }) {
           ? <img src={item.image_url} alt={item.title} className="w-full h-full object-cover" />
           : <IconBroom className="w-14 h-14" />}
         {item.badge && <span className="absolute top-2 right-2 bg-white/90 text-stone-700 text-[9px] font-bold px-1.5 py-0.5 rounded-full">{item.badge}</span>}
-        {providerProfile?.profile_photo && (
-          <div className="absolute top-2 left-2 w-9 h-9 rounded-full overflow-hidden border-2 border-white shadow-md">
-            <img src={providerProfile.profile_photo} alt={providerProfile.nickname} className="w-full h-full object-cover" />
-          </div>
-        )}
       </div>
       <div className="p-3">
         <p className="font-bold text-base text-stone-900 leading-snug">{item.title}</p>
@@ -190,10 +185,7 @@ function SectionRow({ def, items, cleaners, reviews, products, onTrack }) {
         : <PlaceholderCards />;
     }
     return items.length > 0
-      ? items.map(item => {
-          const provider = cleaners.find(c => c.user_id === item.provider_id);
-          return <DbCard key={item.id} item={item} onTrack={onTrack} providerProfile={provider} />;
-        })
+      ? items.map(item => <DbCard key={item.id} item={item} onTrack={onTrack} />)
       : <PlaceholderCards />;
   };
 
