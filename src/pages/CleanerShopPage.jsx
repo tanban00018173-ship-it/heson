@@ -4,7 +4,7 @@ import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import {
   ArrowLeft, Star, Shield, MessageCircle, UserPlus, MapPin,
-  CheckCircle, Clock, ChevronRight, Search
+  CheckCircle, Clock, ChevronRight, Search, UserCheck, Users
 } from 'lucide-react';
 
 const SORT_TABS = ['綜合排名', '最新', '評分最高', '人氣'];
@@ -55,11 +55,21 @@ function SkeletonGrid() {
   );
 }
 
+/* ── 等級橫幅 ── */
+function getLevel(years) {
+  if (!years || years < 2) return { label: '清潔師傅', color: 'from-stone-400 to-stone-600', icon: '🧹' };
+  if (years < 5) return { label: '清潔達人', color: 'from-amber-400 to-orange-500', icon: '⭐' };
+  return { label: '清潔大師', color: 'from-purple-500 to-indigo-600', icon: '👑' };
+}
+
 export default function CleanerShopPage() {
   const navigate = useNavigate();
   const [sortTab, setSortTab] = useState('綜合排名');
   const [search, setSearch] = useState('');
   const [cleanerId, setCleanerId] = useState('');
+  const [followed, setFollowed] = useState(false);
+  // 模擬粉絲數（實際可從 profile 或其他 entity 取得）
+  const [followerCount, setFollowerCount] = useState(128);
 
   useEffect(() => {
     const p = new URLSearchParams(window.location.search);
@@ -131,15 +141,34 @@ export default function CleanerShopPage() {
 
         {/* 頭像 + 按鈕 row */}
         <div className="px-4 flex items-end justify-between" style={{ marginTop: -28 }}>
-          {/* 頭像 */}
-          <div className="w-16 h-16 rounded-2xl overflow-hidden border-2 border-white shadow-md bg-stone-100 flex-shrink-0">
-            {profile?.profile_photo
-              ? <img src={profile.profile_photo} alt={profile?.nickname} className="w-full h-full object-cover" />
-              : <div className="w-full h-full flex items-center justify-center"><span className="text-2xl">🧹</span></div>
-            }
+          {/* 頭像 + 等級橫幅 */}
+          <div className="flex flex-col items-center gap-0">
+            <div className="w-16 h-16 rounded-2xl overflow-hidden border-2 border-white shadow-md bg-stone-100 flex-shrink-0">
+              {profile?.profile_photo
+                ? <img src={profile.profile_photo} alt={profile?.nickname} className="w-full h-full object-cover" />
+                : <div className="w-full h-full flex items-center justify-center"><span className="text-2xl">🧹</span></div>
+              }
+            </div>
+            {/* 等級橫幅 */}
+            {(() => {
+              const lv = getLevel(profile?.experience_years);
+              return (
+                <span className={`mt-1 bg-gradient-to-r ${lv.color} text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow-sm`}>
+                  {lv.icon} {lv.label}
+                </span>
+              );
+            })()}
           </div>
           {/* 操作按鈕 */}
           <div className="flex gap-2 pb-1">
+            <button
+              onClick={() => { setFollowed(f => !f); setFollowerCount(c => followed ? c - 1 : c + 1); }}
+              className={`flex items-center gap-1 text-[11px] font-bold px-3 py-1.5 rounded-full border transition-colors ${
+                followed ? 'bg-stone-100 border-stone-200 text-stone-600' : 'bg-stone-900 border-stone-900 text-white'
+              }`}
+            >
+              <UserCheck className="w-3 h-3" />{followed ? '已追蹤' : '+追蹤'}
+            </button>
             <button
               onClick={() => navigate(`/ServiceInquiry?cleaner=${profile?.user_id}`)}
               className="flex items-center gap-1 bg-stone-900 text-white text-[11px] font-bold px-3 py-1.5 rounded-full"
@@ -152,7 +181,7 @@ export default function CleanerShopPage() {
           </div>
         </div>
 
-        {/* 師傅名稱 & 評分 */}
+        {/* 師傅名稱 & 評分 & 粉絲 */}
         <div className="px-4 mt-2.5">
           <div className="flex items-center gap-2 flex-wrap">
             <h1 className="font-black text-base text-stone-900">{profile?.nickname || (isLoading ? '載入中…' : '師傅')}</h1>
@@ -160,13 +189,19 @@ export default function CleanerShopPage() {
               <span className="bg-green-100 text-green-700 text-[9px] font-bold px-1.5 py-0.5 rounded-full">接案中</span>
             )}
           </div>
-          {avgRating && (
-            <div className="flex items-center gap-1 mt-0.5">
-              <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-              <span className="text-xs font-bold text-amber-600">{avgRating}</span>
-              <span className="text-[10px] text-stone-400">｜{reviews.length} 則評價</span>
-            </div>
-          )}
+          {/* 五星評分 */}
+          <div className="flex items-center gap-1 mt-1">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Star key={i} className={`w-3.5 h-3.5 ${avgRating && i < Math.round(parseFloat(avgRating)) ? 'fill-amber-400 text-amber-400' : 'text-stone-200'}`} />
+            ))}
+            {avgRating && <span className="text-xs font-bold text-amber-600 ml-1">{avgRating}</span>}
+            <span className="text-[10px] text-stone-400 ml-1">({reviews.length} 則評價)</span>
+          </div>
+          {/* 粉絲數 */}
+          <div className="flex items-center gap-1 mt-1">
+            <Users className="w-3 h-3 text-stone-400" />
+            <span className="text-[11px] text-stone-500 font-semibold">{followerCount.toLocaleString()} 粉絲</span>
+          </div>
         </div>
 
         {/* 標籤列 */}
