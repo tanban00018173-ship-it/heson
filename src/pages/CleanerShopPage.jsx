@@ -282,13 +282,13 @@ export default function CleanerShopPage() {
       </div>
 
       {/* ── 排序列 ── */}
-      <div className="bg-white mt-2 border-b border-stone-100 flex">
+      <div className="border-b border-stone-200 flex">
         {SORT_TABS.map(tab => (
           <button
             key={tab}
             onClick={() => setSortTab(tab)}
-            className={`flex-1 py-2.5 text-xs font-semibold transition-colors ${
-              sortTab === tab ? 'text-stone-900' : 'text-stone-400'
+            className={`flex-1 py-2.5 text-xs font-semibold transition-colors border-b-2 ${
+              sortTab === tab ? 'text-stone-900 border-stone-900' : 'text-stone-400 border-transparent'
             }`}
           >
             {tab}
