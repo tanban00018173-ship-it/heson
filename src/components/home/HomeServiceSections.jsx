@@ -39,7 +39,7 @@ const SECTION_DEFS = [
 ];
 
 /* ─── 卡片組件 ─── */
-function DbCard({ item, onTrack }) {
+function DbCard({ item, onTrack, providerPhoto }) {
   const navigate = useNavigate();
   return (
     <button onClick={() => {
@@ -56,7 +56,16 @@ function DbCard({ item, onTrack }) {
         {item.badge && <span className="absolute top-2 right-2 bg-white/90 text-stone-700 text-[9px] font-bold px-1.5 py-0.5 rounded-full">{item.badge}</span>}
       </div>
       <div className="p-3">
-        <p className="font-bold text-base text-stone-900 leading-snug">{item.title}</p>
+        <div className="flex items-center gap-2 mb-1.5">
+          {providerPhoto ? (
+            <img src={providerPhoto} alt="" className="w-6 h-6 rounded-full object-cover border border-stone-100 flex-shrink-0" />
+          ) : (
+            <div className="w-6 h-6 rounded-full bg-stone-200 flex items-center justify-center flex-shrink-0">
+              <span className="text-[10px]">🧹</span>
+            </div>
+          )}
+          <p className="font-bold text-base text-stone-900 leading-snug truncate">{item.title}</p>
+        </div>
         <p className="text-xs text-stone-400 mt-0.5 leading-tight">{item.subtitle}</p>
         {item.price && <p className="text-sm font-bold text-stone-900 mt-1.5">NT$ {item.price.toLocaleString()} 起</p>}
       </div>
@@ -163,7 +172,7 @@ function dedupeCleaners(cleaners, usedIds) {
 }
 
 /* ─── 橫向模塊列 ─── */
-function SectionRow({ def, items, cleaners, reviews, products, onTrack }) {
+function SectionRow({ def, items, cleaners, reviews, products, onTrack, profiles }) {
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -185,7 +194,10 @@ function SectionRow({ def, items, cleaners, reviews, products, onTrack }) {
         : <PlaceholderCards />;
     }
     return items.length > 0
-      ? items.map(item => <DbCard key={item.id} item={item} onTrack={onTrack} />)
+      ? items.map(item => {
+          const provider = profiles.find(p => p.user_id === item.provider_id);
+          return <DbCard key={item.id} item={item} onTrack={onTrack} providerPhoto={provider?.profile_photo} />;
+        })
       : <PlaceholderCards />;
   };
 
@@ -344,6 +356,7 @@ export default function HomeServiceSections({ user, userAddress }) {
                 reviews={reviews}
                 products={shuffledProducts}
                 onTrack={safeTrack}
+                profiles={profiles}
               />
               {/* 每輪第 4 個模塊後插入廠商展示列 */}
               {defIdx === 3 && (
