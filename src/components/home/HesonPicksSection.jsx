@@ -8,33 +8,33 @@ function PickCard({ profile, avgRating, reviewCount, onClick }) {
       onClick={onClick}
       className="flex-shrink-0 w-[55vw] max-w-[240px] rounded-2xl overflow-hidden text-left active:scale-95 transition-transform border border-stone-100 shadow-sm bg-white flex flex-col"
     >
-      <div className="h-32 bg-gradient-to-br from-stone-100 to-stone-200 overflow-hidden flex items-center justify-center">
+      <div className="relative h-40 bg-gradient-to-br from-stone-100 to-stone-200 overflow-hidden flex items-center justify-center flex-shrink-0">
         {profile.profile_photo
           ? <img src={profile.profile_photo} alt={profile.nickname} className="w-full h-full object-cover" />
-          : <span className="text-4xl">🧹</span>
+          : <span className="text-5xl">🧹</span>
         }
         {profile.is_active && (
           <span className="absolute top-2 left-2 bg-green-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">接案中</span>
         )}
       </div>
-      <div className="p-3 flex gap-2.5 flex-1">
-        <div className="w-11 h-11 rounded-full bg-stone-100 flex-shrink-0 overflow-hidden flex items-center justify-center">
+      <div className="p-3 flex gap-2.5">
+        <div className="w-12 h-12 rounded-full bg-stone-100 flex-shrink-0 overflow-hidden flex items-center justify-center">
           {profile.profile_photo
             ? <img src={profile.profile_photo} alt={profile.nickname} className="w-full h-full object-cover" />
-            : <span className="text-lg">🧹</span>
+            : <span className="text-xl">🧹</span>
           }
         </div>
         <div className="flex-1 min-w-0">
-          <p className="font-bold text-sm text-stone-800 truncate">{profile.nickname || '管理師'}</p>
-          <p className="text-[10px] text-stone-400 truncate">{(profile.service_areas || []).slice(0, 2).join('・') || '全台服務'}</p>
-          <div className="flex items-center gap-1 mt-1">
+          <p className="font-bold text-sm text-stone-800">{profile.nickname || '管理師'}</p>
+          <p className="text-[10px] text-stone-400 leading-tight">{(profile.service_areas || []).slice(0, 2).join('・') || '全台服務'}</p>
+          <div className="flex items-center gap-2 mt-1.5">
             {avgRating && (
               <span className="flex items-center gap-0.5 text-[10px] font-bold text-amber-500">
                 <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />{avgRating}
               </span>
             )}
+            <span className="text-[10px] text-stone-600 font-semibold">{profile.experience_years || 1}年資</span>
             {profile.police_record_verified && <Shield className="w-2.5 h-2.5 text-blue-400" />}
-            <span className="text-[10px] text-stone-400 ml-auto">{profile.experience_years || 1}年資</span>
           </div>
         </div>
       </div>
