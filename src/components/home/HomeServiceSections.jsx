@@ -55,19 +55,19 @@ function DbCard({ item, onTrack, providerPhoto }) {
           : <IconBroom className="w-14 h-14" />}
         {item.badge && <span className="absolute top-2 right-2 bg-white/90 text-stone-700 text-[9px] font-bold px-1.5 py-0.5 rounded-full">{item.badge}</span>}
       </div>
-      <div className="p-3">
-        <div className="flex items-center gap-2 mb-1.5">
-          {providerPhoto ? (
-            <img src={providerPhoto} alt="" className="w-6 h-6 rounded-full object-cover border border-stone-100 flex-shrink-0" />
-          ) : (
-            <div className="w-6 h-6 rounded-full bg-stone-200 flex items-center justify-center flex-shrink-0">
-              <span className="text-[10px]">🧹</span>
-            </div>
-          )}
-          <p className="font-bold text-base text-stone-900 leading-snug truncate">{item.title}</p>
+      <div className="p-3 flex gap-2">
+        {providerPhoto ? (
+          <img src={providerPhoto} alt="" className="w-12 h-12 rounded-full object-cover border border-stone-100 flex-shrink-0" />
+        ) : (
+          <div className="w-12 h-12 rounded-full bg-stone-200 flex items-center justify-center flex-shrink-0">
+            <span className="text-lg">🧹</span>
+          </div>
+        )}
+        <div className="flex-1 min-w-0">
+          <p className="font-bold text-base text-stone-900 leading-snug line-clamp-2">{item.title}</p>
+          <p className="text-xs text-stone-400 mt-0.5 leading-tight line-clamp-1">{item.subtitle}</p>
+          {item.price && <p className="text-sm font-bold text-stone-900 mt-1">NT$ {item.price.toLocaleString()} 起</p>}
         </div>
-        <p className="text-xs text-stone-400 mt-0.5 leading-tight">{item.subtitle}</p>
-        {item.price && <p className="text-sm font-bold text-stone-900 mt-1.5">NT$ {item.price.toLocaleString()} 起</p>}
       </div>
     </button>
   );
