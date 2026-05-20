@@ -272,38 +272,28 @@ export default function CleanerShopPage() {
         </div>
       </div>
 
+      {/* 導航 tabs */}
+      <div className="bg-white border-b border-stone-100 flex text-xs font-semibold text-stone-400">
+        {['作品', '服務項目', '評價', '師傅資訊'].map((tab, i) => (
+          <button key={tab} className={`flex-1 py-2.5 border-b-2 transition-colors ${i === 0 ? 'text-stone-900 border-stone-900' : 'border-transparent'}`}>
+            {tab}
+          </button>
+        ))}
+      </div>
 
-
-      {/* ── 排序列 + 導航 tabs ── */}
-      <div className="bg-white border-b border-stone-100 flex items-stretch">
-        {/* 排序 tabs */}
-        <div className="flex items-center">
-          {SORT_TABS.map((tab, idx) => (
-            <div key={tab} className="flex items-center">
-              <button
-                onClick={() => setSortTab(tab)}
-                className={`py-2.5 px-2.5 text-xs font-semibold transition-colors ${
-                  sortTab === tab ? 'text-stone-900' : 'text-stone-400'
-                }`}
-              >
-                {tab}
-              </button>
-              {idx < SORT_TABS.length - 1 && <span className="text-stone-200 text-xs">｜</span>}
-            </div>
-          ))}
-        </div>
-
-        {/* 分隔線 */}
-        <span className="text-stone-200">｜</span>
-
-        {/* 導航 tabs */}
-        <div className="flex-1 flex text-xs font-semibold text-stone-400">
-          {['作品', '服務項目', '評價', '師傅資訊'].map((tab, i) => (
-            <button key={tab} className={`flex-1 py-2.5 transition-colors ${i === 0 ? 'text-stone-900' : ''}`}>
-              {tab}
-            </button>
-          ))}
-        </div>
+      {/* ── 排序列 ── */}
+      <div className="bg-white mt-2 border-b border-stone-100 flex">
+        {SORT_TABS.map(tab => (
+          <button
+            key={tab}
+            onClick={() => setSortTab(tab)}
+            className={`flex-1 py-2.5 text-xs font-semibold transition-colors ${
+              sortTab === tab ? 'text-stone-900' : 'text-stone-400'
+            }`}
+          >
+            {tab}
+          </button>
+        ))}
       </div>
 
       {/* ── 作品網格 ── */}
