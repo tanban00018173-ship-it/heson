@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { Star, ArrowRight, Shield, Zap, ShoppingBag, Sparkles, Home, Wrench, Snowflake, RefreshCw, Package } from 'lucide-react';
+import { Star, ArrowRight, Shield, Zap, ShoppingBag, Sparkles, Home, Wrench, Snowflake, RefreshCw, Package, Users } from 'lucide-react';
 import { IconBroom, IconDeepClean, IconCleaner, IconRecurring, IconAC, IconFabric, IconOrganize, IconShop } from './CleaningIcons';
 import { sortByRelevance } from '@/lib/useNearbyRecommend';
 import { useTrack } from '@/lib/useTrack';
@@ -73,11 +73,13 @@ function DbCard({ item, onTrack, providerPhoto, onOpenDetail }) {
   );
 }
 
-function CleanerCard({ profile, reviews = [], onTrack }) {
+function CleanerCard({ profile, reviews = [], follows = [], onTrack }) {
   const navigate = useNavigate();
   const avgRating = reviews.length
     ? (reviews.reduce((s, r) => s + (r.rating || 0), 0) / reviews.length).toFixed(1)
     : null;
+  const followerCount = follows.filter(f => f.target_id === profile.user_id && f.target_type === 'cleaner').length;
+  
   return (
     <button onClick={() => {
       onTrack('click_cleaner', { section_key: 'featured_cleaners', target_id: profile.user_id, target_name: profile.nickname });
@@ -93,10 +95,16 @@ function CleanerCard({ profile, reviews = [], onTrack }) {
       <div className="flex-1 min-w-0">
         <p className="font-semibold text-sm text-stone-800 truncate">{profile.nickname || '管理師'}</p>
         <p className="text-[10px] text-stone-400 truncate">{(profile.service_areas || []).slice(0, 2).join('・') || '全台服務'}</p>
-        <div className="flex items-center gap-1 mt-1">
-          {avgRating && <span className="flex items-center gap-0.5 text-[10px] font-bold text-amber-500"><Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />{avgRating}</span>}
-          {profile.police_record_verified && <Shield className="w-2.5 h-2.5 text-blue-400" />}
-          <span className="text-[10px] text-stone-400 ml-auto">{profile.experience_years || 1}年資</span>
+        <div className="flex items-center gap-2 mt-2 text-[10px]">
+          <div className="flex items-center gap-0.5">
+            <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+            <span className="font-bold text-stone-800">{avgRating || '—'}</span>
+          </div>
+          <span className="text-stone-300">|</span>
+          <div className="flex items-center gap-0.5">
+            <Users className="w-3 h-3 text-stone-400" />
+            <span className="text-stone-600">{followerCount} 粉絲</span>
+          </div>
         </div>
       </div>
       {profile.is_active && <span className="absolute top-2 left-2 bg-green-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">接案中</span>}
@@ -175,7 +183,7 @@ function dedupeCleaners(cleaners, usedIds) {
 }
 
 /* ─── 橫向模塊列 ─── */
-function SectionRow({ def, items, cleaners, reviews, products, onTrack, profiles, onOpenDetail }) {
+function SectionRow({ def, items, cleaners, reviews, products, follows, onTrack, profiles, onOpenDetail }) {
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -188,7 +196,7 @@ function SectionRow({ def, items, cleaners, reviews, products, onTrack, profiles
   const renderContent = () => {
     if (def.key === 'featured_cleaners') {
       return cleaners.length > 0
-        ? cleaners.map(p => <CleanerCard key={p.id} profile={p} reviews={reviews.filter(r => r.cleaner_id === p.user_id)} onTrack={onTrack} />)
+        ? cleaners.map(p => <CleanerCard key={p.id} profile={p} reviews={reviews.filter(r => r.cleaner_id === p.user_id)} follows={follows} onTrack={onTrack} />)
         : <PlaceholderCards />;
     }
     if (def.key === 'shop') {
@@ -260,6 +268,12 @@ export default function HomeServiceSections({ user, userAddress }) {
   const { data: products = [] } = useQuery({
     queryKey: ['shopProducts-home'],
     queryFn: () => base44.entities.ShopProduct.filter({ is_active: true }, 'sort_order', 16),
+  });
+
+  const { data: follows = [] } = useQuery({
+    queryKey: ['follows-home'],
+    queryFn: () => base44.entities.Follow.list('-created_date', 200),
+    enabled: profiles.length > 0,
   });
 
   // 每個模塊的卡片：資料到位後立即隨機，mount seed 確保每次進入頁面都重新洗牌
@@ -363,6 +377,7 @@ export default function HomeServiceSections({ user, userAddress }) {
                 cleaners={dedupedCleaners}
                 reviews={reviews}
                 products={shuffledProducts}
+                follows={follows}
                 onTrack={safeTrack}
                 profiles={profiles}
                 onOpenDetail={setSelectedService}
