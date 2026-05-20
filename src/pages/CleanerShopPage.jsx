@@ -282,17 +282,21 @@ export default function CleanerShopPage() {
       </div>
 
       {/* ── 排序列 ── */}
-      <div className="border-t border-stone-100 flex">
-        {SORT_TABS.map(tab => (
-          <button
-            key={tab}
-            onClick={() => setSortTab(tab)}
-            className={`flex-1 py-2.5 text-xs font-semibold transition-colors ${
-              sortTab === tab ? 'text-stone-900' : 'text-stone-400'
-            }`}
-          >
-            {tab}
-          </button>
+      <div className="border-t border-stone-100 flex items-center">
+        {SORT_TABS.map((tab, idx) => (
+          <div key={tab} className="flex-1 flex items-center">
+            <button
+              onClick={() => setSortTab(tab)}
+              className={`flex-1 py-2.5 text-xs font-semibold transition-colors ${
+                sortTab === tab ? 'text-stone-900' : 'text-stone-400'
+              }`}
+            >
+              {tab}
+            </button>
+            {idx < SORT_TABS.length - 1 && (
+              <span className="w-px h-4 bg-stone-300" />
+            )}
+          </div>
         ))}
       </div>
 
