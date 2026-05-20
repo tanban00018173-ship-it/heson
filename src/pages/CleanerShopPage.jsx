@@ -274,7 +274,7 @@ export default function CleanerShopPage() {
 
       {/* 導航 tabs */}
       <div className="bg-white border-b border-stone-100 flex text-xs font-semibold text-stone-400">
-        {['作品', '服務項目', '評價', '師傅資訊'].map((tab, i) => (
+        {['首頁', '服務', '小舖', '會員', '貼文'].map((tab, i) => (
           <button key={tab} className={`flex-1 py-2.5 border-b-2 transition-colors ${i === 0 ? 'text-stone-900 border-stone-900' : 'border-transparent'}`}>
             {tab}
           </button>
