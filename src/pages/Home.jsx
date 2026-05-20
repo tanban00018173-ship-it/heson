@@ -29,6 +29,7 @@ export default function Home() {
       <main className="pb-28">
         <AddressBar onAddressChange={(addrObj) => { setUserAddress(addrObj); }} />
         <CategoryChips />
+        <div className="py-0.5" />
         <HomeServiceSections user={user} userAddress={userAddress} />
         <RecentBookings userId={userId} />
       </main>
