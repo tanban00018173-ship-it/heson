@@ -28,6 +28,7 @@ export default function Home() {
 
       <main className="pb-28">
         <AddressBar onAddressChange={(addrObj) => { setUserAddress(addrObj); }} />
+        <div className="h-2" />
         <CategoryChips />
         <HomeServiceSections user={user} userAddress={userAddress} />
         <RecentBookings userId={userId} />
