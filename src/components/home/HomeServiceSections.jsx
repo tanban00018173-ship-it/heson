@@ -73,17 +73,20 @@ function DbCard({ item, onTrack, providerPhoto, onOpenDetail }) {
   );
 }
 
-function CleanerCard({ profile, reviews = [], onTrack }) {
+function CleanerCard({ profile, reviews = [], followers = 0, onTrack }) {
   const navigate = useNavigate();
   const avgRating = reviews.length
     ? (reviews.reduce((s, r) => s + (r.rating || 0), 0) / reviews.length).toFixed(1)
     : null;
+  const ratingInt = avgRating ? Math.floor(avgRating) : 0;
+  const ratingDecimal = avgRating ? (avgRating % 1).toFixed(1).substring(2) : '0';
+  
   return (
     <button onClick={() => {
       onTrack('click_cleaner', { section_key: 'featured_cleaners', target_id: profile.user_id, target_name: profile.nickname });
       navigate(`/CleanerShopPage?id=${profile.user_id}`);
     }}
-      className="flex-shrink-0 w-[55vw] max-w-[240px] bg-white rounded-2xl overflow-hidden shadow-sm border border-stone-100 text-left active:scale-95 transition-transform p-3 flex gap-3"
+      className="flex-shrink-0 w-[55vw] max-w-[240px] bg-white rounded-2xl overflow-hidden shadow-sm border border-stone-100 text-left active:scale-95 transition-transform p-3 flex gap-3 relative"
     >
       <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-stone-100 to-stone-200 flex-shrink-0 overflow-hidden flex items-center justify-center">
         {profile.profile_photo
@@ -93,13 +96,17 @@ function CleanerCard({ profile, reviews = [], onTrack }) {
       <div className="flex-1 min-w-0">
         <p className="font-semibold text-sm text-stone-800 truncate">{profile.nickname || '管理師'}</p>
         <p className="text-[10px] text-stone-400 truncate">{(profile.service_areas || []).slice(0, 2).join('・') || '全台服務'}</p>
-        <div className="flex items-center gap-1 mt-1">
-          {avgRating && <span className="flex items-center gap-0.5 text-[10px] font-bold text-amber-500"><Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />{avgRating}</span>}
-          {profile.police_record_verified && <Shield className="w-2.5 h-2.5 text-blue-400" />}
-          <span className="text-[10px] text-stone-400 ml-auto">{profile.experience_years || 1}年資</span>
+        <div className="flex items-center gap-1.5 mt-2">
+          <div className="flex items-baseline gap-0.5">
+            <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+            <span className="text-xs font-bold text-stone-800">{ratingInt}</span>
+            <span className="text-[9px] text-stone-400">.{ratingDecimal}</span>
+          </div>
+          <span className="text-[9px] text-stone-400">|</span>
+          <span className="flex items-center gap-0.5 text-[10px] text-stone-700">👥 {followers}</span>
         </div>
       </div>
-      {profile.is_active && <span className="absolute top-2 left-2 bg-green-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">接案中</span>}
+      {profile.police_record_verified && <Shield className="absolute top-2 right-2 w-3 h-3 text-blue-400" />}
     </button>
   );
 }
@@ -175,7 +182,7 @@ function dedupeCleaners(cleaners, usedIds) {
 }
 
 /* ─── 橫向模塊列 ─── */
-function SectionRow({ def, items, cleaners, reviews, products, onTrack, profiles, onOpenDetail }) {
+function SectionRow({ def, items, cleaners, reviews, follows = [], products, onTrack, profiles, onOpenDetail }) {
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -188,7 +195,11 @@ function SectionRow({ def, items, cleaners, reviews, products, onTrack, profiles
   const renderContent = () => {
     if (def.key === 'featured_cleaners') {
       return cleaners.length > 0
-        ? cleaners.map(p => <CleanerCard key={p.id} profile={p} reviews={reviews.filter(r => r.cleaner_id === p.user_id)} onTrack={onTrack} />)
+        ? cleaners.map(p => {
+            const cleanerReviews = reviews.filter(r => r.cleaner_id === p.user_id);
+            const followerCount = follows.filter(f => f.target_id === p.user_id && f.target_type === 'cleaner').length;
+            return <CleanerCard key={p.id} profile={p} reviews={cleanerReviews} followers={followerCount} onTrack={onTrack} />;
+          })
         : <PlaceholderCards />;
     }
     if (def.key === 'shop') {
@@ -254,6 +265,12 @@ export default function HomeServiceSections({ user, userAddress }) {
   const { data: reviews = [] } = useQuery({
     queryKey: ['serviceReviews-home'],
     queryFn: () => base44.entities.ServiceReview.list('-created_date', 50),
+    enabled: profiles.length > 0,
+  });
+
+  const { data: follows = [] } = useQuery({
+    queryKey: ['follows-home'],
+    queryFn: () => base44.entities.Follow.list('-created_date', 500),
     enabled: profiles.length > 0,
   });
 
@@ -362,6 +379,7 @@ export default function HomeServiceSections({ user, userAddress }) {
                 items={dedupedItems}
                 cleaners={dedupedCleaners}
                 reviews={reviews}
+                follows={follows}
                 products={shuffledProducts}
                 onTrack={safeTrack}
                 profiles={profiles}
