@@ -282,7 +282,7 @@ export default function CleanerShopPage() {
       </div>
 
       {/* ── 排序列 ── */}
-      <div className="bg-white mt-2 border-b border-stone-100 flex">
+      <div className="border-t border-stone-100 flex">
         {SORT_TABS.map(tab => (
           <button
             key={tab}
