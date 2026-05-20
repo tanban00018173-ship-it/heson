@@ -250,9 +250,9 @@ export default function CleanerShopPage() {
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-2.5 px-3 pt-2">
+          <div className="grid grid-cols-2 gap-[1px] bg-stone-100">
             {items.map(item => (
-              <div key={item.id} className="bg-white rounded-xl p-2.5 shadow-sm">
+              <div key={item.id} className="bg-white p-3">
                 <ServiceCard item={item} onClick={() => navigate(`/ServiceInquiry?cleaner=${profile?.user_id}&service=${item.id}`)} />
               </div>
             ))}
