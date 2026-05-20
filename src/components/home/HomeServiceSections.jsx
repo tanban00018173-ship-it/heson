@@ -317,8 +317,8 @@ export default function HomeServiceSections({ user, userAddress }) {
     <div>
       {/* ── 置頂：Heson 精選推薦（取前半段，避免與口碑模塊重複） ── */}
       <HesonPicksSection
-        cleaners={shuffledCleaners.slice(0, Math.ceil(shuffledCleaners.length / 2))}
-        reviews={reviews}
+        sections={shuffle(allSections).slice(0, 6)}
+        profiles={profiles}
         onTrack={safeTrack}
       />
 
