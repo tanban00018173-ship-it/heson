@@ -11,7 +11,7 @@ const SORT_TABS = ['綜合排名', '最新', '評分最高', '人氣'];
 
 function ServiceCard({ item, onClick }) {
   return (
-    <button onClick={onClick} className="w-full text-left active:scale-[0.98] transition-transform">
+    <button onClick={onClick} className="w-full text-left active:scale-[0.98] transition-transform block">
       <div className="relative w-full aspect-square rounded-xl overflow-hidden bg-stone-100">
         {item.image_url
           ? <img src={item.image_url} alt={item.title} className="w-full h-full object-cover" />
@@ -250,9 +250,9 @@ export default function CleanerShopPage() {
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-[1px] bg-stone-100">
+          <div className="grid gap-[1px] bg-stone-100" style={{ gridTemplateColumns: '1fr 1fr' }}>
             {items.map(item => (
-              <div key={item.id} className="bg-white p-3">
+              <div key={item.id} className="bg-white p-3 min-w-0">
                 <ServiceCard item={item} onClick={() => navigate(`/ServiceInquiry?cleaner=${profile?.user_id}&service=${item.id}`)} />
               </div>
             ))}
