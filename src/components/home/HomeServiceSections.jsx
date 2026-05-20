@@ -47,39 +47,28 @@ function DbCard({ item, onTrack, providerPhoto }) {
       base44.entities.HomeSection.update(item.id, { click_count: (item.click_count || 0) + 1 }).catch(() => {});
       navigate('/ClientBooking');
     }}
-      className="flex-shrink-0 w-[60vw] max-w-[260px] rounded-2xl overflow-hidden text-left active:scale-95 transition-transform border border-stone-100 shadow-sm bg-white flex flex-col"
+      className="flex-shrink-0 w-[60vw] max-w-[260px] rounded-2xl overflow-hidden text-left active:scale-95 transition-transform border border-stone-100 shadow-sm bg-white"
     >
-      <div className="flex flex-1">
-        {/* 左側頭像 */}
-        <div className="w-14 flex-shrink-0 bg-stone-100 flex items-center justify-center">
+      <div className="h-36 bg-stone-100 flex items-center justify-center relative overflow-hidden">
+        {item.image_url
+          ? <img src={item.image_url} alt={item.title} className="w-full h-full object-cover" />
+          : <IconBroom className="w-14 h-14" />}
+        {item.badge && <span className="absolute top-2 right-2 bg-white/90 text-stone-700 text-[9px] font-bold px-1.5 py-0.5 rounded-full">{item.badge}</span>}
+      </div>
+      <div className="p-3">
+        <div className="flex items-center gap-2 mb-1.5">
           {providerPhoto ? (
-            <img src={providerPhoto} alt="" className="w-full h-full object-cover" />
+            <img src={providerPhoto} alt="" className="w-6 h-6 rounded-full object-cover border border-stone-100 flex-shrink-0" />
           ) : (
-            <div className="w-full h-full flex items-center justify-center bg-stone-200">
-              <span className="text-2xl">🧹</span>
+            <div className="w-6 h-6 rounded-full bg-stone-200 flex items-center justify-center flex-shrink-0">
+              <span className="text-[10px]">🧹</span>
             </div>
           )}
+          <p className="font-bold text-base text-stone-900 leading-snug truncate">{item.title}</p>
         </div>
-        
-        {/* 右側內容 */}
-        <div className="flex-1 flex flex-col p-2.5">
-          <div className="h-36 bg-stone-100 flex items-center justify-center relative overflow-hidden rounded-lg mb-2">
-            {item.image_url
-              ? <img src={item.image_url} alt={item.title} className="w-full h-full object-cover" />
-              : <IconBroom className="w-10 h-10" />}
-            {item.badge && <span className="absolute top-1.5 right-1.5 bg-white/90 text-stone-700 text-[8px] font-bold px-1 py-0.5 rounded-full">{item.badge}</span>}
-          </div>
-          <p className="font-bold text-sm text-stone-900 leading-snug line-clamp-2">{item.title}</p>
-          <p className="text-xs text-stone-400 mt-0.5 leading-tight line-clamp-2">{item.subtitle}</p>
-        </div>
+        <p className="text-xs text-stone-400 mt-0.5 leading-tight">{item.subtitle}</p>
+        {item.price && <p className="text-sm font-bold text-stone-900 mt-1.5">NT$ {item.price.toLocaleString()} 起</p>}
       </div>
-      
-      {/* 底部金額 */}
-      {item.price && (
-        <div className="px-2.5 pb-2.5 border-t border-stone-100">
-          <p className="text-xs font-bold text-stone-900">NT$ {item.price.toLocaleString()} 起</p>
-        </div>
-      )}
     </button>
   );
 }
