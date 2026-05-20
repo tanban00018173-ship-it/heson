@@ -4,45 +4,28 @@ import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import {
   ArrowLeft, Star, Shield, MessageCircle, UserPlus, MapPin,
-  CheckCircle, Clock, ChevronRight, Search, Grid2x2, List
+  CheckCircle, Clock, ChevronRight, Search
 } from 'lucide-react';
 
-/* ── URL 參數 ── */
-const params = new URLSearchParams(window.location.search);
-const CLEANER_ID = params.get('cleaner') || params.get('id') || '';
-
-/* ── 排序標籤 ── */
 const SORT_TABS = ['綜合排名', '最新', '評分最高', '人氣'];
 
-/* ── 作品/服務卡片 ── */
 function ServiceCard({ item, onClick }) {
   return (
-    <button
-      onClick={onClick}
-      className="w-full text-left active:scale-[0.98] transition-transform"
-    >
-      {/* 圖片區 */}
+    <button onClick={onClick} className="w-full text-left active:scale-[0.98] transition-transform">
       <div className="relative w-full aspect-square rounded-xl overflow-hidden bg-stone-100">
-        {item.image_url ? (
-          <img src={item.image_url} alt={item.title} className="w-full h-full object-cover" />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <span className="text-4xl">🧹</span>
-          </div>
-        )}
+        {item.image_url
+          ? <img src={item.image_url} alt={item.title} className="w-full h-full object-cover" />
+          : <div className="w-full h-full flex items-center justify-center"><span className="text-4xl">🧹</span></div>
+        }
         {item.badge && (
           <span className="absolute top-1.5 left-1.5 bg-amber-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-md">
             {item.badge}
           </span>
         )}
       </div>
-
-      {/* 資訊區 */}
       <div className="mt-1.5 px-0.5">
         <p className="text-xs text-stone-700 leading-snug line-clamp-2 font-medium">{item.title}</p>
-        {item.subtitle && (
-          <p className="text-[10px] text-stone-400 mt-0.5 line-clamp-1">{item.subtitle}</p>
-        )}
+        {item.subtitle && <p className="text-[10px] text-stone-400 mt-0.5 line-clamp-1">{item.subtitle}</p>}
         {item.price != null && (
           <p className="mt-1 font-black text-stone-900 text-sm">
             <span className="text-[10px] font-bold">NT$</span>
@@ -50,30 +33,18 @@ function ServiceCard({ item, onClick }) {
             <span className="text-[10px] font-normal text-stone-400 ml-1">起</span>
           </p>
         )}
-        {/* 評分 / 完成數 */}
-        {(item.rating || item.booking_count) && (
-          <div className="flex items-center gap-1.5 mt-0.5">
-            {item.rating && (
-              <span className="flex items-center gap-0.5 text-[10px] text-amber-500 font-bold">
-                <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
-                {item.rating}
-              </span>
-            )}
-            {item.booking_count > 0 && (
-              <span className="text-[10px] text-stone-400">已完成 {item.booking_count} 件</span>
-            )}
-          </div>
+        {item.booking_count > 0 && (
+          <p className="text-[10px] text-stone-400 mt-0.5">已完成 {item.booking_count} 件</p>
         )}
       </div>
     </button>
   );
 }
 
-/* ── 骨架屏 ── */
 function SkeletonGrid() {
   return (
-    <div className="grid grid-cols-2 gap-2.5 px-3">
-      {Array.from({ length: 6 }).map((_, i) => (
+    <div className="grid grid-cols-2 gap-2.5 p-3">
+      {Array.from({ length: 4 }).map((_, i) => (
         <div key={i}>
           <div className="w-full aspect-square rounded-xl bg-stone-100 animate-pulse" />
           <div className="mt-2 h-3 bg-stone-100 rounded-full w-4/5 animate-pulse" />
@@ -88,15 +59,13 @@ export default function CleanerShopPage() {
   const navigate = useNavigate();
   const [sortTab, setSortTab] = useState('綜合排名');
   const [search, setSearch] = useState('');
-  const [cleanerId, setCleanerId] = useState(CLEANER_ID);
+  const [cleanerId, setCleanerId] = useState('');
 
-  /* 如果 URL 沒有 cleaner 參數，從 query 抓 */
   useEffect(() => {
     const p = new URLSearchParams(window.location.search);
     setCleanerId(p.get('cleaner') || p.get('id') || '');
   }, []);
 
-  /* ── 管理師基本資料 ── */
   const { data: profiles = [], isLoading: loadingProfile } = useQuery({
     queryKey: ['cleanerShopProfile', cleanerId],
     queryFn: () => cleanerId
@@ -106,32 +75,24 @@ export default function CleanerShopPage() {
   });
   const profile = profiles[0];
 
-  /* ── 評論 ── */
   const { data: reviews = [] } = useQuery({
     queryKey: ['cleanerShopReviews', profile?.user_id],
     queryFn: () => base44.entities.ServiceReview.filter({ cleaner_id: profile.user_id }, '-created_date', 50),
     enabled: !!profile?.user_id,
   });
 
-  /* ── HomeSection 作品（section_key = featured_cleaners 或此師傅有的卡片） ── */
   const { data: sections = [], isLoading: loadingSections } = useQuery({
     queryKey: ['cleanerShopSections', profile?.user_id],
     queryFn: () => base44.entities.HomeSection.filter({ provider_id: profile.user_id, is_active: true }),
     enabled: !!profile?.user_id,
   });
 
-  /* ── 統計 ── */
   const avgRating = reviews.length
     ? (reviews.reduce((s, r) => s + (r.rating || 0), 0) / reviews.length).toFixed(1)
     : null;
 
-  /* ── 排序 & 搜尋 ── */
   let items = [...sections];
-  if (search) {
-    items = items.filter(i =>
-      i.title?.includes(search) || i.subtitle?.includes(search)
-    );
-  }
+  if (search) items = items.filter(i => i.title?.includes(search) || i.subtitle?.includes(search));
   if (sortTab === '最新') items.sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
   else if (sortTab === '評分最高') items.sort((a, b) => (b.booking_count || 0) - (a.booking_count || 0));
   else if (sortTab === '人氣') items.sort((a, b) => (b.click_count || 0) - (a.click_count || 0));
@@ -144,10 +105,7 @@ export default function CleanerShopPage() {
       {/* ── 頂部搜尋列 ── */}
       <div className="sticky top-0 z-30 bg-white border-b border-stone-100">
         <div className="flex items-center gap-2 px-3 py-2.5">
-          <button
-            onClick={() => navigate(-1)}
-            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-stone-100 flex-shrink-0"
-          >
+          <button onClick={() => navigate(-1)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-stone-100 flex-shrink-0">
             <ArrowLeft className="w-4 h-4 text-stone-700" />
           </button>
           <div className="flex-1 flex items-center bg-stone-100 rounded-full px-3 py-2 gap-2">
@@ -164,122 +122,95 @@ export default function CleanerShopPage() {
 
       {/* ── 師傅 Banner ── */}
       <div className="bg-white">
-        {/* 封面 */}
-        <div className="relative h-32 bg-gradient-to-br from-stone-700 via-stone-600 to-stone-500 overflow-hidden">
+        {/* 封面圖 */}
+        <div className="h-24 bg-gradient-to-r from-stone-600 to-stone-400 overflow-hidden">
           {profile?.profile_photo && (
-            <img
-              src={profile.profile_photo}
-              alt="cover"
-              className="w-full h-full object-cover opacity-60"
-            />
+            <img src={profile.profile_photo} alt="cover" className="w-full h-full object-cover opacity-40" />
           )}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
         </div>
 
-        {/* 師傅資訊列 */}
-        <div className="px-4 pt-3 pb-4">
-          <div className="flex items-start gap-3">
-            {/* 頭像 */}
-            <div className="w-16 h-16 rounded-2xl overflow-hidden border-2 border-white shadow-lg flex-shrink-0 -mt-10 bg-stone-200">
-              {profile?.profile_photo ? (
-                <img src={profile.profile_photo} alt={profile.nickname} className="w-full h-full object-cover" />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center bg-stone-100">
-                  <span className="text-2xl">🧹</span>
-                </div>
-              )}
-            </div>
-
-            {/* 姓名 & 操作 */}
-            <div className="flex-1 min-w-0 pt-1">
-              <div className="flex items-center justify-between">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    <h1 className="font-black text-base text-stone-900 truncate">
-                      {profile?.nickname || '載入中…'}
-                    </h1>
-                    {profile?.is_active && (
-                      <span className="bg-green-100 text-green-700 text-[9px] font-bold px-1.5 py-0.5 rounded-full">接案中</span>
-                    )}
-                  </div>
-                  {avgRating && (
-                    <div className="flex items-center gap-1 mt-0.5">
-                      <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                      <span className="text-xs font-bold text-amber-600">{avgRating}</span>
-                      <span className="text-[10px] text-stone-400">｜{reviews.length} 則評價</span>
-                    </div>
-                  )}
-                </div>
-
-                {/* 操作按鈕 */}
-                <div className="flex gap-2 flex-shrink-0">
-                  <button
-                    onClick={() => navigate(`/ServiceInquiry?cleaner=${profile?.user_id}`)}
-                    className="flex items-center gap-1 bg-stone-900 text-white text-[11px] font-bold px-3 py-1.5 rounded-full"
-                  >
-                    <UserPlus className="w-3 h-3" />預約
-                  </button>
-                  <button className="flex items-center gap-1 border border-stone-300 text-stone-700 text-[11px] font-semibold px-3 py-1.5 rounded-full">
-                    <MessageCircle className="w-3 h-3" />聊聊
-                  </button>
-                </div>
-              </div>
-
-              {/* 標籤列 */}
-              <div className="flex flex-wrap gap-1.5 mt-2">
-                {profile?.police_record_verified && (
-                  <span className="flex items-center gap-0.5 bg-blue-50 text-blue-600 text-[10px] font-semibold px-2 py-0.5 rounded-full">
-                    <Shield className="w-2.5 h-2.5" />良民證核實
-                  </span>
-                )}
-                {profile?.experience_years && (
-                  <span className="flex items-center gap-0.5 bg-amber-50 text-amber-600 text-[10px] font-semibold px-2 py-0.5 rounded-full">
-                    <Clock className="w-2.5 h-2.5" />{profile.experience_years} 年資歷
-                  </span>
-                )}
-                {profile?.residence_area && (
-                  <span className="flex items-center gap-0.5 bg-stone-100 text-stone-600 text-[10px] font-semibold px-2 py-0.5 rounded-full">
-                    <MapPin className="w-2.5 h-2.5" />{profile.residence_area}
-                  </span>
-                )}
-                {profile?.has_own_tools && (
-                  <span className="flex items-center gap-0.5 bg-stone-100 text-stone-600 text-[10px] font-semibold px-2 py-0.5 rounded-full">
-                    <CheckCircle className="w-2.5 h-2.5" />自備工具
-                  </span>
-                )}
-              </div>
-            </div>
+        {/* 頭像 + 按鈕 row */}
+        <div className="px-4 flex items-end justify-between" style={{ marginTop: -28 }}>
+          {/* 頭像 */}
+          <div className="w-16 h-16 rounded-2xl overflow-hidden border-2 border-white shadow-md bg-stone-100 flex-shrink-0">
+            {profile?.profile_photo
+              ? <img src={profile.profile_photo} alt={profile?.nickname} className="w-full h-full object-cover" />
+              : <div className="w-full h-full flex items-center justify-center"><span className="text-2xl">🧹</span></div>
+            }
           </div>
+          {/* 操作按鈕 */}
+          <div className="flex gap-2 pb-1">
+            <button
+              onClick={() => navigate(`/ServiceInquiry?cleaner=${profile?.user_id}`)}
+              className="flex items-center gap-1 bg-stone-900 text-white text-[11px] font-bold px-3 py-1.5 rounded-full"
+            >
+              <UserPlus className="w-3 h-3" />預約
+            </button>
+            <button className="flex items-center gap-1 border border-stone-300 text-stone-700 text-[11px] font-semibold px-3 py-1.5 rounded-full">
+              <MessageCircle className="w-3 h-3" />聊聊
+            </button>
+          </div>
+        </div>
 
-          {/* 自我介紹 */}
-          {profile?.bio && (
-            <p className="mt-3 text-xs text-stone-500 leading-relaxed line-clamp-2">
-              {profile.bio}
-            </p>
-          )}
-
-          {/* 服務類型 chips */}
-          {(profile?.service_types || []).length > 0 && (
-            <div className="flex gap-1.5 mt-2.5 overflow-x-auto scrollbar-none pb-0.5">
-              {profile.service_types.map(s => (
-                <span key={s} className="flex-shrink-0 bg-stone-900 text-white text-[10px] font-semibold px-2.5 py-1 rounded-full">
-                  {s}
-                </span>
-              ))}
+        {/* 師傅名稱 & 評分 */}
+        <div className="px-4 mt-2.5">
+          <div className="flex items-center gap-2 flex-wrap">
+            <h1 className="font-black text-base text-stone-900">{profile?.nickname || (isLoading ? '載入中…' : '師傅')}</h1>
+            {profile?.is_active && (
+              <span className="bg-green-100 text-green-700 text-[9px] font-bold px-1.5 py-0.5 rounded-full">接案中</span>
+            )}
+          </div>
+          {avgRating && (
+            <div className="flex items-center gap-1 mt-0.5">
+              <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+              <span className="text-xs font-bold text-amber-600">{avgRating}</span>
+              <span className="text-[10px] text-stone-400">｜{reviews.length} 則評價</span>
             </div>
           )}
         </div>
 
-        {/* 分隔 */}
-        <div className="border-t border-stone-100" />
+        {/* 標籤列 */}
+        <div className="px-4 mt-2 flex flex-wrap gap-1.5">
+          {profile?.police_record_verified && (
+            <span className="flex items-center gap-0.5 bg-blue-50 text-blue-600 text-[10px] font-semibold px-2 py-0.5 rounded-full">
+              <Shield className="w-2.5 h-2.5" />良民證
+            </span>
+          )}
+          {profile?.experience_years && (
+            <span className="flex items-center gap-0.5 bg-amber-50 text-amber-600 text-[10px] font-semibold px-2 py-0.5 rounded-full">
+              <Clock className="w-2.5 h-2.5" />{profile.experience_years} 年資歷
+            </span>
+          )}
+          {profile?.residence_area && (
+            <span className="flex items-center gap-0.5 bg-stone-100 text-stone-600 text-[10px] font-semibold px-2 py-0.5 rounded-full">
+              <MapPin className="w-2.5 h-2.5" />{profile.residence_area}
+            </span>
+          )}
+          {profile?.has_own_tools && (
+            <span className="flex items-center gap-0.5 bg-stone-100 text-stone-600 text-[10px] font-semibold px-2 py-0.5 rounded-full">
+              <CheckCircle className="w-2.5 h-2.5" />自備工具
+            </span>
+          )}
+        </div>
 
-        {/* 導航 tabs（仿蝦皮） */}
-        <div className="flex px-4 gap-5 text-xs font-semibold text-stone-400 py-2.5 overflow-x-auto scrollbar-none">
+        {/* 自我介紹 */}
+        {profile?.bio && (
+          <p className="px-4 mt-2 text-xs text-stone-500 leading-relaxed line-clamp-2">{profile.bio}</p>
+        )}
+
+        {/* 服務類型 chips */}
+        {(profile?.service_types || []).length > 0 && (
+          <div className="flex gap-1.5 px-4 mt-2.5 pb-3 overflow-x-auto scrollbar-none">
+            {profile.service_types.map(s => (
+              <span key={s} className="flex-shrink-0 bg-stone-900 text-white text-[10px] font-semibold px-2.5 py-1 rounded-full">{s}</span>
+            ))}
+          </div>
+        )}
+
+        {/* 導航 tabs */}
+        <div className="border-t border-stone-100 flex px-4 gap-5 text-xs font-semibold text-stone-400 pt-2.5 pb-0 overflow-x-auto scrollbar-none">
           {['作品', '服務項目', '評價', '師傅資訊'].map((tab, i) => (
-            <button
-              key={tab}
-              className={`flex-shrink-0 pb-1.5 border-b-2 transition-colors ${i === 0 ? 'text-stone-900 border-stone-900' : 'border-transparent hover:text-stone-600'}`}
-            >
+            <button key={tab} className={`flex-shrink-0 pb-2 border-b-2 transition-colors ${i === 0 ? 'text-stone-900 border-stone-900' : 'border-transparent'}`}>
               {tab}
             </button>
           ))}
@@ -287,23 +218,19 @@ export default function CleanerShopPage() {
       </div>
 
       {/* ── 排序列 ── */}
-      <div className="bg-white mt-2 sticky top-[52px] z-20 border-b border-stone-100">
-        <div className="flex items-center gap-0 overflow-x-auto scrollbar-none">
-          {SORT_TABS.map(tab => (
-            <button
-              key={tab}
-              onClick={() => setSortTab(tab)}
-              className={`flex-shrink-0 px-4 py-2.5 text-xs font-semibold transition-colors border-b-2 ${
-                sortTab === tab
-                  ? 'text-stone-900 border-stone-900'
-                  : 'text-stone-400 border-transparent'
-              }`}
-            >
-              {tab}
-              {tab === '最新' && <span className="ml-0.5 w-1.5 h-1.5 bg-red-500 rounded-full inline-block align-middle" />}
-            </button>
-          ))}
-        </div>
+      <div className="bg-white mt-2 border-b border-stone-100 flex overflow-x-auto scrollbar-none">
+        {SORT_TABS.map(tab => (
+          <button
+            key={tab}
+            onClick={() => setSortTab(tab)}
+            className={`flex-shrink-0 px-4 py-2.5 text-xs font-semibold border-b-2 transition-colors ${
+              sortTab === tab ? 'text-stone-900 border-stone-900' : 'text-stone-400 border-transparent'
+            }`}
+          >
+            {tab}
+            {tab === '最新' && <span className="ml-0.5 w-1.5 h-1.5 bg-red-500 rounded-full inline-block align-middle" />}
+          </button>
+        ))}
       </div>
 
       {/* ── 作品網格 ── */}
@@ -311,7 +238,7 @@ export default function CleanerShopPage() {
         {isLoading ? (
           <SkeletonGrid />
         ) : items.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-stone-300">
+          <div className="flex flex-col items-center justify-center py-20">
             <span className="text-5xl mb-3">🧹</span>
             <p className="text-sm font-medium text-stone-400">尚無作品</p>
             <p className="text-xs text-stone-300 mt-1">師傅尚未上架服務項目</p>
@@ -323,13 +250,10 @@ export default function CleanerShopPage() {
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-[1px] bg-stone-100 mt-[1px]">
+          <div className="grid grid-cols-2 gap-[1px] bg-stone-100">
             {items.map(item => (
               <div key={item.id} className="bg-white p-3">
-                <ServiceCard
-                  item={item}
-                  onClick={() => navigate(`/ServiceInquiry?cleaner=${profile?.user_id}&service=${item.id}`)}
-                />
+                <ServiceCard item={item} onClick={() => navigate(`/ServiceInquiry?cleaner=${profile?.user_id}&service=${item.id}`)} />
               </div>
             ))}
           </div>
@@ -354,10 +278,7 @@ export default function CleanerShopPage() {
                   </div>
                   <div className="flex items-center gap-1">
                     {Array.from({ length: 5 }).map((_, i) => (
-                      <Star
-                        key={i}
-                        className={`w-2.5 h-2.5 ${i < r.rating ? 'fill-amber-400 text-amber-400' : 'text-stone-200'}`}
-                      />
+                      <Star key={i} className={`w-2.5 h-2.5 ${i < r.rating ? 'fill-amber-400 text-amber-400' : 'text-stone-200'}`} />
                     ))}
                   </div>
                   <span className="text-[10px] text-stone-400 ml-auto">
