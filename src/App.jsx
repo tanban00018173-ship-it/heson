@@ -54,6 +54,7 @@ const ProviderSectionManager= React.lazy(() => import('./pages/ProviderSectionMa
 const SearchResults         = React.lazy(() => import('./pages/SearchResults'));
 const CleanerShopPage       = React.lazy(() => import('./pages/CleanerShopPage'));
 const ClientFavorites       = React.lazy(() => import('./pages/ClientFavorites'));
+const ServiceBrowse          = React.lazy(() => import('./pages/ServiceBrowse'));
 
 /* ── Page loading fallback ── */
 const PageLoader = () => (
@@ -173,6 +174,7 @@ const AuthenticatedApp = () => {
         <Route path="/SearchResults"          element={<SearchResults />} />
         <Route path="/CleanerShopPage"        element={<CleanerShopPage />} />
         <Route path="/ClientFavorites"       element={<ClientFavorites />} />
+        <Route path="/ServiceBrowse"         element={<ServiceBrowse />} />
         <Route path="*"                       element={<PageNotFound />} />
       </Routes>
     </Suspense>

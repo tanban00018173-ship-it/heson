@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { Star, Shield, MapPin, X, Sparkles, Tag, TrendingUp, Flame, Zap, User } from 'lucide-react';
+import { Star, Shield, MapPin, X, Sparkles, Tag, TrendingUp, Flame, Zap, User, SlidersHorizontal } from 'lucide-react';
 
 /* ── 彩色 SVG icon 定義 ── */
 const icons = {
@@ -247,6 +247,13 @@ export default function CategoryChips() {
 
       {/* 下行：篩選膠囊（複選） */}
       <div className="flex overflow-x-auto gap-2 px-4 pb-3 pt-1 scrollbar-none">
+        <button
+          onClick={() => navigate('/ServiceBrowse')}
+          className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[11px] font-semibold whitespace-nowrap transition-colors flex-shrink-0 bg-gold-100 text-gold-700 border border-gold-200"
+        >
+          <SlidersHorizontal className="w-3 h-3" />
+          篩選服務
+        </button>
         {FILTERS.map((f) => {
           const active = selectedFilters.includes(f.id);
           const FIcon = f.Icon;
