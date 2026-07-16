@@ -1,0 +1,80 @@
+{
+  "name": "ServiceFavorite",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "\u6536\u85cf\u8005\u7684 user ID"
+    },
+    "section_id": {
+      "type": "string",
+      "description": "\u5c0d\u61c9\u7684 HomeSection ID"
+    },
+    "title": {
+      "type": "string",
+      "description": "\u670d\u52d9\u540d\u7a31\uff08\u5feb\u7167\uff09"
+    },
+    "subtitle": {
+      "type": "string",
+      "description": "\u670d\u52d9\u526f\u6a19\uff08\u5feb\u7167\uff09"
+    },
+    "price": {
+      "type": "number",
+      "description": "\u8d77\u59cb\u50f9\u683c\uff08\u5feb\u7167\uff09"
+    },
+    "image_url": {
+      "type": "string",
+      "description": "\u5361\u7247\u5716\u7247 URL\uff08\u5feb\u7167\uff09"
+    },
+    "badge": {
+      "type": "string",
+      "description": "\u6a19\u7c64\u6587\u5b57\uff08\u5feb\u7167\uff09"
+    },
+    "provider_id": {
+      "type": "string",
+      "description": "\u4e0a\u67b6\u8005 ID\uff08\u5feb\u7167\uff09"
+    },
+    "provider_type": {
+      "type": "string",
+      "enum": [
+        "cleaner",
+        "vendor"
+      ],
+      "description": "\u4e0a\u67b6\u8005\u985e\u578b\uff08\u5feb\u7167\uff09"
+    }
+  },
+  "required": [
+    "user_id",
+    "section_id"
+  ],
+  "rls": {
+    "create": {},
+    "read": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "data.user_id": "{{user.id}}"
+    },
+    "delete": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}

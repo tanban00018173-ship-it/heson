@@ -2,12 +2,15 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
+import FavoriteButton from './FavoriteButton';
 
 function ServiceCard({ item, providerPhoto, onClick }) {
   return (
-    <button
+    <div
       onClick={onClick}
-      className="flex-shrink-0 w-[60vw] max-w-[260px] rounded-2xl overflow-hidden text-left active:scale-95 transition-transform border border-stone-100 shadow-sm bg-white"
+      role="button"
+      tabIndex={0}
+      className="flex-shrink-0 w-[60vw] max-w-[260px] rounded-2xl overflow-hidden text-left active:scale-95 transition-transform border border-stone-100 shadow-sm bg-white cursor-pointer"
     >
       <div className="h-36 bg-stone-100 flex items-center justify-center relative overflow-hidden">
         {item.image_url
@@ -17,6 +20,9 @@ function ServiceCard({ item, providerPhoto, onClick }) {
         {item.badge && (
           <span className="absolute top-2 right-2 bg-white/90 text-stone-700 text-[9px] font-bold px-1.5 py-0.5 rounded-full">{item.badge}</span>
         )}
+        <div className="absolute top-2 left-2">
+          <FavoriteButton item={item} />
+        </div>
       </div>
       <div className="p-3 flex gap-2">
         {providerPhoto ? (
@@ -34,7 +40,7 @@ function ServiceCard({ item, providerPhoto, onClick }) {
           )}
         </div>
       </div>
-    </button>
+    </div>
   );
 }
 

@@ -9,6 +9,7 @@ import { useTrack } from '@/lib/useTrack';
 import VendorShowcaseRow from './VendorShowcaseRow';
 import HesonPicksSection from './HesonPicksSection';
 import ServiceDetailSheet from './ServiceDetailSheet';
+import FavoriteButton from './FavoriteButton';
 
 /* ─── 隨機洗牌（Fisher-Yates） ─── */
 function shuffle(arr) {
@@ -42,18 +43,23 @@ const SECTION_DEFS = [
 /* ─── 卡片組件 ─── */
 function DbCard({ item, onTrack, providerPhoto, onOpenDetail }) {
   return (
-    <button onClick={() => {
+    <div onClick={() => {
       onTrack('click_card', { section_key: item.section_key, target_id: item.id, target_name: item.title });
       base44.entities.HomeSection.update(item.id, { click_count: (item.click_count || 0) + 1 }).catch(() => {});
       onOpenDetail(item);
     }}
-      className="flex-shrink-0 w-[60vw] max-w-[260px] rounded-2xl overflow-hidden text-left active:scale-95 transition-transform border border-stone-100 shadow-sm bg-white"
+      role="button"
+      tabIndex={0}
+      className="flex-shrink-0 w-[60vw] max-w-[260px] rounded-2xl overflow-hidden text-left active:scale-95 transition-transform border border-stone-100 shadow-sm bg-white cursor-pointer"
     >
       <div className="h-36 bg-stone-100 flex items-center justify-center relative overflow-hidden">
         {item.image_url
           ? <img src={item.image_url} alt={item.title} className="w-full h-full object-cover" />
           : <IconBroom className="w-14 h-14" />}
         {item.badge && <span className="absolute top-2 right-2 bg-white/90 text-stone-700 text-[9px] font-bold px-1.5 py-0.5 rounded-full">{item.badge}</span>}
+        <div className="absolute top-2 left-2">
+          <FavoriteButton item={item} />
+        </div>
       </div>
       <div className="p-3 flex gap-2">
         {providerPhoto ? (
@@ -69,7 +75,7 @@ function DbCard({ item, onTrack, providerPhoto, onOpenDetail }) {
           {item.price && <p className="text-sm font-bold text-stone-900 mt-1">NT$ {item.price.toLocaleString()} 起</p>}
         </div>
       </div>
-    </button>
+    </div>
   );
 }
 

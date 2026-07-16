@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Search, ShoppingCart, MessageCircle, X } from 'lucide-react';
+import { Search, ShoppingCart, MessageCircle, Heart, X } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useCart } from '@/lib/CartContext';
 
@@ -98,6 +98,14 @@ export default function HomeTopBar({ onChatOpen }) { // onChatOpen kept for back
             </span>
           )}
         </button>
+
+        {/* Favorites */}
+        <Link
+          to="/ClientFavorites"
+          className="w-10 h-10 flex items-center justify-center rounded-2xl bg-stone-100 hover:bg-stone-200 transition-colors"
+        >
+          <Heart className="w-5 h-5 text-stone-700" />
+        </Link>
 
         {/* Chat → VendorChat */}
         <Link
