@@ -1,13 +1,21 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { ArrowLeft, Star, Shield, MapPin } from 'lucide-react';
+import SortFilterBar from '@/components/home/SortFilterBar';
+
+const SORT_OPTIONS = [
+  { value: 'latest', label: '最新' },
+  { value: 'rating', label: '評分' },
+  { value: 'popular', label: '人氣' },
+];
 
 export default function SearchResults() {
   const navigate = useNavigate();
   const params = new URLSearchParams(window.location.search);
   const service = params.get('service') || '';
+  const [sort, setSort] = useState('latest');
 
   const { data: cleaners = [], isLoading } = useQuery({
     queryKey: ['searchCleaners', service],
@@ -28,6 +36,20 @@ export default function SearchResults() {
     );
   }, [cleaners, service]);
 
+  // 依排序方式整理
+  const sorted = useMemo(() => {
+    const withMeta = filtered.map(c => {
+      const cReviews = reviews.filter(r => r.cleaner_id === c.user_id);
+      const avgRating = cReviews.length
+        ? cReviews.reduce((s, r) => s + (r.rating || 0), 0) / cReviews.length
+        : 0;
+      return { ...c, _avgRating: avgRating, _reviewCount: cReviews.length };
+    });
+    if (sort === 'rating') return withMeta.sort((a, b) => b._avgRating - a._avgRating);
+    if (sort === 'popular') return withMeta.sort((a, b) => b._reviewCount - a._reviewCount);
+    return withMeta.sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
+  }, [filtered, reviews, sort]);
+
   const getAvgRating = (cleanerId) => {
     const r = reviews.filter(r => r.cleaner_id === cleanerId);
     if (!r.length) return null;
@@ -47,13 +69,20 @@ export default function SearchResults() {
         </div>
       </div>
 
+      {/* Sort filter */}
+      {!isLoading && filtered.length > 0 && (
+        <div className="sticky top-[57px] z-10 bg-stone-50 px-4 pt-3 pb-1">
+          <SortFilterBar options={SORT_OPTIONS} value={sort} onChange={setSort} />
+        </div>
+      )}
+
       {/* Results */}
       <div className="px-4 py-4 space-y-3">
         {isLoading ? (
           Array.from({ length: 4 }).map((_, i) => (
             <div key={i} className="bg-white rounded-2xl h-28 animate-pulse" />
           ))
-        ) : filtered.length === 0 ? (
+        ) : sorted.length === 0 ? (
           <div className="text-center py-20 text-stone-400">
             <p className="text-4xl mb-3">🔍</p>
             <p className="text-sm">目前沒有符合「{service}」的管理師</p>
@@ -66,7 +95,7 @@ export default function SearchResults() {
             </button>
           </div>
         ) : (
-          filtered.map(cleaner => {
+          sorted.map(cleaner => {
             const avg = getAvgRating(cleaner.user_id);
             return (
               <button
@@ -117,7 +146,7 @@ export default function SearchResults() {
       </div>
 
       {/* 底部詢問 CTA */}
-      {!isLoading && filtered.length > 0 && (
+      {!isLoading && sorted.length > 0 && (
         <div className="px-4 pb-8 pt-2 text-center">
           <p className="text-xs text-stone-400 mb-2">沒有找到合適的管理師？</p>
           <button

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { ShoppingBag, Package, Search, ShoppingCart, MessageCircle } from 'lucide-react';
@@ -6,11 +6,20 @@ import { Link } from 'react-router-dom';
 import { useCart } from '@/lib/CartContext';
 import CartDrawer from '@/components/home/CartDrawer';
 import ClientBottomNav from '@/components/dashboard/ClientBottomNav';
+import SortFilterBar from '@/components/home/SortFilterBar';
 import { toast } from 'sonner';
+
+const SORT_OPTIONS = [
+  { value: 'latest', label: '最新' },
+  { value: 'popular', label: '人氣' },
+  { value: 'price_low', label: '價格低到高' },
+  { value: 'price_high', label: '價格高到低' },
+];
 
 export default function ClientShop() {
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('全部');
+  const [sort, setSort] = useState('latest');
 
   const { data: products = [], isLoading } = useQuery({
     queryKey: ['shop_products_public'],
@@ -24,6 +33,14 @@ export default function ClientShop() {
     const matchSearch = !search || p.name.includes(search) || (p.description || '').includes(search);
     return matchCat && matchSearch;
   });
+
+  const sorted = useMemo(() => {
+    const arr = [...filtered];
+    if (sort === 'price_low') return arr.sort((a, b) => a.price - b.price);
+    if (sort === 'price_high') return arr.sort((a, b) => b.price - a.price);
+    if (sort === 'popular') return arr.sort((a, b) => (a.sort_order ?? 99) - (b.sort_order ?? 99));
+    return arr.sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
+  }, [filtered, sort]);
 
   const { totalCount, setOpen: setCartOpen } = useCart();
 
@@ -106,8 +123,12 @@ export default function ClientShop() {
           )}
 
           {!isLoading && filtered.length > 0 && (
+            <>
+            <div className="mb-3">
+              <SortFilterBar options={SORT_OPTIONS} value={sort} onChange={setSort} />
+            </div>
             <div className="grid grid-cols-2 gap-3">
-              {filtered.map(p => (
+              {sorted.map(p => (
                 <div key={p.id} className="bg-white rounded-2xl border border-stone-100 shadow-sm overflow-hidden flex flex-col">
                   <div className="relative">
                     {p.image_url ? (
@@ -150,6 +171,7 @@ export default function ClientShop() {
                 </div>
               ))}
             </div>
+            </>
           )}
 
           <p className="text-center text-xs text-stone-400 mt-8 mb-2">

@@ -25,5 +25,9 @@
       "type": "object",
       "description": "\u5f8c\u53f0\u7d30\u90e8\u6b0a\u9650\u8986\u5beb {bookings, cleaners, clients, dispatch, finance, tools, users, settings}\uff0c\u503c\u70ba true/false"
     }
-  }
+  },
+  "required": [
+    "admin_level",
+    "admin_permissions"
+  ]
 }

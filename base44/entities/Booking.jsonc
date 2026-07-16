@@ -15,7 +15,7 @@
       "enum": [
         "\u57fa\u790e\u6708\u8b77-4\u6b21",
         "\u9032\u968e\u6708\u5b89-8\u6b21",
-        "\u5c0a\u69ae\u6708\u6046-12\u6b21",
+        "\u5c0a\u7dbb\u6708\u7dbb-12\u6b21",
         "\u55ae\u6b21\u6e05\u6f54",
         "\u8f15\u91cf\u6e05\u6f54",
         "\u5927\u6383\u9664",
@@ -23,6 +23,16 @@
         "\u6c11\u5bbf\u6e05\u6f54"
       ],
       "description": "\u670d\u52d9\u985e\u578b"
+    },
+    "business_type": {
+      "type": "string",
+      "enum": [
+        "\u5e73\u53f0\u6d3e\u6848",
+        "\u8d6b\u980c\u5ee0\u5546",
+        "\u8d6b\u980c\u76f4\u71df"
+      ],
+      "default": "\u5e73\u53f0\u6d3e\u6848",
+      "description": "\u696d\u52d9\u985e\u578b\uff1a\u5e73\u53f0\u6d3e\u6848\uff08\u54e1\u5de5\u62bd70%\uff09/ \u8d6b\u980c\u5ee0\u5546\uff08\u5ee0\u5546\u62bd80%\uff09/ \u8d6b\u980c\u76f4\u71df\uff08\u56fa\u5b9a\u85aa\uff09"
     },
     "status": {
       "type": "string",
@@ -133,6 +143,14 @@
     "amount": {
       "type": "number",
       "description": "\u8a02\u55ae\u91d1\u984d"
+    },
+    "sheet_db_id": {
+      "type": "string",
+      "description": "\u8cc7\u6599\u5eab\u8a66\u7b97\u8868\u7de8\u865f\uff08\u5982 R1, H5, D16\uff09"
+    },
+    "extra_fields": {
+      "type": "object",
+      "description": "\u5f48\u6027\u6b04\u4f4d\uff1a\u5b58\u653e\u8868\u55ae\u984d\u5916\u8490\u96c6\u7684\u8cc7\u6599\uff08\u576a\u6578\u3001\u5bf5\u7269\u3001\u504f\u597d\u661f\u671f\u7b49\uff09\uff0c\u683c\u5f0f\u81ea\u7531"
     }
   },
   "required": [
